@@ -1,0 +1,6 @@
+export * from './lib/sql-client';
+export * from './lib/errors/errors';
+export * from './lib/types';
+export * from './lib/commands';
+export * from './lib/sql-client.interface';
+export * from './lib/statement';
