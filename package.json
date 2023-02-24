@@ -1,11 +1,13 @@
 {
-  "name": "exasol-driver-ts",
-  "version": "1.0.0",
+  "name": "@exasol/exasol-driver-ts",
+  "version": "0.1.0",
   "description": "Exasol SQL Driver",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -cw",
     "test": "jest --selectProjects unit-dom unit-node",
+    "test:dom": "jest --selectProjects unit-dom",
+    "test:node": "jest --selectProjects unit-node",
     "lint": "eslint --ignore-path .eslintignore --ext .js,.ts --fix .",
     "lint:ci": "eslint --ignore-path .eslintignore --ext .js,.ts .",
     "format": "prettier --write .",
