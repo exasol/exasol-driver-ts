@@ -1,6 +1,6 @@
 import { ExaWebsocket } from '../../src/lib/connection';
-import { connectTest } from '../testcases/connect';
+import { basicTests } from '../testcases/basic.spec';
 
-connectTest('Browser', (url) => {
+basicTests('Browser', (url) => {
   return new WebSocket(url) as ExaWebsocket;
 });

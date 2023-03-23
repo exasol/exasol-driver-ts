@@ -23,7 +23,7 @@ const driver = new ExasolDriver((url) => {
     });
 
 await driver.connect();
-await driver.execute("SELECT * FROM EXA_ALL_SCHEMAS")
+await driver.query("SELECT * FROM EXA_ALL_SCHEMAS")
 await driver.close();
 ```
 
@@ -47,8 +47,31 @@ const driver = new ExasolDriver((url) => {
     });
 
 await driver.connect();
-await driver.execute("SELECT * FROM EXA_ALL_SCHEMAS")
+await driver.query("SELECT * FROM EXA_ALL_SCHEMAS")
 await driver.close();
+```
+
+### Example create table and read data
+
+```js
+const driver = await openConnection(factory, container);
+const schemaName = 'TEST';
+await driver.execute('CREATE SCHEMA ' + schemaName);
+await driver.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
+await driver.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
+const queryResult = await driver.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+
+console.log(queryResult.getColumns());
+/*
+[
+  { name: 'X', dataType: { type: 'DECIMAL', precision: 18, scale: 0 } }
+]
+*/
+
+console.log(queryResult.getRows());
+/*
+ [ { X: 15 } ]
+*/
 ```
 
 ## Development

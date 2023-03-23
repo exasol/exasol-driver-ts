@@ -4,6 +4,7 @@
  */
 import { SQLQueriesResponse, SQLResponse } from './types';
 import { CommandsNoResult, Attributes, Commands } from './commands';
+import { QueryResult } from './query-result';
 
 export type Cancelable = () => void;
 
@@ -26,8 +27,9 @@ export interface IExasolDriver {
    *  Close current connection
    */
   close(): Promise<void>;
+
   /**
-   * Execute single SQL statement
+   * Query single SQL statement
    *
    * @async
    * @param {string} sqlStatement
@@ -35,7 +37,58 @@ export interface IExasolDriver {
    * @reject {Error}
    * @returns {Promise.<SQLResponse<SQLQueriesResponse>>}
    */
-  execute(sqlStatement: string, attributes?: Partial<Attributes>, getCancel?: CetCancelFunction): Promise<SQLResponse<SQLQueriesResponse>>;
+  query(sqlStatement: string, attributes?: Partial<Attributes>, getCancel?: CetCancelFunction): Promise<QueryResult>;
+  query(
+    sqlStatement: string,
+    attributes?: Partial<Attributes>,
+    getCancel?: CetCancelFunction,
+    responseType?: 'default'
+  ): Promise<QueryResult>;
+
+  /**
+   * Query single SQL statement and get raw result
+   *
+   * @async
+   * @param {string} sqlStatement
+   * @param {Partial<Attributes>} attributes
+   * @reject {Error}
+   * @returns {Promise.<SQLResponse<SQLQueriesResponse>>}
+   */
+  query(
+    sqlStatement: string,
+    attributes?: Partial<Attributes>,
+    getCancel?: CetCancelFunction,
+    responseType?: 'raw'
+  ): Promise<SQLResponse<SQLQueriesResponse>>;
+
+  /**
+   * Execute single SQL statement
+   *
+   * @async
+   * @param {string} sqlStatement
+   * @param {Partial<Attributes>} attributes
+   * @reject {Error}
+   * @returns {Promise.<number>}
+   */
+  execute(sqlStatement: string, attributes?: Partial<Attributes>, getCancel?: CetCancelFunction): Promise<number>;
+  execute(sqlStatement: string, attributes?: Partial<Attributes>, getCancel?: CetCancelFunction, responseType?: 'default'): Promise<number>;
+
+  /**
+   * Execute single SQL statement and get raw result back
+   *
+   * @async
+   * @param {string} sqlStatement
+   * @param {Partial<Attributes>} attributes
+   * @reject {Error}
+   * @returns {Promise.<SQLResponse<SQLQueriesResponse>>}
+   */
+  execute(
+    sqlStatement: string,
+    attributes?: Partial<Attributes>,
+    getCancel?: CetCancelFunction,
+    responseType?: 'raw'
+  ): Promise<SQLResponse<SQLQueriesResponse>>;
+
   /**
    * Executes multiple SQL statements sequentially as a batch.
    *

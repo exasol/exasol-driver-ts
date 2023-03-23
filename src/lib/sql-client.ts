@@ -10,6 +10,7 @@ import { fetchData } from './fetch';
 import { ErrClosed, ErrInvalidConn, ErrInvalidCredentials, ErrLoggerNil } from './errors/errors';
 import { Connection, ExaWebsocket } from './connection';
 import { CommandsNoResult, Attributes, Commands, OIDCSQLCommand, SQLSingleCommand, SQLBatchCommand } from './commands';
+import { QueryResult } from './query-result';
 
 export interface Config {
   host: string;
@@ -195,11 +196,29 @@ export class ExasolDriver implements IExasolDriver {
   /**
    * @inheritDoc
    */
-  public async execute(
+  async query(
     sqlStatement: string,
-    attributes?: Partial<Attributes>,
-    getCancel?: CetCancelFunction
-  ): Promise<SQLResponse<SQLQueriesResponse>> {
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined
+  ): Promise<QueryResult>;
+  async query(
+    sqlStatement: string,
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined,
+    responseType?: 'default' | undefined
+  ): Promise<QueryResult>;
+  async query(
+    sqlStatement: string,
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined,
+    responseType?: 'raw' | undefined
+  ): Promise<SQLResponse<SQLQueriesResponse>>;
+  async query(
+    sqlStatement: string,
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined,
+    responseType?: 'default' | 'raw'
+  ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
     const connection = await this.acquire();
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
@@ -211,6 +230,66 @@ export class ExasolDriver implements IExasolDriver {
           this.pool.release(connection);
         }
         return data;
+      })
+      .then((data) => {
+        if (responseType == 'raw') {
+          return data;
+        }
+
+        return new QueryResult(data.responseData.results[0].resultSet);
+      })
+      .catch((err) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        throw err;
+      });
+  }
+
+  /**
+   * @inheritDoc
+   */
+  async execute(
+    sqlStatement: string,
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined
+  ): Promise<number>;
+  async execute(
+    sqlStatement: string,
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined,
+    responseType?: 'default' | undefined
+  ): Promise<number>;
+  async execute(
+    sqlStatement: string,
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined,
+    responseType?: 'raw' | undefined
+  ): Promise<SQLResponse<SQLQueriesResponse>>;
+  async execute(
+    sqlStatement: string,
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined,
+    responseType?: 'default' | 'raw'
+  ): Promise<SQLResponse<SQLQueriesResponse> | number> {
+    const connection = await this.acquire();
+    return connection
+      .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
+      .then((data) => {
+        return fetchData(data, connection, this.logger, this.config.maxRows);
+      })
+      .then((data) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        return data;
+      })
+      .then((data) => {
+        if (responseType == 'raw') {
+          return data;
+        }
+
+        return data.responseData.results[0].rowCount ?? 0;
       })
       .catch((err) => {
         if (connection) {
