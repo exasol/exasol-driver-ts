@@ -18,3 +18,13 @@ export const newPoolSizeErr = (max: number) => {
 export const newInvalidHostRangeLimits = (host: string) => {
   return new ExaErrorBuilder('E-EDJS-9').message('Invalid host range limits: {{host name}}.', host).error();
 };
+
+export const newInvalidReturnValueResultSet = new ExaErrorBuilder('E-EDJS-10')
+  .message('Invalid result type.')
+  .mitigation('Please use method query to execute sql')
+  .error();
+
+export const newInvalidReturnValueRowCount = new ExaErrorBuilder('E-EDJS-11')
+  .message('Invalid result type.')
+  .mitigation('Please use method execute instead of query')
+  .error();

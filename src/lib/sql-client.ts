@@ -7,7 +7,15 @@ import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.inter
 import { ConnectionPool } from './pool/pool';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { fetchData } from './fetch';
-import { ErrClosed, ErrInvalidConn, ErrInvalidCredentials, ErrLoggerNil } from './errors/errors';
+import {
+  ErrClosed,
+  ErrInvalidConn,
+  ErrInvalidCredentials,
+  ErrLoggerNil,
+  ErrMalformedData,
+  newInvalidReturnValueResultSet,
+  newInvalidReturnValueRowCount,
+} from './errors/errors';
 import { Connection, ExaWebsocket } from './connection';
 import { CommandsNoResult, Attributes, Commands, OIDCSQLCommand, SQLSingleCommand, SQLBatchCommand } from './commands';
 import { QueryResult } from './query-result';
@@ -232,6 +240,14 @@ export class ExasolDriver implements IExasolDriver {
         return data;
       })
       .then((data) => {
+        if (data.responseData.numResults === 0) {
+          throw ErrMalformedData;
+        }
+
+        if (data.responseData.results[0].resultType === 'rowCount') {
+          throw newInvalidReturnValueRowCount;
+        }
+
         if (responseType == 'raw') {
           return data;
         }
@@ -285,6 +301,14 @@ export class ExasolDriver implements IExasolDriver {
         return data;
       })
       .then((data) => {
+        if (data.responseData.numResults === 0) {
+          throw ErrMalformedData;
+        }
+
+        if (data.responseData.results[0].resultType === 'resultSet') {
+          throw newInvalidReturnValueResultSet;
+        }
+
         if (responseType == 'raw') {
           return data;
         }
