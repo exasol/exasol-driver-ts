@@ -1,113 +1,24 @@
-# Exasol Driver
+# Exasol Driver for Node and the Browser ( Typescript / Javascript )
 
-## Usage
+A Typescript/ Javascript driver for the Exasol database.
 
-### NodeJS
+Check out the [user guide](doc/user_guide/user_guide.md) for more details.
 
-```bash
-npm install -S @exasol/exasol-driver-ts ws @types/ws
-```
+## Features
 
-```js
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
-import { WebSocket } from 'ws';
+1. Connect to an [Exasol](https://www.exasol.com/) database and execute SQL queries and commands
+1. Encrypted communication via TLS
 
-const driver = new ExasolDriver((url) => {
-      return new WebSocket(url) as ExaWebsocket;
-    }, {
-        host: "localhost",
-        port: 8563,
-        user: 'sys',
-        password: 'exasol',
-        encryption: false,
-    });
+## Information for Users
 
-await driver.connect();
-await driver.query("SELECT * FROM EXA_ALL_SCHEMAS")
-await driver.close();
-```
+- [User Guide](doc/user_guide/user_guide.md)
+- [Change Log](doc/changes/changelog.md)
+- [MIT License](LICENSE)
 
-### Browser
+### Dependencies
 
-```bash
-npm install -S @exasol/exasol-driver-ts
-```
+See the [dependencies list](dependencies.md) for build and test dependencies and license information.
 
-```js
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+## Information for Developers
 
-const driver = new ExasolDriver((url) => {
-      return new WebSocket(url) as ExaWebsocket;
-    }, {
-        host: "localhost",
-        port: 8563,
-        user: 'sys',
-        password: 'exasol',
-        encryption: false,
-    });
-
-await driver.connect();
-await driver.query("SELECT * FROM EXA_ALL_SCHEMAS")
-await driver.close();
-```
-
-### Example create table and read data
-
-```js
-const driver = await openConnection(factory, container);
-const schemaName = 'TEST';
-await driver.execute('CREATE SCHEMA ' + schemaName);
-await driver.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
-await driver.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
-const queryResult = await driver.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-
-console.log(queryResult.getColumns());
-/*
-[
-  { name: 'X', dataType: { type: 'DECIMAL', precision: 18, scale: 0 } }
-]
-*/
-
-console.log(queryResult.getRows());
-/*
- [ { X: 15 } ]
-*/
-```
-
-## Development
-
-### Requirements
-
-- NodeJS
-- Docker
-
-### Lint
-
-```bash
-npm run lint // Will autofix issues
-npm run lint:ci // No autofix enabled
-```
-
-### Unit test
-
-```bash
- npm run test // Runs both test in parallel
- npm run test:dom
- npm run test:node
-```
-
-### Integration test
-
-```bash
- npm run itest // Runs both test in parallel
- npm run itest:dom
- npm run itest:node
-```
-
-#### MacOS
-
-If you using Docker Desktop, please set
-
-```bash
-export DOCKER_HOST=unix:///Users/$(whoami)/Library/Containers/com.docker.docker/Data/docker.raw.sock
-```
+- [Developer Guide](doc/developer_guide/developer_guide.md)
