@@ -2,7 +2,7 @@
 
 ### NodeJS
 
-Install the following dependencies using npm (Part of nodeJs, [found here](https://nodejs.org/en/download))
+Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
 
 ```bash
 npm install -S @exasol/exasol-driver-ts ws @types/ws
