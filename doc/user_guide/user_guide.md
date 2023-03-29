@@ -122,3 +122,19 @@ const queryResult = await driver.query('...');
 //print out the 0th row, 'X' column value
 console.log(queryResult.getRows()[0]['X']);
 ```
+
+### Supported Driver Properties
+
+| Property           |       Value        |       Default       | Description                                                                                                                             |
+| :----------------- | :----------------: | :-----------------: | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| `host`             |       string       |     'localhost'     | Host name or ip address.                                                                                                                |
+| `port`             |       number       |        8563         | Port number.                                                                                                                            |
+| `user`             |       string       |                     | Exasol username.                                                                                                                        |
+| `password`         |       string       |                     | Exasol password.                                                                                                                        |
+| `autocommit`       | false=off, true=on |        true         | Switch autocommit on or off.                                                                                                            |
+| `clientName`       |       string       | 'Javascript client' | Tell the server the application name.                                                                                                   |
+| `clientVersion`    |       string       |          1          | Tell the server the version of the application.                                                                                         |
+| `encryption`       | false=off, true=on |        true         | Switch automatic encryption on or off.                                                                                                  |
+| `fetchSize`        |     number, >0     |     `128*1024`      | Amount of data in kB which should be obtained by Exasol during a fetch. The application can run out of memory if the value is too high. |
+| `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
+| `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
