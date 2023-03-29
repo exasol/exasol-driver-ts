@@ -2,7 +2,7 @@
 
 ### NodeJS
 
-Install the following dependencies using npm (Part of nodeJs, [found here](https://nodejs.org/en/download))
+Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
 
 ```bash
 npm install -S @exasol/exasol-driver-ts ws @types/ws
@@ -31,6 +31,36 @@ await driver.query("SELECT * FROM EXA_ALL_SCHEMAS");
 //close the connection
 await driver.close();
 ```
+
+### Browser
+
+Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
+
+```bash
+npm install -S @exasol/exasol-driver-ts
+```
+
+Connecting to the database:
+
+```js
+import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+
+const driver = new ExasolDriver((url) => {
+      return new WebSocket(url) as ExaWebsocket;
+    }, {
+        host: "localhost",
+        port: 8563,
+        user: 'sys',
+        password: 'exasol',
+        encryption: false,
+    });
+
+await driver.connect();
+await driver.query("SELECT * FROM EXA_ALL_SCHEMAS")
+await driver.close();
+```
+
+### Further examples
 
 Executing a query using the query method:
 
@@ -91,28 +121,4 @@ Reading out a specific row and column from the result set:
 const queryResult = await driver.query('...');
 //print out the 0th row, 'X' column value
 console.log(queryResult.getRows()[0]['X']);
-```
-
-### Browser
-
-```bash
-npm install -S @exasol/exasol-driver-ts
-```
-
-```js
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
-
-const driver = new ExasolDriver((url) => {
-      return new WebSocket(url) as ExaWebsocket;
-    }, {
-        host: "localhost",
-        port: 8563,
-        user: 'sys',
-        password: 'exasol',
-        encryption: false,
-    });
-
-await driver.connect();
-await driver.query("SELECT * FROM EXA_ALL_SCHEMAS")
-await driver.close();
 ```
