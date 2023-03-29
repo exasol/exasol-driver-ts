@@ -34,9 +34,8 @@ export interface Config {
   clientVersion: string;
   fetchSize: number;
   schema?: string;
-  resultSetMaxRows?: number;
   /** Limit max rows fetched */
-  maxRows?: number;
+  resultSetMaxRows?: number;
   onClose?: () => void;
   onError?: () => void;
 }
@@ -231,7 +230,7 @@ export class ExasolDriver implements IExasolDriver {
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
       .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.maxRows);
+        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
       })
       .then((data) => {
         if (connection) {
@@ -292,7 +291,7 @@ export class ExasolDriver implements IExasolDriver {
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
       .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.maxRows);
+        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
       })
       .then((data) => {
         if (connection) {
@@ -336,7 +335,7 @@ export class ExasolDriver implements IExasolDriver {
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLBatchCommand(sqlStatements, attributes), getCancel)
       .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.maxRows);
+        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
       })
       .then((data) => {
         if (connection) {

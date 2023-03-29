@@ -31,7 +31,7 @@ export const fetchData = async (
   rawData: SQLResponse<SQLQueriesResponse>,
   connection: Connection,
   logger: ILogger,
-  maxRows?: number
+  resultSetMaxRows?: number
 ): Promise<SQLResponse<SQLQueriesResponse>> => {
   const batchResponse = rawData.responseData;
 
@@ -43,8 +43,8 @@ export const fetchData = async (
       const fetched = await fetchMoreData(
         response.resultSet,
         response.resultSet.numRowsInMessage,
-        Math.min(response.resultSet.numRows, maxRows ?? response.resultSet.numRows),
-        maxRows ?? response.resultSet.numRows,
+        Math.min(response.resultSet.numRows, resultSetMaxRows ?? response.resultSet.numRows),
+        resultSetMaxRows ?? response.resultSet.numRows,
         connection,
         logger
       );
@@ -69,7 +69,7 @@ const fetchMoreData = async (
   resultSet: ResultSet,
   fetchedRows: number,
   expectedRows: number,
-  maxRows: number,
+  resultSetMaxRows: number,
   connection: Connection,
   logger: ILogger
 ): Promise<ResultSet> => {
@@ -83,14 +83,14 @@ const fetchMoreData = async (
           const rows = fetchResponse.responseData.data[index];
           const alreadyFetchedRows = resultSet.data[index] ?? [];
 
-          const rowsUntilMax = Math.min(rows.length, maxRows - alreadyFetchedRows.length);
+          const rowsUntilMax = Math.min(rows.length, resultSetMaxRows - alreadyFetchedRows.length);
 
           resultSet.data[index] = [...alreadyFetchedRows, ...rows.slice(0, rowsUntilMax)];
         }
       }
 
-      if ((resultSet.data[0] ?? []).length === maxRows) {
-        resultSet.numRowsInMessage = maxRows;
+      if ((resultSet.data[0] ?? []).length === resultSetMaxRows) {
+        resultSet.numRowsInMessage = resultSetMaxRows;
         return resultSet;
       }
 
@@ -99,7 +99,7 @@ const fetchMoreData = async (
         resultSet,
         fetchedRows + fetchResponse.responseData.numRows,
         expectedRows,
-        maxRows,
+        resultSetMaxRows,
         connection,
         logger
       );
