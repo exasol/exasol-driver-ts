@@ -59,16 +59,17 @@ await driver.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 await driver.close();
 ```
 
-Reading out data
+Running a query and retrieving the results:
 
 ```js
 //...
 //connect
 await driver.connect();
-//run the query
 const schemaName = 'TEST';
+//run the query
 const queryResult = await driver.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
 
+//print the result
 console.log(queryResult.getColumns());
 /*
 [
@@ -82,6 +83,14 @@ console.log(queryResult.getRows());
 */
 //close the connection
 await driver.close();
+```
+
+Reading out a specific row and column from the result set:
+
+```js
+const queryResult = await driver.query('...');
+//print out the 0th row, 'X' column value
+console.log(queryResult.getRows()[0]['X']);
 ```
 
 ### Browser

@@ -1,6 +1,6 @@
-# Exasol Driver for Node and the Browser ( Typescript / Javascript )
+# Exasol Typescript / Javascript Driver for Node and the Browser
 
-A Typescript/ Javascript driver for the Exasol database.
+A Typescript/Javascript driver for the Exasol database.
 
 Check out the [user guide](doc/user_guide/user_guide.md) for more details.
 

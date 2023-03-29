@@ -1,4 +1,4 @@
-## Development
+## Developer guide
 
 ### Requirements
 
