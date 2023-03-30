@@ -1,6 +1,6 @@
 name: Pull Request
 env:
-  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+  NPM_TOKEN: 'thisisaworkaroundfornode14'
 on:
   pull_request:
 jobs:
