@@ -4,11 +4,13 @@ Code name: Initial release
 
 ## Summary
 
-Initial release of the NodeJs driver
+Initial release of the Exasol Javascript driver
 
 ## Features
 
-Initial release of the NodeJs driver
+* Support for NodeJS
+* Support for Browser (Chrome, Edge, Safari and more)
+* Typescript support
 
 ## Dependency Updates
 
