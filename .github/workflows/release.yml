@@ -3,7 +3,7 @@ env:
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 on:
   release:
-    types: [created]
+    types: [released]
 jobs:
   distributed-tasks:
     runs-on: ubuntu-latest
