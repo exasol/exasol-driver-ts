@@ -30,7 +30,7 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci
-      - run: npm build
+      - run: npm run build
       - run: npm pack
       - name: Publish package on NPM 📦
         run: npm publish --access public
