@@ -41,3 +41,8 @@ export DOCKER_HOST=unix:///Users/$(whoami)/Library/Containers/com.docker.docker/
 You can use `npm install <directory of this project>` to install the driver locally in your other node test projects.  
 Don't forget to (re)build the driver using `npm run build` to see your changes reflected.  
 In case of unexplainable errors in your tests it might help to remove the entire `/dist` folder before rebuilding.
+
+### Release Process
+
+- Run release droid + project-keeper to create a github release draft as you usually would.
+- Upon publishing the draft release on github the release workflow for npm will be triggered. 
