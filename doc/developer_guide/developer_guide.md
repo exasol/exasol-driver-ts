@@ -46,3 +46,9 @@ In case of unexplainable errors in your tests it might help to remove the entire
 
 - Run release droid + project-keeper to create a github release draft as you usually would.
 - Upon publishing the draft release on github the release workflow for npm will be triggered. 
+
+#### More info on the release workflow.
+
+- The npm token is kept in a secret, then set as an environment variable in the release.yml workflow.
+- The added `.npmrc` file contains a setting that enables reading out this environment variable while publishing.
+- For a scoped release you need to explicitly specify that you wish to release a public release using `publish --access public`.
