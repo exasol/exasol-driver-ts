@@ -3,6 +3,7 @@
 A Typescript/Javascript driver for the Exasol database.
 
 [![Build Status](https://github.com/exasol/exasol-driver-ts/actions/workflows/ci-build.yml/badge.svg)](https://github.com/exasol/exasol-driver-ts/actions/workflows/ci-build.yml)
+[![NPM Version](https://img.shields.io/npm/v/@exasol/exasol-driver-ts)](https://www.npmjs.com/package/@exasol/exasol-driver-ts)
 
 Check out the [user guide](doc/user_guide/user_guide.md) for more details.
 
