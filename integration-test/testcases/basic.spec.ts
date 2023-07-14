@@ -37,8 +37,26 @@ export const basicTests = (name: string, factory: websocketFactory) =>
       await driver.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
       const data = await driver.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
 
-      console.log(data.getColumns());
+      expect(data.getColumns()[0].name).toBe('X');
       expect(data.getRows()[0]['X']).toBe(15);
+
+      await driver.close();
+    });
+
+    it('Exec and fetch (raw)', async () => {
+      const driver = await openConnection(factory, container);
+
+      await driver.execute('CREATE SCHEMA ' + schemaName, undefined, undefined, 'raw');
+      await driver.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
+      await driver.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
+
+      const data = await driver.execute('SELECT x FROM ' + schemaName + '.TEST_TABLE', undefined, undefined, 'raw');
+
+      expect(data.status).toBe('ok');
+      expect(data.responseData.numResults).toBe(1);
+      expect(data.responseData.results[0].resultType).toBe('resultSet');
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      expect(data.responseData.results[0].resultSet?.data![0][0]).toBe(15);
 
       await driver.close();
     });
