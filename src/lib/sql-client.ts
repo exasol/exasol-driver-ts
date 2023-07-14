@@ -239,16 +239,16 @@ export class ExasolDriver implements IExasolDriver {
         return data;
       })
       .then((data) => {
+        if (responseType == 'raw') {
+          return data;
+        }
+
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
         }
 
         if (data.responseData.results[0].resultType === 'rowCount') {
           throw newInvalidReturnValueRowCount;
-        }
-
-        if (responseType == 'raw') {
-          return data;
         }
 
         return new QueryResult(data.responseData.results[0].resultSet);
@@ -300,16 +300,16 @@ export class ExasolDriver implements IExasolDriver {
         return data;
       })
       .then((data) => {
+        if (responseType == 'raw') {
+          return data;
+        }
+
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
         }
 
         if (data.responseData.results[0].resultType === 'resultSet') {
           throw newInvalidReturnValueResultSet;
-        }
-
-        if (responseType == 'raw') {
-          return data;
         }
 
         return data.responseData.results[0].rowCount ?? 0;
@@ -354,13 +354,16 @@ export class ExasolDriver implements IExasolDriver {
   /**
    * @inheritDoc
    */
-  public async prepare(sqlStatement: string): Promise<IStatement> {
+  public async prepare(sqlStatement: string, getCancel?: CetCancelFunction): Promise<IStatement> {
     const connection = await this.acquire();
     return connection
-      .sendCommand<CreatePreparedStatementResponse>({
-        command: 'createPreparedStatement',
-        sqlText: sqlStatement,
-      })
+      .sendCommand<CreatePreparedStatementResponse>(
+        {
+          command: 'createPreparedStatement',
+          sqlText: sqlStatement,
+        },
+        getCancel
+      )
       .then((response) => {
         return new Statement(connection, this.pool, response.responseData.statementHandle, response.responseData.parameterData.columns);
       });
@@ -369,11 +372,11 @@ export class ExasolDriver implements IExasolDriver {
   /**
    * @inheritDoc
    */
-  public async sendCommand<T>(cmd: Commands): Promise<SQLResponse<T>> {
+  public async sendCommand<T>(cmd: Commands, getCancel?: CetCancelFunction): Promise<SQLResponse<T>> {
     const connection = await this.acquire();
 
     return connection
-      .sendCommand<T>(cmd)
+      .sendCommand<T>(cmd, getCancel)
       .then((data) => {
         if (connection) {
           this.pool.release(connection);
