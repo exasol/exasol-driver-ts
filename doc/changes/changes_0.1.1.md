@@ -4,8 +4,8 @@ Code name: Raw result
 
 ## Summary
 
-Don't interpret sql result if result mode is `raw`
+This release fixes a bug that caused raw query results being interpreted that should have been returned unmodified.
 
-## Fixes
+## Bugfixes
 
-- Handle raw result correctly
+- #20 Fixed handling of raw results
