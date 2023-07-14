@@ -11,7 +11,7 @@ export const basicTests = (name: string, factory: websocketFactory) =>
     let schemaName = '';
 
     beforeAll(async () => {
-      container = await new GenericContainer('exasol/docker-db')
+      container = await new GenericContainer('exasol/docker-db:7.1.21')
         .withExposedPorts(8563, 2580)
         .withPrivilegedMode()
         .withDefaultLogDriver()
