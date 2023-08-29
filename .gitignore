@@ -62,3 +62,4 @@ pom.xml.versionsBackup
 *.old
 *.md.html
 *.flattened-pom.xml
+/.scannerwork/

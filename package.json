@@ -5,15 +5,15 @@
     "scripts": {
         "build": "rollup -c",
         "watch": "rollup -cw",
-        "test": "jest --selectProjects unit-dom unit-node",
-        "test:dom": "jest --selectProjects unit-dom",
-        "test:node": "jest --selectProjects unit-node",
+        "test": "jest --selectProjects unit-dom unit-node --coverage",
+        "test:dom": "jest --selectProjects unit-dom --coverage",
+        "test:node": "jest --selectProjects unit-node --coverage",
         "lint": "eslint --ignore-path .eslintignore --ext .js,.ts --fix .",
         "lint:ci": "eslint --ignore-path .eslintignore --ext .js,.ts .",
         "format": "prettier --write .",
-        "itest": "jest --selectProjects itest-dom itest-node",
-        "itest:dom": "jest --selectProjects itest-dom",
-        "itest:node": "jest --selectProjects itest-node"
+        "itest": "jest --selectProjects itest-dom itest-node --coverage",
+        "itest:dom": "jest --selectProjects itest-dom --coverage",
+        "itest:node": "jest --selectProjects itest-node --coverage"
     },
     "dependencies": {
         "jsrsasign": "^10.8.6"

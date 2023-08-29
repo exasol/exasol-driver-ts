@@ -77,7 +77,7 @@ const config: Config = {
   transformIgnorePatterns: ['node_modules/(?!.*.mjs$)'],
   preset: './jest.preset.js',
   moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: './coverage/exasol-driver',
+  coverageDirectory: './coverage',
 };
 
 export default config;
