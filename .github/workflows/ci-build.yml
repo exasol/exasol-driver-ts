@@ -10,6 +10,8 @@ jobs:
       fail-fast: true
       matrix:
         target: ['lint:ci', 'test:dom', 'test:node', 'itest:dom', 'itest:node', 'build']
+    env:
+      DEFAULT_TARGET: 'test:node'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -19,6 +21,7 @@ jobs:
       - run: npm run ${{ matrix.target }}
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
+        if: ${{ matrix.target == env.DEFAULT_TARGET }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
