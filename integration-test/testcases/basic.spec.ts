@@ -1,5 +1,6 @@
-import { RandomUuid, GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
+import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
+import { RandomUuid } from 'testcontainers/dist/uuid';
 
 export const basicTests = (name: string, factory: websocketFactory) =>
   describe(name, () => {

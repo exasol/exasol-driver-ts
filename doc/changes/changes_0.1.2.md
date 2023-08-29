@@ -19,7 +19,7 @@ This release fixes vulnerability CVE-2023-26136 in dependency `tough-cookie`.
 ### Development Dependency Updates
 
 * Updated `eslint-plugin-n:^15.6.1` to `^16.0.2`
-* Updated `testcontainers:^9.1.3` to `^10.2.1`
+* Updated `testcontainers:^9.1.3` to `9.1.3`
 * Updated `eslint-config-prettier:^8.6.0` to `^9.0.0`
 * Updated `jest-environment-jsdom:^29.4.3` to `^29.6.4`
 * Updated `@types/ws:^8.5.4` to `^8.5.5`
