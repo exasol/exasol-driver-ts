@@ -1,5 +1,4 @@
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
-import { RandomUuid } from 'testcontainers/dist/uuid';
+import { RandomUuid, GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
 
 export const basicTests = (name: string, factory: websocketFactory) =>
@@ -11,7 +10,7 @@ export const basicTests = (name: string, factory: websocketFactory) =>
     let schemaName = '';
 
     beforeAll(async () => {
-      container = await new GenericContainer('exasol/docker-db:7.1.21')
+      container = await new GenericContainer('exasol/docker-db:7.1.22')
         .withExposedPorts(8563, 2580)
         .withPrivilegedMode()
         .withDefaultLogDriver()
