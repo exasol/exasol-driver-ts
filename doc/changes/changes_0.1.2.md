@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.1.2, released 2023-08-30
+# Exasol Driver ts 0.1.2, released 2023-08-31
 
 Code name: Upgrade Dependencies on Top of 0.1.1
 
