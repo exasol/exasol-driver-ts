@@ -15,7 +15,7 @@ npm run lint:ci // No autofix enabled
 ### Unit tests
 
 ```bash
-npm run test // Runs both test in parallel
+npm run test # Runs both test in parallel
 npm run test:dom
 npm run test:node
 ```
@@ -23,7 +23,7 @@ npm run test:node
 ### Integration tests
 
 ```bash
-npm run itest // Runs both test in parallel
+npm run itest # Runs both test in parallel
 npm run itest:dom
 npm run itest:node
 ```
