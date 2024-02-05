@@ -14,4 +14,4 @@ This release fixes vulnerabilities in bable traverse and jsrsasign by updating b
 
 ### Compile Dependency Updates
 
-- Updated `jsrsasign:^10.8.6` to `^11.1.0`
+* Updated `jsrsasign:^10.8.6` to `^11.1.0`
