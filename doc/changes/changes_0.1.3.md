@@ -4,11 +4,11 @@ Code name: Fix bable traverse and jsrsasign vulnerabilities
 
 ## Summary
 
-This release fixes vulnerabilities in bable traverse and jsrsasign.
+This release fixes vulnerabilities in bable traverse and jsrsasign by updating both packages.
 
 ## Features
 
-- #26: Fix vulnerability CVE-2023-45133
+- #26: Fix vulnerabilities
 
 ## Dependency Updates
 
