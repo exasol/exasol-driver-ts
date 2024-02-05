@@ -1,6 +1,6 @@
 {
   "name": "@exasol/exasol-driver-ts",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Exasol SQL Driver",
   "scripts": {
     "build": "rollup -c",
@@ -16,7 +16,7 @@
     "itest:node": "jest --selectProjects itest-node --coverage"
   },
   "dependencies": {
-    "jsrsasign": "^10.8.6"
+    "jsrsasign": "^11.1.0"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.3",
