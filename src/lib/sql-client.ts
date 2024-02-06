@@ -1,4 +1,5 @@
-import { hextob64, KEYUTIL, KJUR, RSAKey } from 'jsrsasign';
+import * as forge from 'node-forge';
+
 
 import { getURIScheme } from './utils';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
@@ -407,20 +408,22 @@ export class ExasolDriver implements IExasolDriver {
     }
     return connection;
   }
-
+  
   private async loginBasicAuth() {
     return this.sendCommand<PublicKeyResponse>({
       command: 'login',
       protocolVersion: this.config.apiVersion,
     }).then((response) => {
-      const key = KEYUTIL.getKey({
-        n: response.responseData.publicKeyModulus,
-        e: response.responseData.publicKeyExponent,
-      }) as RSAKey;
-      const password = KJUR.crypto.Cipher.encrypt(this.config.password ?? '', key, 'RSA');
+
+      const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);
+      const e = new forge.jsbn.BigInteger(response.responseData.publicKeyExponent, 16);
+
+      const pubKey = forge.pki.rsa.setPublicKey(n, e);
+      const password = pubKey.encrypt(this.config.password ?? '');
+
       return this.sendCommand({
         username: this.config.user ?? '',
-        password: hextob64(password),
+        password: forge.util.encode64(password),
         useCompression: false,
         clientName: this.config.clientName,
         driverName: `exasol-driver-js ${driverVersion}`,
