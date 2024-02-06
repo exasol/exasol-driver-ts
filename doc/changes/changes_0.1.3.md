@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.1.3, released 2024-02-05
+# Exasol Driver ts 0.1.3, released 2024-02-06
 
 Code name: Fix bable traverse and jsrsasign vulnerabilities.
 
