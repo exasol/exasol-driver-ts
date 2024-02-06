@@ -4,7 +4,7 @@ Code name: Fix bable traverse and jsrsasign vulnerabilities.
 
 ## Summary
 
-This release fixes vulnerabilities in bable traverse and jsrsasign by updating both packages.
+This release fixes vulnerabilities in bable traverse by updating the package and swaps out jsrsasign with node-forge to replace RSA encryption.
 
 ## Features
 
@@ -14,4 +14,10 @@ This release fixes vulnerabilities in bable traverse and jsrsasign by updating b
 
 ### Compile Dependency Updates
 
-* Updated `jsrsasign:^10.8.6` to `^11.1.0`
+* Added `node-forge:^1.3.1`
+* Removed `jsrsasign:^10.8.6`
+
+### Development Dependency Updates
+
+* Added `@types/node-forge:^1.3.11`
+* Removed `@types/jsrsasign:^10.5.8`
