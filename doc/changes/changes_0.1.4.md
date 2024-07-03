@@ -1,13 +1,13 @@
-# Exasol Driver ts 0.1.4, released 2024-07-03
+# Exasol Driver ts 0.1.4, released 2024-07-04
 
-Code name: CVE-2024-37890
+Code name: CVE-2024-37890 / CVE-2024-4068
 
 ## Summary
 - Fixed CVE-2024-37890 in dev dependencies,
-- Fixed https://github.com/advisories/GHSA-grv7-fg5c-xmjg in dev dependencies,
+- Fixed CVE-2024-4068 in dev dependencies,
 ## Features
 
-* #32: CVE-2024-37890
+* #32: CVE-2024-37890 / CVE-2024-4068
 
 ## Dependency Updates
 
