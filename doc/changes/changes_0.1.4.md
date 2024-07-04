@@ -1,13 +1,14 @@
 # Exasol Driver ts 0.1.4, released 2024-07-04
 
-Code name: CVE-2024-37890 / CVE-2024-4068
+Code name: Fixed CVE-2024-37890 and CVE-2024-4068 in dev dependencies
 
 ## Summary
-- Fixed CVE-2024-37890 in dev dependencies,
-- Fixed CVE-2024-4068 in dev dependencies,
-## Features
 
-* #32: CVE-2024-37890 / CVE-2024-4068
+This release fixes vulnerabilities CVE-2024-37890 and CVE-2024-4068 in dev dependencies.
+
+## Security
+
+* #32: Fixed CVE-2024-37890 and CVE-2024-4068 in dev dependencies
 
 ## Dependency Updates
 
