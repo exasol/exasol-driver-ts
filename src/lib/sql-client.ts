@@ -1,6 +1,5 @@
 import * as forge from 'node-forge';
 
-
 import { getURIScheme } from './utils';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
 import { Statement } from './statement';
@@ -44,6 +43,7 @@ export interface Config {
 interface InternalConfig {
   apiVersion: number;
   compression: boolean;
+  poolMaxConnections: number;
 }
 
 export const driverVersion = 'v1.0.0';
@@ -61,6 +61,7 @@ export class ExasolDriver implements IExasolDriver {
     encryption: true,
     compression: false,
     apiVersion: 3,
+    poolMaxConnections: 1,
   };
   private readonly config: Config & InternalConfig & { websocketFactory: websocketFactory };
   private readonly logger: ILogger;
@@ -68,9 +69,13 @@ export class ExasolDriver implements IExasolDriver {
 
   private readonly pool: ConnectionPool<Connection>;
 
-  constructor(websocketFactory: websocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Debug)) {
+  constructor(
+    websocketFactory: websocketFactory,
+    config: Partial<Config> & Partial<InternalConfig>,
+    logger: ILogger = new Logger(LogLevel.Debug),
+  ) {
     // Used internally to avoid parallel execution
-    this.pool = new ConnectionPool<Connection>(1, logger);
+    this.pool = new ConnectionPool<Connection>(config.poolMaxConnections, logger);
     this.config = {
       ...this.defaultConfig,
       ...config,
@@ -207,25 +212,25 @@ export class ExasolDriver implements IExasolDriver {
   async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
-    getCancel?: CetCancelFunction | undefined
+    getCancel?: CetCancelFunction | undefined,
   ): Promise<QueryResult>;
   async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
-    responseType?: 'default' | undefined
+    responseType?: 'default' | undefined,
   ): Promise<QueryResult>;
   async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
-    responseType?: 'raw' | undefined
+    responseType?: 'raw' | undefined,
   ): Promise<SQLResponse<SQLQueriesResponse>>;
   async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
-    responseType?: 'default' | 'raw'
+    responseType?: 'default' | 'raw',
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
     const connection = await this.acquire();
     return connection
@@ -268,25 +273,25 @@ export class ExasolDriver implements IExasolDriver {
   async execute(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
-    getCancel?: CetCancelFunction | undefined
+    getCancel?: CetCancelFunction | undefined,
   ): Promise<number>;
   async execute(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
-    responseType?: 'default' | undefined
+    responseType?: 'default' | undefined,
   ): Promise<number>;
   async execute(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
-    responseType?: 'raw' | undefined
+    responseType?: 'raw' | undefined,
   ): Promise<SQLResponse<SQLQueriesResponse>>;
   async execute(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
-    responseType?: 'default' | 'raw'
+    responseType?: 'default' | 'raw',
   ): Promise<SQLResponse<SQLQueriesResponse> | number> {
     const connection = await this.acquire();
     return connection
@@ -329,7 +334,7 @@ export class ExasolDriver implements IExasolDriver {
   public async executeBatch(
     sqlStatements: string[],
     attributes?: Partial<Attributes>,
-    getCancel?: CetCancelFunction
+    getCancel?: CetCancelFunction,
   ): Promise<SQLResponse<SQLQueriesResponse>> {
     const connection = await this.acquire();
 
@@ -363,7 +368,7 @@ export class ExasolDriver implements IExasolDriver {
           command: 'createPreparedStatement',
           sqlText: sqlStatement,
         },
-        getCancel
+        getCancel,
       )
       .then((response) => {
         return new Statement(connection, this.pool, response.responseData.statementHandle, response.responseData.parameterData.columns);
@@ -408,13 +413,12 @@ export class ExasolDriver implements IExasolDriver {
     }
     return connection;
   }
-  
+
   private async loginBasicAuth() {
     return this.sendCommand<PublicKeyResponse>({
       command: 'login',
       protocolVersion: this.config.apiVersion,
     }).then((response) => {
-
       const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);
       const e = new forge.jsbn.BigInteger(response.responseData.publicKeyExponent, 16);
 
