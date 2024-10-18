@@ -67,4 +67,7 @@ export class ConnectionPool<T extends PoolItem> {
 
     return undefined;
   }
+  atMaxSize() {
+    return this.pool.size == this.max;
+  }
 }
