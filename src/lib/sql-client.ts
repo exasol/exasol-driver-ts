@@ -87,6 +87,10 @@ export class ExasolDriver implements IExasolDriver {
   /**
    * @inheritDoc
    */
+  //TODO: add a check against 'overloading' the pool?
+  //problem is this function is both used publically (see examples) and internally in acquire()
+  //solution would be to hollow out this function, maybe have it call acquire() instead and have acquire call a new function containing this logic
+  //a la "create connection and add to pool
   public async connect(): Promise<void> {
     let hasCredentials = false;
     let isBasicAuth = false;
@@ -132,6 +136,7 @@ export class ExasolDriver implements IExasolDriver {
       };
       webSocket.onopen = () => {
         this.logger.debug('[SQLClient] Login');
+        //add connection to pool
         this.pool
           .add(connection)
           .then(() => {
@@ -418,7 +423,7 @@ export class ExasolDriver implements IExasolDriver {
       } else {
         //create a new connection if the pool is not at max size, add it to the pool and then acquire it.
         this.logger.debug('[SQLClient] Found no free connection and pool did not reach its limit, will create new connection');
-        await this.connect();
+        await this.connect(); // connect will create a connection and add it to the pool
         connection = this.pool.acquire();
       }
       if (!connection) {
