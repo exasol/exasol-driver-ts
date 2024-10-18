@@ -194,11 +194,11 @@ export class ExasolDriver implements IExasolDriver {
       return connection
         .sendCommandWithNoResult(cmd)
         .then(() => {
-          this.pool.release(connection);
+          this.release(connection);
           return;
         })
         .catch((err) => {
-          this.pool.release(connection);
+          this.release(connection);
           throw err;
         });
     }
@@ -240,7 +240,7 @@ export class ExasolDriver implements IExasolDriver {
       })
       .then((data) => {
         if (connection) {
-          this.pool.release(connection);
+          this.release(connection);
         }
         return data;
       })
@@ -261,7 +261,7 @@ export class ExasolDriver implements IExasolDriver {
       })
       .catch((err) => {
         if (connection) {
-          this.pool.release(connection);
+          this.release(connection);
         }
         throw err;
       });
@@ -301,7 +301,7 @@ export class ExasolDriver implements IExasolDriver {
       })
       .then((data) => {
         if (connection) {
-          this.pool.release(connection);
+          this.release(connection);
         }
         return data;
       })
@@ -322,7 +322,7 @@ export class ExasolDriver implements IExasolDriver {
       })
       .catch((err) => {
         if (connection) {
-          this.pool.release(connection);
+          this.release(connection);
         }
         throw err;
       });
@@ -345,13 +345,13 @@ export class ExasolDriver implements IExasolDriver {
       })
       .then((data) => {
         if (connection) {
-          this.pool.release(connection);
+          this.release(connection);
         }
         return data;
       })
       .catch((err) => {
         if (connection) {
-          this.pool.release(connection);
+          this.release(connection);
         }
         throw err;
       });
@@ -385,33 +385,51 @@ export class ExasolDriver implements IExasolDriver {
       .sendCommand<T>(cmd, getCancel)
       .then((data) => {
         if (connection) {
-          this.pool.release(connection);
+          this.release(connection);
         }
         return data;
       })
       .catch((err) => {
         if (connection) {
-          this.pool.release(connection);
+          this.release(connection);
         }
         throw err;
       });
   }
+  // Attempts to acquire a connection from the pool.
+  // If there is one available, acquire the connection.
+  // If there isn't one:
+  // If the pool is at max size: wait until a connection gets released and then acquire it.
+  // If the pool is not at max size: Create a new connection using the connect() method and acquire the new connection from the pool.
 
   private async acquire() {
     if (this.closed) {
       return Promise.reject(ErrClosed);
     }
-
+    //acquire a connection.
     let connection = this.pool.acquire();
+    //if acquiring a connection failed:
     if (!connection) {
-      this.logger.debug("[SQLClient] Found no free connection and pool did not reach it's limit, will create new connection");
-      await this.connect();
-      connection = this.pool.acquire();
-    }
-    if (!connection) {
-      return Promise.reject(ErrInvalidConn);
+      //if the pool is at max size, wait until a connection opens up/gets released and acquire it.
+      if (this.pool.atMaxSize()) {
+        while (!connection) {
+          connection = this.pool.acquire();
+        }
+      } else {
+        //create a new connection if the pool is not at max size, add it to the pool and then acquire it.
+        this.logger.debug('[SQLClient] Found no free connection and pool did not reach its limit, will create new connection');
+        await this.connect();
+        connection = this.pool.acquire();
+      }
+      if (!connection) {
+        return Promise.reject(ErrInvalidConn);
+      }
     }
     return connection;
+  }
+
+  private async release(connection: Connection) {
+    this.pool.release(connection);
   }
 
   private async loginBasicAuth() {
