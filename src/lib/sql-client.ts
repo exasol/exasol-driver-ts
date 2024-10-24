@@ -3,7 +3,7 @@ import * as forge from 'node-forge';
 import { getURIScheme } from './utils';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
 import { Statement } from './statement';
-import { CetCancelFunction, IExasolDriver as IExasolClient, IStatement } from './sql-client.interface';
+import { CetCancelFunction, IExasolClient as IExasolClient, IStatement } from './sql-client.interface';
 //import { ConnectionPool } from './pool/pool';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { fetchData } from './fetch';
