@@ -10,7 +10,7 @@ export type Cancelable = () => void;
 
 export type CetCancelFunction = (cancel?: Cancelable) => void;
 
-export interface IExasolDriver {
+export interface IExasolClient {
   /**
    * Connect to database
    *
@@ -42,7 +42,7 @@ export interface IExasolDriver {
     sqlStatement: string,
     attributes?: Partial<Attributes>,
     getCancel?: CetCancelFunction,
-    responseType?: 'default'
+    responseType?: 'default',
   ): Promise<QueryResult>;
 
   /**
@@ -58,7 +58,7 @@ export interface IExasolDriver {
     sqlStatement: string,
     attributes?: Partial<Attributes>,
     getCancel?: CetCancelFunction,
-    responseType?: 'raw'
+    responseType?: 'raw',
   ): Promise<SQLResponse<SQLQueriesResponse>>;
 
   /**
@@ -86,7 +86,7 @@ export interface IExasolDriver {
     sqlStatement: string,
     attributes?: Partial<Attributes>,
     getCancel?: CetCancelFunction,
-    responseType?: 'raw'
+    responseType?: 'raw',
   ): Promise<SQLResponse<SQLQueriesResponse>>;
 
   /**
@@ -101,7 +101,7 @@ export interface IExasolDriver {
   executeBatch(
     sqlStatements: string[],
     attributes?: Partial<Attributes>,
-    getCancel?: CetCancelFunction
+    getCancel?: CetCancelFunction,
   ): Promise<SQLResponse<SQLQueriesResponse>>;
   /**
    * Prepare statement

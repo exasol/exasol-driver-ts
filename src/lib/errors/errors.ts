@@ -6,7 +6,7 @@ export const ErrMalformedData = new ExaErrorBuilder('E-EDJS-3').message('Malform
 export const ErrInvalidValuesCount = new ExaErrorBuilder('E-EDJS-4').message('Invalid value count for prepared status.').error();
 export const ErrLoggerNil = new ExaErrorBuilder('E-EDJS-5')
   .message('Logger is undefined or null.')
-  .mitigation('Set logger in ExasolDriver constructor.')
+  .mitigation('Set logger in ExasolClient constructor.')
   .error();
 export const ErrInvalidCredentials = new ExaErrorBuilder('E-EDJS-6').message('Invalid credentials.').error();
 export const ErrJobAlreadyRunning = new ExaErrorBuilder('E-EDJS-7').message('Another query is already running.').error();

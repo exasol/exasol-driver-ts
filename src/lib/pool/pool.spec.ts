@@ -1,6 +1,6 @@
 /* eslint-disable jest/no-conditional-expect */
 import { Logger } from '../logger/logger';
-import { ConnectionPool, PoolItem } from './pool';
+import { ConnectionPool, IConnection } from './pool';
 
 describe('connectionPool', () => {
   it('should work for single item pool', async () => {
@@ -8,7 +8,7 @@ describe('connectionPool', () => {
     expect(connectionPool.acquire()).toBeUndefined();
     await connectionPool.add({ name: 'test' });
 
-    const connection = connectionPool.acquire() as PoolItem;
+    const connection = connectionPool.acquire() as IConnection;
     expect(connection?.name).toEqual('test');
     expect(connectionPool.acquire()).toBeUndefined();
     connectionPool.release(connection);

@@ -1,11 +1,11 @@
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
-import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
+import { ExasolClient, websocketFactory } from '../../src/lib/sql-client';
 import { RandomUuid } from 'testcontainers/dist/uuid';
 
 export const basicTests = (name: string, factory: websocketFactory) =>
   describe(name, () => {
     const randomId = new RandomUuid();
-    let tmpDriver: ExasolDriver | undefined;
+    let tmpDriver: ExasolClient | undefined;
     let container: StartedTestContainer;
     jest.setTimeout(7000000);
     let schemaName = '';
@@ -102,7 +102,7 @@ export const basicTests = (name: string, factory: websocketFactory) =>
     });
 
     const openConnection = async (factory: websocketFactory, container: StartedTestContainer) => {
-      const driver = new ExasolDriver(factory, {
+      const driver = new ExasolClient(factory, {
         host: container.getHost(),
         port: container.getMappedPort(8563),
         user: 'sys',

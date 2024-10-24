@@ -11,10 +11,10 @@ npm install -S @exasol/exasol-driver-ts ws @types/ws
 Connecting to the database:
 
 ```js
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { ExasolClient,ExaWebsocket } from '@exasol/exasol-driver-ts';
 import { WebSocket } from 'ws';
 
-const driver = new ExasolDriver((url) => {
+const driver = new ExasolClient((url) => {
       return new WebSocket(url) as ExaWebsocket;
     }, {
         host: "localhost",
@@ -43,9 +43,9 @@ npm install -S @exasol/exasol-driver-ts
 Connecting to the database:
 
 ```js
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { ExasolClient,ExaWebsocket } from '@exasol/exasol-driver-ts';
 
-const driver = new ExasolDriver((url) => {
+const driver = new ExasolClient((url) => {
       return new WebSocket(url) as ExaWebsocket;
     }, {
         host: "localhost",
