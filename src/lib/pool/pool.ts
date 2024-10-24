@@ -6,10 +6,16 @@ export interface PoolItem {
   active?: boolean;
   name: string;
 }
-
+//TODO: multiple todos here,
+//TBD: how do we want the pool to be filled? on request, on driver startup?
+//TBD: a min pool size?
+//TBD: a query time out parameter to 'unblock' the pool? also check connection for this
 export class ConnectionPool<T extends PoolItem> {
   private readonly pool = new Map<string, { claimed: boolean; connection: T }>();
-  constructor(private readonly max = 1, private readonly logger: ILogger) {}
+  constructor(
+    private readonly max = 1,
+    private readonly logger: ILogger,
+  ) {}
 
   async add(connection: T): Promise<void> {
     this.logger.debug(`[Pool:${connection.name}] Add connection`);
@@ -46,6 +52,7 @@ export class ConnectionPool<T extends PoolItem> {
 
   acquire(): T | undefined {
     const keys = Array.from(this.pool.keys());
+
     for (let index = 0; index < keys.length; index++) {
       const key = keys[index];
       const item = this.pool.get(key);
