@@ -1,15 +1,18 @@
 import { newPoolSizeErr } from '../errors/errors';
 import { ILogger } from '../logger/logger';
 
-export interface PoolItem {
+export interface IConnection {
   broken?: boolean;
   active?: boolean;
   name: string;
 }
 
-export class ConnectionPool<T extends PoolItem> {
+export class ConnectionPool<T extends IConnection> {
   private readonly pool = new Map<string, { claimed: boolean; connection: T }>();
-  constructor(private readonly max = 1, private readonly logger: ILogger) {}
+  constructor(
+    private readonly max = 1,
+    private readonly logger: ILogger,
+  ) {}
 
   async add(connection: T): Promise<void> {
     this.logger.debug(`[Pool:${connection.name}] Add connection`);

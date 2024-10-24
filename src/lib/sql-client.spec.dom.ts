@@ -1,11 +1,11 @@
 /* eslint-disable jest/no-conditional-expect */
 import { ExaWebsocket } from './connection';
-import { ExasolDriver } from './sql-client';
+import { ExasolClient } from './sql-client';
 
 describe('sqlClient', () => {
   it('should fail with no credentials', async () => {
     expect.assertions(2);
-    const driver = new ExasolDriver((url) => {
+    const driver = new ExasolClient((url) => {
       return new WebSocket(url) as ExaWebsocket;
     }, {});
     return driver.connect().catch((err: Error) => {

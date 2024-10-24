@@ -1,6 +1,6 @@
 import { SQLResponse } from './types';
 import { Cancelable } from './sql-client.interface';
-import { PoolItem } from './pool/pool';
+import { IConnection } from './pool/pool';
 import { ILogger } from './logger/logger';
 import { ErrClosed, ErrInvalidConn, ErrJobAlreadyRunning, ErrMalformedData } from './errors/errors';
 import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
@@ -31,7 +31,7 @@ const CLOSING = 2;
 /** The connection is closed. */
 const CLOSED = 3;
 
-export class Connection implements PoolItem {
+export class Connection implements IConnection {
   private isInUse = false;
   private isBroken = false;
 
@@ -50,7 +50,11 @@ export class Connection implements PoolItem {
   public get broken(): boolean {
     return this.isBroken;
   }
-  constructor(private readonly websocket: ExaWebsocket, private readonly logger: ILogger, public name: string) {}
+  constructor(
+    private readonly websocket: ExaWebsocket,
+    private readonly logger: ILogger,
+    public name: string,
+  ) {}
 
   async close() {
     if (this.connection && this.connection.readyState === OPEN) {

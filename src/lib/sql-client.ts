@@ -3,8 +3,8 @@ import * as forge from 'node-forge';
 import { getURIScheme } from './utils';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
 import { Statement } from './statement';
-import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
-import { ConnectionPool } from './pool/pool';
+import { CetCancelFunction, IExasolDriver as IExasolClient, IStatement } from './sql-client.interface';
+//import { ConnectionPool } from './pool/pool';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { fetchData } from './fetch';
 import {
@@ -50,7 +50,7 @@ export const driverVersion = 'v1.0.0';
 
 export type websocketFactory = (url: string) => ExaWebsocket;
 
-export class ExasolDriver implements IExasolDriver {
+export class ExasolClient implements IExasolClient {
   private readonly defaultConfig: Config & InternalConfig = {
     host: 'localhost',
     port: 8563,
@@ -63,19 +63,16 @@ export class ExasolDriver implements IExasolDriver {
     apiVersion: 3,
     poolMaxConnections: 1,
   };
+  private clientConnection?: Connection;
   private readonly config: Config & InternalConfig & { websocketFactory: websocketFactory };
   private readonly logger: ILogger;
   private closed = false;
-
-  private readonly pool: ConnectionPool<Connection>;
 
   constructor(
     websocketFactory: websocketFactory,
     config: Partial<Config> & Partial<InternalConfig>,
     logger: ILogger = new Logger(LogLevel.Debug),
   ) {
-    // Used internally to avoid parallel execution
-    this.pool = new ConnectionPool<Connection>(config.poolMaxConnections, logger);
     this.config = {
       ...this.defaultConfig,
       ...config,
@@ -88,9 +85,9 @@ export class ExasolDriver implements IExasolDriver {
    * @inheritDoc
    */
   public async connect(): Promise<void> {
-    await this.acquire();
+    await this.createConnection();
   }
-  private async createConnectionAndAddToPool(): Promise<void> {
+  private async createConnection(): Promise<void> {
     let hasCredentials = false;
     let isBasicAuth = false;
     if (this.config.user && this.config.password) {
@@ -133,27 +130,23 @@ export class ExasolDriver implements IExasolDriver {
         connection.close();
         reject(ErrClosed);
       };
-      webSocket.onopen = () => {
+
+      webSocket.onopen = async () => {
         this.logger.debug('[SQLClient] Login');
-        this.pool
-          .add(connection)
-          .then(() => {
-            if (isBasicAuth) {
-              return this.loginBasicAuth();
-            }
-            return this.loginTokenAuth();
-          })
-          .then((data) => {
-            if (data.status !== 'ok') {
-              reject(data.exception);
-              return;
-            }
-            resolve();
-            return;
-          })
-          .catch((err) => {
-            reject(err);
-          });
+        let authResult;
+        if (isBasicAuth) {
+          authResult = await this.loginBasicAuth();
+        } else {
+          authResult = await this.loginTokenAuth();
+        }
+        if (authResult.status !== 'ok') {
+          reject(authResult.exception);
+          return;
+        }
+        this.logger.debug('[SQLClient] Authentication Succesful.');
+        this.clientConnection = connection;
+        resolve();
+        return;
       };
     });
   }
@@ -175,14 +168,7 @@ export class ExasolDriver implements IExasolDriver {
       return;
     }
     this.closed = true;
-    this.logger.debug('[SQLClient] Close all connections');
-
-    const connections = this.pool.getAll();
-    for (let index = 0; index < connections.length; index++) {
-      const connection = connections[index];
-      await connection.close();
-    }
-    this.pool.clear();
+    await this.clientConnection?.close();
   }
 
   /**
@@ -236,38 +222,42 @@ export class ExasolDriver implements IExasolDriver {
     responseType?: 'default' | 'raw',
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
     const connection = await this.acquire();
-    return connection
-      .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
-      .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
-      })
-      .then((data) => {
-        if (connection) {
-          this.release(connection);
-        }
-        return data;
-      })
-      .then((data) => {
-        if (responseType == 'raw') {
+    if (connection) {
+      return connection
+        .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
+        .then((data) => {
+          return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+        })
+        .then((data) => {
+          if (connection) {
+            this.release(connection);
+          }
           return data;
-        }
+        })
+        .then((data) => {
+          if (responseType == 'raw') {
+            return data;
+          }
 
-        if (data.responseData.numResults === 0) {
-          throw ErrMalformedData;
-        }
+          if (data.responseData.numResults === 0) {
+            throw ErrMalformedData;
+          }
 
-        if (data.responseData.results[0].resultType === 'rowCount') {
-          throw newInvalidReturnValueRowCount;
-        }
+          if (data.responseData.results[0].resultType === 'rowCount') {
+            throw newInvalidReturnValueRowCount;
+          }
 
-        return new QueryResult(data.responseData.results[0].resultSet);
-      })
-      .catch((err) => {
-        if (connection) {
-          this.release(connection);
-        }
-        throw err;
-      });
+          return new QueryResult(data.responseData.results[0].resultSet);
+        })
+        .catch((err) => {
+          if (connection) {
+            this.release(connection);
+          }
+          throw err;
+        });
+    } else {
+      throw Error('Connection undefined');
+    }
   }
 
   /**
@@ -297,38 +287,42 @@ export class ExasolDriver implements IExasolDriver {
     responseType?: 'default' | 'raw',
   ): Promise<SQLResponse<SQLQueriesResponse> | number> {
     const connection = await this.acquire();
-    return connection
-      .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
-      .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
-      })
-      .then((data) => {
-        if (connection) {
-          this.release(connection);
-        }
-        return data;
-      })
-      .then((data) => {
-        if (responseType == 'raw') {
+    if (connection) {
+      return connection
+        .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
+        .then((data) => {
+          return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+        })
+        .then((data) => {
+          if (connection) {
+            this.release(connection);
+          }
           return data;
-        }
+        })
+        .then((data) => {
+          if (responseType == 'raw') {
+            return data;
+          }
 
-        if (data.responseData.numResults === 0) {
-          throw ErrMalformedData;
-        }
+          if (data.responseData.numResults === 0) {
+            throw ErrMalformedData;
+          }
 
-        if (data.responseData.results[0].resultType === 'resultSet') {
-          throw newInvalidReturnValueResultSet;
-        }
+          if (data.responseData.results[0].resultType === 'resultSet') {
+            throw newInvalidReturnValueResultSet;
+          }
 
-        return data.responseData.results[0].rowCount ?? 0;
-      })
-      .catch((err) => {
-        if (connection) {
-          this.release(connection);
-        }
-        throw err;
-      });
+          return data.responseData.results[0].rowCount ?? 0;
+        })
+        .catch((err) => {
+          if (connection) {
+            this.release(connection);
+          }
+          throw err;
+        });
+    } else {
+      throw Error('Connection undefined');
+    }
   }
 
   /**
@@ -340,24 +334,27 @@ export class ExasolDriver implements IExasolDriver {
     getCancel?: CetCancelFunction,
   ): Promise<SQLResponse<SQLQueriesResponse>> {
     const connection = await this.acquire();
-
-    return connection
-      .sendCommand<SQLQueriesResponse>(new SQLBatchCommand(sqlStatements, attributes), getCancel)
-      .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
-      })
-      .then((data) => {
-        if (connection) {
-          this.release(connection);
-        }
-        return data;
-      })
-      .catch((err) => {
-        if (connection) {
-          this.release(connection);
-        }
-        throw err;
-      });
+    if (connection) {
+      return connection
+        .sendCommand<SQLQueriesResponse>(new SQLBatchCommand(sqlStatements, attributes), getCancel)
+        .then((data) => {
+          return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+        })
+        .then((data) => {
+          if (connection) {
+            this.release(connection);
+          }
+          return data;
+        })
+        .catch((err) => {
+          if (connection) {
+            this.release(connection);
+          }
+          throw err;
+        });
+    } else {
+      throw Error('Connection undefined');
+    }
   }
 
   /**
@@ -365,17 +362,21 @@ export class ExasolDriver implements IExasolDriver {
    */
   public async prepare(sqlStatement: string, getCancel?: CetCancelFunction): Promise<IStatement> {
     const connection = await this.acquire();
-    return connection
-      .sendCommand<CreatePreparedStatementResponse>(
-        {
-          command: 'createPreparedStatement',
-          sqlText: sqlStatement,
-        },
-        getCancel,
-      )
-      .then((response) => {
-        return new Statement(connection, this.pool, response.responseData.statementHandle, response.responseData.parameterData.columns);
-      });
+    if (connection) {
+      return connection
+        .sendCommand<CreatePreparedStatementResponse>(
+          {
+            command: 'createPreparedStatement',
+            sqlText: sqlStatement,
+          },
+          getCancel,
+        )
+        .then((response) => {
+          return new Statement(connection, response.responseData.statementHandle, response.responseData.parameterData.columns);
+        });
+    } else {
+      throw Error('Connection undefined');
+    }
   }
 
   /**
@@ -383,21 +384,24 @@ export class ExasolDriver implements IExasolDriver {
    */
   public async sendCommand<T>(cmd: Commands, getCancel?: CetCancelFunction): Promise<SQLResponse<T>> {
     const connection = await this.acquire();
-
-    return connection
-      .sendCommand<T>(cmd, getCancel)
-      .then((data) => {
-        if (connection) {
-          this.release(connection);
-        }
-        return data;
-      })
-      .catch((err) => {
-        if (connection) {
-          this.release(connection);
-        }
-        throw err;
-      });
+    if (connection) {
+      return connection
+        .sendCommand<T>(cmd, getCancel)
+        .then((data) => {
+          if (connection) {
+            this.release(connection);
+          }
+          return data;
+        })
+        .catch((err) => {
+          if (connection) {
+            this.release(connection);
+          }
+          throw err;
+        });
+    } else {
+      throw Error('Connection undefined');
+    }
   }
   // Attempts to acquire a connection from the pool.
   // If there is one available, acquire the connection.
@@ -406,33 +410,23 @@ export class ExasolDriver implements IExasolDriver {
   // If the pool is not at max size: Create a new connection using the connect() method and acquire the new connection from the pool.
 
   private async acquire() {
-    if (this.closed) {
-      return Promise.reject(ErrClosed);
+    if (!this.clientConnection) Promise.reject('Failed to acquire connection. Uninitialized.');
+
+    while (this.clientConnection?.active && !this.clientConnection.broken) {
+      this.logger.debug('Waiting to acquire active clientconnection.');
     }
-    //acquire a connection.
-    let connection = this.pool.acquire();
-    //if acquiring a connection failed:
-    if (!connection) {
-      //if the pool is at max size, wait until a connection opens up/gets released and acquire it.
-      if (this.pool.atMaxSize()) {
-        while (!connection) {
-          connection = this.pool.acquire();
-        }
-      } else {
-        //create a new connection if the pool is not at max size, add it to the pool and then acquire it.
-        this.logger.debug('[SQLClient] Found no free connection and pool did not reach its limit, will create new connection');
-        await this.createConnectionAndAddToPool();
-        connection = this.pool.acquire();
-      }
-      if (!connection) {
-        return Promise.reject(ErrInvalidConn);
-      }
+
+    if (!this.clientConnection?.broken) Promise.reject('Broken connection.');
+
+    if (this.clientConnection) {
+      this.clientConnection.active = true;
     }
-    return connection;
+    return this.clientConnection;
   }
 
   private async release(connection: Connection) {
-    this.pool.release(connection);
+    //TODO: clientConnection release, remove param and do the necessary
+    connection.active = false;
   }
 
   private async loginBasicAuth() {

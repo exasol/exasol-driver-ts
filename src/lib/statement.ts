@@ -1,6 +1,5 @@
 import { SQLQueriesResponse, SQLQueryColumn, SQLResponse } from './types';
 import { IStatement } from './sql-client.interface';
-import { ConnectionPool } from './pool/pool';
 import { ErrInvalidValuesCount } from './errors/errors';
 import { Connection } from './connection';
 import { ClosePreparedStatementCommand, ExecutePreparedStatementCommand } from './commands';
@@ -8,10 +7,14 @@ import { ClosePreparedStatementCommand, ExecutePreparedStatementCommand } from '
 export class Statement implements IStatement {
   constructor(
     private readonly connection: Connection,
-    private readonly pool: ConnectionPool<Connection>,
     private readonly statementHandle: number,
-    private readonly columns: SQLQueryColumn[]
+    private readonly columns: SQLQueryColumn[],
   ) {}
+
+  private async release(connection: Connection) {
+    //TODO: clientConnection release, remove param and do the necessary
+    connection.active = false;
+  }
 
   /**
    * @inheritDoc
@@ -20,11 +23,11 @@ export class Statement implements IStatement {
     return this.connection
       .sendCommand(new ClosePreparedStatementCommand(this.statementHandle))
       .then(() => {
-        this.pool.release(this.connection);
+        this.release(this.connection);
         return;
       })
       .catch((err) => {
-        this.pool.release(this.connection);
+        this.release(this.connection);
         throw err;
       });
   }
@@ -52,10 +55,10 @@ export class Statement implements IStatement {
           numColumns: this.columns.length,
           numRows: data[0].length,
           data: data,
-        })
+        }),
       )
       .catch((err) => {
-        this.pool.release(this.connection);
+        this.release(this.connection);
         throw err;
       });
   }
