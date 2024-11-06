@@ -184,7 +184,7 @@ export class ExasolDriver implements IExasolDriver {
     if (this.closed) {
       return Promise.reject(ErrClosed);
     }
-    const connection = this.pool.acquire();
+    const connection = await this.acquire();
     if (connection) {
       return connection
         .sendCommandWithNoResult(cmd)
