@@ -131,7 +131,7 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       await setupClient.close();
     });
 
-    it('Fetch multiple queries asynchronously (high volume)', async () => {
+    it('Fetch multiple queries asynchronously (20)', async () => {
       const setupClient = new ExasolDriver(factory, {
         host: container.getHost(),
         port: container.getMappedPort(8563),
@@ -155,21 +155,44 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       await setupClient.execute('CREATE SCHEMA ' + schemaName);
       await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
       await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
-      const promiseArr: Promise<QueryResult>[] = [];
+
       const amountOfRequests = 20;
 
-      for (let i = 0; i < amountOfRequests; i++) {
-        const dataPromise = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-        promiseArr.push(dataPromise);
-      }
+      await runQueryXNumberOfTimesAndCheckResult(amountOfRequests, poolToQuery, schemaName);
 
-      await Promise.all(promiseArr);
+      await poolToQuery.drain();
+      await poolToQuery.clear();
 
-      for (let i = 0; i < amountOfRequests; i++) {
-        const data = await promiseArr[i];
-        expect(data.getColumns()[0].name).toBe('X');
-        expect(data.getRows()[0]['X']).toBe(15);
-      }
+      await setupClient.close();
+    });
+    it('Fetch multiple queries asynchronously (100)', async () => {
+      const setupClient = new ExasolDriver(factory, {
+        host: container.getHost(),
+        port: container.getMappedPort(8563),
+        user: 'sys',
+        password: 'exasol',
+        encryption: false,
+      });
+
+      const poolToQuery = new ExasolPool(factory, {
+        host: container.getHost(),
+        port: container.getMappedPort(8563),
+        user: 'sys',
+        password: 'exasol',
+        encryption: false,
+        min: 1,
+        max: 10,
+      });
+
+      await setupClient.connect();
+
+      await setupClient.execute('CREATE SCHEMA ' + schemaName);
+      await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
+      await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
+
+      const amountOfRequests = 20;
+
+      await runQueryXNumberOfTimesAndCheckResult(amountOfRequests, poolToQuery, schemaName);
 
       await poolToQuery.drain();
       await poolToQuery.clear();
@@ -181,3 +204,19 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       //  await container.stop();
     });
   });
+async function runQueryXNumberOfTimesAndCheckResult(amountOfRequests: number, poolToQuery: ExasolPool, schemaName: string) {
+  const promiseArr: Promise<QueryResult>[] = [];
+
+  for (let i = 0; i < amountOfRequests; i++) {
+    const dataPromise = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+    promiseArr.push(dataPromise);
+  }
+
+  await Promise.all(promiseArr);
+
+  for (let i = 0; i < amountOfRequests; i++) {
+    const data = await promiseArr[i];
+    expect(data.getColumns()[0].name).toBe('X');
+    expect(data.getRows()[0]['X']).toBe(15);
+  }
+}
