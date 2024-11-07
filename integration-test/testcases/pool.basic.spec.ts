@@ -26,8 +26,6 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
     });
 
     it('Connect to DB', async () => {
-      //ACQUIRE AND DESTROY
-
       const poolToQuery = new ExasolPool(factory, {
         host: container.getHost(),
         port: container.getMappedPort(8563),
@@ -41,14 +39,14 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       await poolToQuery.clear();
     });
 
-    it('Exec and fetch', async () => {
-      // const setupClient = new ExasolDriver(factory, {
-      //   host: container.getHost(),
-      //   port: container.getMappedPort(8563),
-      //   user: 'sys',
-      //   password: 'exasol',
-      //   encryption: false,
-      // });
+    it('Fetch multiple queries simultaneously/asynchronously', async () => {
+      const setupClient = new ExasolDriver(factory, {
+        host: container.getHost(),
+        port: container.getMappedPort(8563),
+        user: 'sys',
+        password: 'exasol',
+        encryption: false,
+      });
 
       const poolToQuery = new ExasolPool(factory, {
         host: container.getHost(),
@@ -60,17 +58,68 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
         max: 10,
       });
 
-      // await setupClient.connect();
+      await setupClient.connect();
 
-      // await setupClient.execute('CREATE SCHEMA ' + schemaName);
-      // await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
-      // await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
+      await setupClient.execute('CREATE SCHEMA ' + schemaName);
+      await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
+      await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 
-      // //const data = await poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-      // const data = await setupClient.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+      const dataPromise1 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+      const dataPromise2 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+      const dataPromise3 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+      const dataPromise4 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
 
-      // expect(data.getColumns()[0].name).toBe('X');
-      // expect(data.getRows()[0]['X']).toBe(15);
+      const data1 = await dataPromise1;
+      expect(await data1.getColumns()[0].name).toBe('X');
+      expect(await data1.getRows()[0]['X']).toBe(15);
+
+      const data2 = await dataPromise2;
+      expect(await data2.getColumns()[0].name).toBe('X');
+      expect(await data2.getRows()[0]['X']).toBe(15);
+
+      const data3 = await dataPromise3;
+      expect(await data3.getColumns()[0].name).toBe('X');
+      expect(await data3.getRows()[0]['X']).toBe(15);
+
+      const data4 = await dataPromise4;
+      expect(await data4.getColumns()[0].name).toBe('X');
+      expect(await data4.getRows()[0]['X']).toBe(15);
+
+      await poolToQuery.drain();
+      await poolToQuery.clear();
+
+      await setupClient.close();
+    });
+
+    it('Exec and fetch', async () => {
+      const setupClient = new ExasolDriver(factory, {
+        host: container.getHost(),
+        port: container.getMappedPort(8563),
+        user: 'sys',
+        password: 'exasol',
+        encryption: false,
+      });
+
+      const poolToQuery = new ExasolPool(factory, {
+        host: container.getHost(),
+        port: container.getMappedPort(8563),
+        user: 'sys',
+        password: 'exasol',
+        encryption: false,
+        min: 1,
+        max: 10,
+      });
+
+      await setupClient.connect();
+
+      await setupClient.execute('CREATE SCHEMA ' + schemaName);
+      await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
+      await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
+
+      const data = await poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+
+      expect(data.getColumns()[0].name).toBe('X');
+      expect(data.getRows()[0]['X']).toBe(15);
 
       // poolToQuery.drain().then(function () {
       //   poolToQuery.clear();
@@ -78,7 +127,7 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       await poolToQuery.drain();
       await poolToQuery.clear();
 
-      //await setupClient.close();
+      await setupClient.close();
     });
 
     // it('Exec and fetch (raw)', async () => {
