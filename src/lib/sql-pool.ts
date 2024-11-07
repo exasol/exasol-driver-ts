@@ -42,7 +42,6 @@ export function getPool(websocketFactory: websocketFactory, config: Partial<Conf
   const tempPool = createPool(poolFactory, poolOpts);
   return tempPool;
 }
-//TODO:add getters and setters,refer to pool documentation
 export class ExasolPool {
   private internalPool: Pool<ExasolDriver>;
   private logger: ILogger;
@@ -55,24 +54,24 @@ export class ExasolPool {
     this.internalPool = getPool(websocketFactory, config, logger);
   }
 
-  async query(
+  public async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
   ): Promise<QueryResult>;
-  async query(
+  public async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | undefined,
   ): Promise<QueryResult>;
-  async query(
+  public async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'raw' | undefined,
   ): Promise<SQLResponse<SQLQueriesResponse>>;
-  async query(
+  public async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
@@ -81,7 +80,6 @@ export class ExasolPool {
     {
       let exasolClient;
       try {
-        //TODO: add error handling for maxWaitingClients?
         exasolClient = await this.internalPool.acquire();
 
         const response = await exasolClient.query(sqlStatement, attributes, getCancel, responseType);
@@ -96,10 +94,10 @@ export class ExasolPool {
       }
     }
   }
-  async drain() {
+  public async drain() {
     await this.internalPool.drain();
   }
-  async clear() {
+  public async clear() {
     await this.internalPool.clear();
   }
 }
