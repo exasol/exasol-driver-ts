@@ -14,4 +14,4 @@ Adds `ExasolPool`, which is a connection pool using `ExasolDriver` underneath. A
 
 ### Compile Dependency Updates
 
-- Added `generic-pool:^3.9.0`
+* Added `generic-pool:^3.9.0`
