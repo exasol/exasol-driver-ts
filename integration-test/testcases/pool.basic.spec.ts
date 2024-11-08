@@ -39,6 +39,43 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       await poolToQuery.clear();
     });
 
+    it('Exec and fetch (default min / max connection settings)', async () => {
+      const setupClient = new ExasolDriver(factory, {
+        host: container.getHost(),
+        port: container.getMappedPort(8563),
+        user: 'sys',
+        password: 'exasol',
+        encryption: false,
+      });
+
+      const poolToQuery = new ExasolPool(factory, {
+        host: container.getHost(),
+        port: container.getMappedPort(8563),
+        user: 'sys',
+        password: 'exasol',
+        encryption: false,
+      });
+
+      await setupClient.connect();
+
+      await setupClient.execute('CREATE SCHEMA ' + schemaName);
+      await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
+      await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
+
+      const data = await poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+
+      expect(data.getColumns()[0].name).toBe('X');
+      expect(data.getRows()[0]['X']).toBe(15);
+
+      // poolToQuery.drain().then(function () {
+      //   poolToQuery.clear();
+      // });
+      await poolToQuery.drain();
+      await poolToQuery.clear();
+
+      await setupClient.close();
+    });
+
     it('Exec and fetch', async () => {
       const setupClient = new ExasolDriver(factory, {
         host: container.getHost(),
