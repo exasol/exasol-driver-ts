@@ -36,7 +36,7 @@ export function getPool(websocketFactory: websocketFactory, config: Partial<Conf
     },
   };
   const poolOpts: PoolConfig = {
-    max: config.max ?? 1, // maximum size of the pool
+    max: config.max ?? 5, // maximum size of the pool
     min: config.min ?? 0, // minimum size of the pool
   };
   const tempPool = createPool(poolFactory, poolOpts);
@@ -99,5 +99,8 @@ export class ExasolPool {
   }
   public async clear() {
     await this.internalPool.clear();
+  }
+  public getInternalPool() {
+    return this.internalPool;
   }
 }
