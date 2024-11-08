@@ -48,7 +48,7 @@ export class ExasolPool {
   constructor(
     websocketFactory: websocketFactory,
     config: Partial<Config> & Partial<PoolConfig>,
-    logger: ILogger = new Logger(LogLevel.Off),
+    logger: ILogger = new Logger(LogLevel.Debug),
   ) {
     this.logger = logger;
     this.internalPool = getPool(websocketFactory, config, logger);
