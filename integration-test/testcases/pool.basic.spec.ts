@@ -7,7 +7,6 @@ import { QueryResult } from '../../src/lib/query-result';
 export const basicPoolTests = (name: string, factory: websocketFactory) =>
   describe(name, () => {
     const randomId = new RandomUuid();
-    //let tmpDriver: ExasolClient | undefined;
     let container: StartedTestContainer;
     jest.setTimeout(7000000);
     let schemaName = '';
@@ -110,20 +109,20 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       const dataPromise4 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
 
       const data1 = await dataPromise1;
-      expect(await data1.getColumns()[0].name).toBe('X');
-      expect(await data1.getRows()[0]['X']).toBe(15);
+      expect(data1.getColumns()[0].name).toBe('X');
+      expect(data1.getRows()[0]['X']).toBe(15);
 
       const data2 = await dataPromise2;
-      expect(await data2.getColumns()[0].name).toBe('X');
-      expect(await data2.getRows()[0]['X']).toBe(15);
+      expect(data2.getColumns()[0].name).toBe('X');
+      expect(data2.getRows()[0]['X']).toBe(15);
 
       const data3 = await dataPromise3;
-      expect(await data3.getColumns()[0].name).toBe('X');
-      expect(await data3.getRows()[0]['X']).toBe(15);
+      expect(data3.getColumns()[0].name).toBe('X');
+      expect(data3.getRows()[0]['X']).toBe(15);
 
       const data4 = await dataPromise4;
-      expect(await data4.getColumns()[0].name).toBe('X');
-      expect(await data4.getRows()[0]['X']).toBe(15);
+      expect(data4.getColumns()[0].name).toBe('X');
+      expect(data4.getRows()[0]['X']).toBe(15);
 
       await poolToQuery.drain();
       await poolToQuery.clear();
