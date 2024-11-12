@@ -111,15 +111,7 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
     it('Fetch multiple queries asynchronously (20)', async () => {
       const setupClient = createSetupClient(factory, container);
 
-      const poolToQuery = new ExasolPool(factory, {
-        host: container.getHost(),
-        port: container.getMappedPort(8563),
-        user: 'sys',
-        password: 'exasol',
-        encryption: false,
-        min: 1,
-        max: 10,
-      });
+      const poolToQuery = createPool(factory, container, 1, 10);
 
       await setupClient.connect();
 
