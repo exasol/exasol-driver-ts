@@ -150,13 +150,13 @@ Install the following dependencies from the [npm](https://www.npmjs.com/) packag
 NodeJS:
 
 ```bash
-npm install -S @exasol/exasol-driver-ts ws @types/ws
+npm install --save @exasol/exasol-driver-ts ws @types/ws
 ```
 
 Browser:
 
 ```bash
-npm install -S @exasol/exasol-driver-ts
+npm install --save @exasol/exasol-driver-ts
 ```
 
 #### Creating a connection pool:

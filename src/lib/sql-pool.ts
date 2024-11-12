@@ -5,8 +5,6 @@ import { QueryResult } from './query-result';
 import { Attributes } from './commands';
 import { CetCancelFunction } from './sql-client.interface';
 import { SQLQueriesResponse, SQLResponse } from './types';
-//https://www.npmjs.com/package/generic-pool
-//https://www.npmjs.com/package/@types/generic-pool
 export interface PoolConfig {
   min: number;
   max: number;
