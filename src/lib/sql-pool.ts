@@ -35,9 +35,24 @@ function getPool(websocketFactory: websocketFactory, config: Partial<Config> & P
   const tempPool = createPool(poolFactory, poolOpts);
   return tempPool;
 }
+/**
+ * ExasolPool is a connection pool.
+ * Use this class to manage a high volume of queries using a specified number of database connections.
+ *
+ * @export
+ * @class ExasolPool
+ */
 export class ExasolPool {
   private internalPool: Pool<ExasolDriver>;
   private logger: ILogger;
+  /**
+   * Creates an instance of ExasolPool.
+   *
+   * @param {websocketFactory} websocketFactory
+   * @param {(Partial<Config> & Partial<PoolConfig>)} config
+   * @param {ILogger} [logger=new Logger(LogLevel.Debug)]
+   * @memberof ExasolPool
+   */
   constructor(
     websocketFactory: websocketFactory,
     config: Partial<Config> & Partial<PoolConfig>,
@@ -46,24 +61,62 @@ export class ExasolPool {
     this.logger = logger;
     this.internalPool = getPool(websocketFactory, config, logger);
   }
-
+  /**
+   * Query single SQL statement
+   *
+   * @param {string} sqlStatement
+   * @param {(Partial<Attributes> | undefined)} [attributes]
+   * @param {(CetCancelFunction | undefined)} [getCancel]
+   * @return {*}  {Promise<QueryResult>}
+   * @memberof ExasolPool
+   */
   public async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
   ): Promise<QueryResult>;
+  /**
+   * Query single SQL statement
+   *
+   * @param {string} sqlStatement
+   * @param {(Partial<Attributes> | undefined)} [attributes]
+   * @param {(CetCancelFunction | undefined)} [getCancel]
+   * @param {('default' | undefined)} [responseType]
+   * @return {*}  {Promise<QueryResult>}
+   * @memberof ExasolPool
+   */
   public async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | undefined,
   ): Promise<QueryResult>;
+  /**
+   * Query single SQL statement
+   *
+   * @param {string} sqlStatement
+   * @param {(Partial<Attributes> | undefined)} [attributes]
+   * @param {(CetCancelFunction | undefined)} [getCancel]
+   * @param {('raw' | undefined)} [responseType]
+   * @return {*}  {Promise<SQLResponse<SQLQueriesResponse>>}
+   * @memberof ExasolPool
+   */
   public async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'raw' | undefined,
   ): Promise<SQLResponse<SQLQueriesResponse>>;
+  /**
+   * Query single SQL statement
+   *
+   * @param {string} sqlStatement
+   * @param {(Partial<Attributes> | undefined)} [attributes]
+   * @param {(CetCancelFunction | undefined)} [getCancel]
+   * @param {('default' | 'raw')} [responseType]
+   * @return {*}  {(Promise<QueryResult | SQLResponse<SQLQueriesResponse>>)}
+   * @memberof ExasolPool
+   */
   public async query(
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
@@ -85,10 +138,19 @@ export class ExasolPool {
       }
     }
   }
-
+  /**
+   * This sets the pool into a "draining" state.
+   *
+   * @memberof ExasolPool
+   */
   public async drain() {
     await this.internalPool.drain();
   }
+  /**
+   * Clears the connections in the pool.
+   *
+   * @memberof ExasolPool
+   */
   public async clear() {
     await this.internalPool.clear();
   }
