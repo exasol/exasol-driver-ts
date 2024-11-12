@@ -175,8 +175,8 @@ const pool = new ExasolPool((url) => {
   user: 'sys',
   password: 'exasol',
   encryption: false,
-  min: 1,
-  max: 10,
+  minimumPoolSize: 1,
+  maximumPoolSize: 10,
 });
 ```
 
@@ -193,12 +193,12 @@ const pool = new ExasolPool((url) => {
   user: 'sys',
   password: 'exasol',
   encryption: false,
-  min: 1,
-  max: 10,
+  minimumPoolSize: 1,
+  maximumPoolSize: 10,
 });
 ```
 
-The configuration is very similar to the `ExasolDriver` (client). With the added `min` and `max` options you can specify the minimum and maximum number of active connections in the pool. Defaults are 0 (min) and 5 (max).
+The configuration is very similar to the `ExasolDriver` (client). With the added `minimumPoolSize` and `maximumPoolSize` options you can specify the minimum and maximum number of active connections in the pool. Defaults are 0 (minimumPoolSize) and 5 (maximumPoolSize).
 
 #### Runninq a query
 
@@ -230,5 +230,5 @@ await pool.clear();
 | `fetchSize`        |     number, >0     |     `128*1024`      | Amount of data in kB which should be obtained by Exasol during a fetch. The application can run out of memory if the value is too high. |
 | `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
 | `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
-| `min`              |       number       |          0          | Minimum amount of active connections.                                                                                                   |
-| `max`              |       number       |          5          | Maximum amount of active connections.                                                                                                   |
+| `minimumPoolSize`  |       number       |          0          | Minimum amount of active connections.                                                                                                   |
+| `maximumPoolSize`  |       number       |          5          | maximumPoolSizeimum amount of active connections.                                                                                       |

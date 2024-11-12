@@ -1,15 +1,15 @@
-import { createPool, Factory, Pool } from 'generic-pool';
+import { createPool, Factory, Options, Pool } from 'generic-pool';
 import { Config, ExasolDriver, websocketFactory } from './sql-client';
 import { ILogger, LogLevel, Logger } from './logger/logger';
 import { QueryResult } from './query-result';
 import { Attributes } from './commands';
 import { CetCancelFunction } from './sql-client.interface';
 import { SQLQueriesResponse, SQLResponse } from './types';
-export interface PoolConfig {
-  min: number;
-  max: number;
+export interface ClientPoolConfig {
+  minimumPoolSize: number;
+  maximumPoolSize: number;
 }
-function getPool(websocketFactory: websocketFactory, config: Partial<Config> & Partial<PoolConfig>, logger: ILogger) {
+function getPool(websocketFactory: websocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger: ILogger) {
   async function createClient() {
     const exasolClient: ExasolDriver = new ExasolDriver(websocketFactory, config, logger);
     await exasolClient.connect();
@@ -28,9 +28,9 @@ function getPool(websocketFactory: websocketFactory, config: Partial<Config> & P
       return destroyClient(client);
     },
   };
-  const poolOpts: PoolConfig = {
-    max: config.max ?? 5, // maximum size of the pool
-    min: config.min ?? 0, // minimum size of the pool
+  const poolOpts: Options = {
+    max: config.maximumPoolSize ?? 5, // maximum size of the pool
+    min: config.minimumPoolSize ?? 0, // minimum size of the pool
   };
   const tempPool = createPool(poolFactory, poolOpts);
   return tempPool;
@@ -49,13 +49,13 @@ export class ExasolPool {
    * Creates an instance of ExasolPool.
    *
    * @param {websocketFactory} websocketFactory
-   * @param {(Partial<Config> & Partial<PoolConfig>)} config
+   * @param {(Partial<Config> & Partial<ClientPoolConfig>)} config
    * @param {ILogger} [logger=new Logger(LogLevel.Debug)]
    * @memberof ExasolPool
    */
   constructor(
     websocketFactory: websocketFactory,
-    config: Partial<Config> & Partial<PoolConfig>,
+    config: Partial<Config> & Partial<ClientPoolConfig>,
     logger: ILogger = new Logger(LogLevel.Debug),
   ) {
     this.logger = logger;
