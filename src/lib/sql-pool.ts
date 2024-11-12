@@ -74,19 +74,18 @@ export class ExasolPool {
       let exasolClient;
       try {
         exasolClient = await this.internalPool.acquire();
-
-        const response = await exasolClient.query(sqlStatement, attributes, getCancel, responseType);
-        await this.internalPool.release(exasolClient);
-        return response;
+        return await exasolClient.query(sqlStatement, attributes, getCancel, responseType);
       } catch (err) {
+        this.logger.log('Query method error:' + err);
+        throw err;
+      } finally {
         if (exasolClient) {
           await this.internalPool.release(exasolClient);
         }
-        this.logger.log('Query method error:' + err);
-        throw err;
       }
     }
   }
+
   public async drain() {
     await this.internalPool.drain();
   }
