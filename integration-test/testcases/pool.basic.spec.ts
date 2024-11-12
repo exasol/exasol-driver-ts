@@ -174,15 +174,15 @@ function createPoolWithDefaultSize(factory: websocketFactory, container: Started
   });
 }
 
-function createPool(factory: websocketFactory, container: StartedTestContainer, min: number, max: number) {
+function createPool(factory: websocketFactory, container: StartedTestContainer, minimumPoolSize: number, maximumPoolSize: number) {
   return new ExasolPool(factory, {
     host: container.getHost(),
     port: container.getMappedPort(8563),
     user: 'sys',
     password: 'exasol',
     encryption: false,
-    min: min,
-    max: max,
+    minimumPoolSize: minimumPoolSize,
+    maximumPoolSize: maximumPoolSize,
   });
 }
 
