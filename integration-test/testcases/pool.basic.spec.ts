@@ -67,9 +67,6 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       expect(data.getColumns()[0].name).toBe('X');
       expect(data.getRows()[0]['X']).toBe(15);
 
-      // poolToQuery.drain().then(function () {
-      //   poolToQuery.clear();
-      // });
       await poolToQuery.drain();
       await poolToQuery.clear();
 
@@ -237,7 +234,6 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
     });
 
     afterAll(async () => {
-      //  await container.stop();
     });
   });
 async function runQueryXNumberOfTimesAndCheckResult(amountOfRequests: number, poolToQuery: ExasolPool, schemaName: string) {

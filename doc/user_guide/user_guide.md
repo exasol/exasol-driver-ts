@@ -198,7 +198,7 @@ const pool = new ExasolPool((url) => {
 });
 ```
 
-The configuration is very similar to the `ExasolDriver` (client). With the added `min` and `max` options you can specify the minimum and maximum amount of active connections in the pool. Defaults are 0 (min) and 5 (max).
+The configuration is very similar to the `ExasolDriver` (client). With the added `min` and `max` options you can specify the minimum and maximum number of active connections in the pool. Defaults are 0 (min) and 5 (max).
 
 #### Runninq a query
 

@@ -11,12 +11,7 @@ export interface PoolConfig {
   min: number;
   max: number;
 }
-export function getPool(websocketFactory: websocketFactory, config: Partial<Config> & Partial<PoolConfig>, logger: ILogger) {
-  // export interface Factory<T> {
-  //   create(): Promise<T>;
-  //   destroy(client: T): Promise<void>;
-  //   validate?(client: T): Promise<boolean>;
-  // }
+function getPool(websocketFactory: websocketFactory, config: Partial<Config> & Partial<PoolConfig>, logger: ILogger) {
   async function createClient() {
     const exasolClient: ExasolDriver = new ExasolDriver(websocketFactory, config, logger);
     await exasolClient.connect();
