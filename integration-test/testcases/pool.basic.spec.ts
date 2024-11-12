@@ -220,7 +220,7 @@ export const basicPoolTests = (name: string, factory: websocketFactory) =>
       await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
       await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 
-      const amountOfRequests = 20;
+      const amountOfRequests = 100;
 
       await runQueryXNumberOfTimesAndCheckResult(amountOfRequests, poolToQuery, schemaName);
 
