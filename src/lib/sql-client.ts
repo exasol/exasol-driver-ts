@@ -1,6 +1,5 @@
 import * as forge from 'node-forge';
 
-
 import { getURIScheme } from './utils';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
 import { Statement } from './statement';
@@ -68,7 +67,7 @@ export class ExasolDriver implements IExasolDriver {
 
   private readonly pool: ConnectionPool<Connection>;
 
-  constructor(websocketFactory: websocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Debug)) {
+  constructor(websocketFactory: websocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
     // Used internally to avoid parallel execution
     this.pool = new ConnectionPool<Connection>(1, logger);
     this.config = {
