@@ -184,7 +184,7 @@ export class ExasolDriver implements IExasolDriver {
     if (this.closed) {
       return Promise.reject(ErrClosed);
     }
-    const connection = this.pool.acquire();
+    const connection = await this.acquire();
     if (connection) {
       return connection
         .sendCommandWithNoResult(cmd)
@@ -225,7 +225,13 @@ export class ExasolDriver implements IExasolDriver {
     sqlStatement: string,
     attributes?: Partial<Attributes> | undefined,
     getCancel?: CetCancelFunction | undefined,
-    responseType?: 'default' | 'raw'
+    responseType?: 'default' | 'raw',
+  ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>>;
+  async query(
+    sqlStatement: string,
+    attributes?: Partial<Attributes> | undefined,
+    getCancel?: CetCancelFunction | undefined,
+    responseType?: 'default' | 'raw' | undefined,
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
     const connection = await this.acquire();
     return connection
