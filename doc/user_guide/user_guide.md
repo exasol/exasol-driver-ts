@@ -231,4 +231,4 @@ await pool.clear();
 | `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
 | `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
 | `minimumPoolSize`  |       number       |          0          | Minimum amount of active connections.                                                                                                   |
-| `maximumPoolSize`  |       number       |          5          | maximumPoolSizeimum amount of active connections.                                                                                       |
+| `maximumPoolSize`  |       number       |          5          | Maximum amount of active connections.                                                                                                   |
