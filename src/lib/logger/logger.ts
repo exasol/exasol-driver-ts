@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export enum LogLevel {
   Off = 0,
-  Error,
-  Warn,
-  Info,
-  Debug,
-  Trace,
+  Error = 1,
+  Warn = 2,
+  Info = 3,
+  Debug = 4,
+  Trace = 5,
 }
 
 export type LoggerMethod = (...data: any) => void;
@@ -21,10 +21,8 @@ export interface ILogger {
 export class Logger implements ILogger {
   private readonly level: LogLevel = LogLevel.Debug;
 
-  constructor(level?: number) {
-    if (level) {
-      this.level = level;
-    }
+  constructor(level: LogLevel = LogLevel.Debug) {
+    this.level = level;
   }
 
   private readonly emptyLog = () => {
@@ -81,7 +79,7 @@ export class Logger implements ILogger {
       `%c[${new Date().toISOString()}] %c${level}%c: %s`,
       'color: gray',
       'color: ' + color,
-      'color: inherit'
+      'color: inherit',
     );
   }
 }
