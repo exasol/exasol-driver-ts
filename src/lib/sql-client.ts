@@ -139,6 +139,8 @@ export class ExasolDriver implements IExasolDriver {
               reject(data.exception);
               return;
             }
+            //at this point the user should be logged in, he asked for the PK and sent credentials and info in login...Auth() methods
+            connection.setCompression(true);
             resolve();
             return;
           })
@@ -404,7 +406,7 @@ export class ExasolDriver implements IExasolDriver {
 
     let connection = this.pool.acquire();
     if (!connection) {
-      this.logger.debug("[SQLClient] Found no free connection and pool did not reach it's limit, will create new connection");
+      this.logger.debug("[SQLClient] Found no free connection and pool did not reach its limit, will create new connection");
       await this.connect();
       connection = this.pool.acquire();
     }
@@ -428,7 +430,7 @@ export class ExasolDriver implements IExasolDriver {
       return this.sendCommand({
         username: this.config.user ?? '',
         password: forge.util.encode64(password),
-        useCompression: false,
+        useCompression: this.config.compression,
         clientName: this.config.clientName,
         driverName: `exasol-driver-js ${driverVersion}`,
         clientOs: 'Browser',
@@ -449,7 +451,7 @@ export class ExasolDriver implements IExasolDriver {
       protocolVersion: this.config.apiVersion,
     }).then(() => {
       const command: OIDCSQLCommand = {
-        useCompression: false,
+        useCompression: this.config.compression,
         clientName: this.config.clientName,
         driverName: `exasol-driver-js ${driverVersion}`,
         clientOs: 'Browser',

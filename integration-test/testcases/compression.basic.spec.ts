@@ -29,12 +29,14 @@ export const basicCompressionTests = (name: string, factory: websocketFactory) =
 
       const setupClient = createClient(factory,container,false,LogLevel.Off)
   
-      const clientWithCompression = createClient(factory,container,true,LogLevel.Trace)
+
       await setupClient.connect();
   
       await setupClient.execute('CREATE SCHEMA ' + schemaName);
       await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
       await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
+
+      const clientWithCompression = createClient(factory,container,true,LogLevel.Trace)
   
       await clientWithCompression.connect();
       const dataPromise1 = clientWithCompression.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
