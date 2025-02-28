@@ -46,6 +46,7 @@ export const basicCompressionTests = (name: string, factory: websocketFactory) =
       console.log("name:" + data1.getColumns()[0].name);
       console.log("value:" + data1.getRows()[0]['X']);
   
+      await clientWithCompression.close();
       await setupClient.execute('DROP SCHEMA ' + schemaName + ' CASCADE;');
       await setupClient.close();
     });
