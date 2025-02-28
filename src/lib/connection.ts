@@ -104,39 +104,51 @@ export class Connection implements PoolItem {
   //   }
   // }
 
-  private stringToUint8Array(str: string) : Uint8Array {
-    const bytes = new Uint8Array(str.length);
-    for (let i = 0; i < str.length; i++) {
-        bytes[i] = str.charCodeAt(i); // Extract byte values
-    }
-    return bytes;
-}
+//   private stringToUint8Array(str: string) : Uint8Array {
+//     const bytes = new Uint8Array(str.length);
+//     for (let i = 0; i < str.length; i++) {
+//         bytes[i] = str.charCodeAt(i); // Extract byte values
+//     }
+//     return bytes;
+// }
 
   public sendCommand<T>(cmd: Commands, getCancel?: (cancel?: Cancelable) => void): Promise<SQLResponse<T>> {
     if (!this.connection || this.connection.readyState === CLOSED || this.connection.readyState === CLOSING) {
       this.isBroken = true;
       return Promise.reject(ErrClosed);
     }
-
+    console.log("Entered sendCommand");
     const cancelQuery = () => {
       this.sendCommandWithNoResult(new AbortQueryCommand());
     };
+    console.log(`[useCompression is: ${this.useCompression}]`);
 
     getCancel && getCancel(cancelQuery);
     //TODO: verify this : you "lose" class state here, see this.connection as soon as you step into the promise code below
     //TODO verify this: you can still access the encapsulating function parameters
     return new Promise<SQLResponse<T>>((resolve, reject) => {
+      console.log('Entered promise block');
+      console.log(`[useCompression is: ${this.useCompression}]`);
       if (this.connection === undefined) {
         this.isBroken = true;
         reject(ErrInvalidConn);
       } else {
+
         this.connection.onmessage = (event) => {
           //(event: { data: string }) => {
-          this.logger.debug(`[OnMessage triggered for :${this.name}]`);
+            console.log(`[Entered OnMessage for :${this.name}]`);
+            console.log(`[useCompression is: ${this.useCompression}]`);
+            console.log(`[Cmd called is: ${cmd}]`);
+            //console.log(`[event status: ${event.data.status}]`);
           this.active = false;
           let data :SQLResponse<T>;
           if (this.useCompression) {
-            this.logger.debug("Using compression");
+            
+            console.log("Using compression");
+
+            // if (event.status !== 'ok') {
+            //   console.log(`[Connection:${this.name}] Received invalid data or error`);
+            // }
             //const eventDataStr : string = event.data;
 
             //const encoder = new TextEncoder();
@@ -149,19 +161,21 @@ export class Connection implements PoolItem {
             //const compressedData = eventDataStr;
             //const textDecoder =  new TextDecoder();
             //const decoded = textDecoder.decode(pako.inflate(compressedData));
-
-            const arrayBuffer = event.data.arrayBuffer(); // Convert Blob to ArrayBuffer
-            const decompressed = inflate(new Uint8Array(arrayBuffer));
+            console.log("To arraybuffer");
+            //const arrayBuffer = event.data.arrayBuffer(); // Convert Blob to ArrayBuffer
+            console.log("inflate");
+            const decompressed = inflate(new Uint8Array(event.data));
+            console.log("decode")
             const decoded  = new TextDecoder().decode(decompressed);
-
+            console.log("parse");
             data = JSON.parse(decoded) as SQLResponse<T> ;
           } else {
             data = JSON.parse(event.data) as SQLResponse<T>;
           }
-          this.logger.debug(`[Connection:${this.name}] Received data`);
+          console.log(`[Connection:${this.name}] Received data`);
 
           if (data.status !== 'ok') {
-            this.logger.warn(`[Connection:${this.name}] Received invalid data or error`);
+            console.log(`[Connection:${this.name}] Received invalid data or error`);
 
             if (data.exception) {
               resolve(data);
@@ -173,31 +187,33 @@ export class Connection implements PoolItem {
           }
           resolve(data);
         };
+        //end of onMessage
 
         this.connection.onerror = (event: unknown) => {
           this.logger.trace("WebSocket error:", event);
       };
 
+      //sendCommand 'resumes'
         if (this.active === true) {
           reject(ErrJobAlreadyRunning);
           return;
         }
-        this.logger.trace(`[Connection:${this.name}] Send request:`, cmd);
+        console.log(`[Connection:${this.name}] Send request:`, cmd);
         const cmdStr : string = JSON.stringify(cmd);
-
+        console.log(`[useCompression is: ${this.useCompression}]`);
         if (this.useCompression) {
           //const deflated : Uint8Array = pako.deflate(cmdStr);
-          this.logger.debug("Using compression");
+          console.log("Debug: Using compression");
           const data = typeof cmdStr === 'string' ? new TextEncoder().encode(cmdStr) : cmdStr;
           const deflatedData = deflate(data);
           this.connection.send(deflatedData); //,this.handleErrorOnSend); 
         }
           else {
-          this.logger.debug("Not using compression");
+            console.log("Debug: Not using compression");
           this.connection.send(cmdStr); //,this.handleErrorOnSend)
         }
 
       }
-    });
-  }
+    }); //end of return new promise
+  }//end of sendCommand
 }
