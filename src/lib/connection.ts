@@ -138,7 +138,16 @@ export class Connection implements PoolItem {
           //(event: { data: string }) => {
             console.log(`[Entered OnMessage for :${this.name}]`);
             console.log(`[useCompression is: ${this.useCompression}]`);
-            console.log(`[Cmd called is: ${cmd}]`);
+            console.log(`[Cmd called is: ${JSON.stringify(cmd)}]`);
+            console.log(`[DEBUGGING:]`);
+            console.log(`[DEBUGGING:  value of this.logger is: ${JSON.stringify(this.logger)}]`);
+            if (this.logger == undefined) {
+              console.log('DEBUGGING: the variable is not defined!');
+            } else {
+              console.log('DEBUGGING: the variable is defined!');
+            }
+            this.logger.debug("DEBUG LOGGER HELP");
+            
             //console.log(`[event status: ${event.data.status}]`);
           this.active = false;
           let data :SQLResponse<T>;
@@ -161,7 +170,7 @@ export class Connection implements PoolItem {
             //const compressedData = eventDataStr;
             //const textDecoder =  new TextDecoder();
             //const decoded = textDecoder.decode(pako.inflate(compressedData));
-            console.log("To arraybuffer");
+            //console.log("To arraybuffer");
             //const arrayBuffer = event.data.arrayBuffer(); // Convert Blob to ArrayBuffer
             console.log("inflate");
             const decompressed = inflate(new Uint8Array(event.data));
@@ -201,6 +210,16 @@ export class Connection implements PoolItem {
         console.log(`[Connection:${this.name}] Send request:`, cmd);
         const cmdStr : string = JSON.stringify(cmd);
         console.log(`[useCompression is: ${this.useCompression}]`);
+
+        console.log(`[DEBUGGING:`);
+        console.log(`[DEBUGGING:  value of this.logger is: ${JSON.stringify(this.logger)}]`);
+        if (this.logger == undefined) {
+          console.log('DEBUGGING: the variable is not defined!');
+        } else {
+          console.log('DEBUGGING: the variable is defined!');
+        }
+
+
         if (this.useCompression) {
           //const deflated : Uint8Array = pako.deflate(cmdStr);
           console.log("Debug: Using compression");
