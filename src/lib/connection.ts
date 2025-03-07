@@ -60,6 +60,12 @@ export class Connection implements PoolItem {
     this.name = name;
   }
 
+  private cleanupConnection() {
+    this.connection.onerror = null;
+    this.connection.onclose = null;
+    this.connection.close();
+  }
+
   async close() {
     if (this.connection && this.connection.readyState === OPEN) {
       try {
@@ -68,9 +74,7 @@ export class Connection implements PoolItem {
         this.logger.warn(`[Connection:${this.name}] Graceful closing failed`);
       }
     }
-    this.connection.onerror = null;
-    this.connection.onclose = null;
-    this.connection.close();
+    this.cleanupConnection();
     this.logger.debug(`[Connection:${this.name}] Closed connection`);
   }
 
@@ -81,18 +85,26 @@ export class Connection implements PoolItem {
     }
 
     this.logger.debug('[WebSQL]: Send request with no result:', cmd);
-    const cmdStr : string = JSON.stringify(cmd);
+    this.sendCmd(cmd);
+    return;
+  }
+
+  private encodeAndCompressData(data: string): Uint8Array {
+    const encoded = new TextEncoder().encode(data);
+    return deflate(encoded);
+  }
+
+  private sendCmd(cmd: Commands) {
+    const cmdStr: string = JSON.stringify(cmd);
 
     if (this.useCompression) {
       this.logger.debug("Using compression");
-      const data = typeof cmdStr === 'string' ? new TextEncoder().encode(cmdStr) : cmdStr;
-      const deflatedData = deflate(data);
+      const deflatedData = this.encodeAndCompressData(cmdStr);
       this.connection.send(deflatedData);
     } else {
       this.logger.debug("Not using compression");
-    this.connection.send(cmdStr);
+      this.connection.send(cmdStr);
     }
-    return;
   }
 
   public sendCommand<T>(cmd: Commands, getCancel?: (cancel?: Cancelable) => void): Promise<SQLResponse<T>> {
@@ -130,6 +142,7 @@ export class Connection implements PoolItem {
             const decompressed = inflate(new Uint8Array(event.data));
             this.logger.debug("decode")
             const decoded  = new TextDecoder().decode(decompressed);
+            
             this.logger.debug("parse");
             data = JSON.parse(decoded) as SQLResponse<T> ;
           } else {
@@ -170,19 +183,7 @@ export class Connection implements PoolItem {
           return;
         }
         this.logger.debug(`[Connection:${this.name}] Send request:`, cmd);
-        const cmdStr : string = JSON.stringify(cmd);
-        this.logger.debug(`[useCompression is: ${this.useCompression}]`);
-
-        if (this.useCompression) {
-          this.logger.debug("Debug: Using compression");
-          const data = typeof cmdStr === 'string' ? new TextEncoder().encode(cmdStr) : cmdStr;
-          const deflatedData = deflate(data);
-          this.connection.send(deflatedData);
-        }
-          else {
-            this.logger.debug("Debug: Not using compression");
-          this.connection.send(cmdStr);
-        }
+        this.sendCmd(cmd);
 
       }
     }); //end of return new promise
