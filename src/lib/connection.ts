@@ -134,7 +134,8 @@ export class Connection implements PoolItem {
       } else {
 
         this.connection.onmessage = (event) => {
-
+          
+          try {
             this.logger.debug(`[Entered OnMessage for :${this.name}]`);
             this.logger.debug(`[Cmd sent was: ${JSON.stringify(cmd)}]`);
             this.logger.debug(`[Compression enabled: ${this.useCompression}]`);
@@ -166,6 +167,14 @@ export class Connection implements PoolItem {
             return;
           }
           resolve(data);
+        } catch (error: unknown) {
+          let errorMessage = "Unexpected error in message handling";
+          if (error instanceof Error) {
+              errorMessage = error.message;
+          }
+          console.log(`[Unhandled error in onmessage: ${errorMessage}]`);
+          reject(new Error(errorMessage));
+      }
         };
         //end of onMessage
 
