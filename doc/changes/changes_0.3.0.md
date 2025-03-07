@@ -1,12 +1,14 @@
 # Exasol Driver ts 0.3.0, released 2025-??-??
 
-Code name:
+Code name: Compression
 
 ## Summary
 
+Adds compression support to the driver.
+
 ## Features
 
-* ISSUE_NUMBER: description
+* #30 : Add support for compression 
 
 ## Dependency Updates
 
