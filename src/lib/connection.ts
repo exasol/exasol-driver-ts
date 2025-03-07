@@ -84,33 +84,16 @@ export class Connection implements PoolItem {
     const cmdStr : string = JSON.stringify(cmd);
 
     if (this.useCompression) {
-      //const deflated : Uint8Array = pako.deflate(cmdStr);
       this.logger.debug("Using compression");
       const data = typeof cmdStr === 'string' ? new TextEncoder().encode(cmdStr) : cmdStr;
       const deflatedData = deflate(data);
-      this.connection.send(deflatedData); //,this.handleErrorOnSend); 
+      this.connection.send(deflatedData);
     } else {
       this.logger.debug("Not using compression");
     this.connection.send(cmdStr);
     }
     return;
   }
-
-  // private handleErrorOnSend(err?: Error) {
-  //   if (err) {
-  //     this.logger.trace("Failed to send data:", err);
-  //   } else {
-  //     this.logger.trace("Data sent successfully!");
-  //   }
-  // }
-
-//   private stringToUint8Array(str: string) : Uint8Array {
-//     const bytes = new Uint8Array(str.length);
-//     for (let i = 0; i < str.length; i++) {
-//         bytes[i] = str.charCodeAt(i); // Extract byte values
-//     }
-//     return bytes;
-// }
 
   public sendCommand<T>(cmd: Commands, getCancel?: (cancel?: Cancelable) => void): Promise<SQLResponse<T>> {
     if (!this.connection || this.connection.readyState === CLOSED || this.connection.readyState === CLOSING) {
@@ -124,8 +107,7 @@ export class Connection implements PoolItem {
     this.logger.debug(`[useCompression is: ${this.useCompression}]`);
 
     getCancel && getCancel(cancelQuery);
-    //TODO: verify this : you "lose" class state here, see this.connection as soon as you step into the promise code below
-    //TODO verify this: you can still access the encapsulating function parameters
+    
     return new Promise<SQLResponse<T>>((resolve, reject) => {
 
       if (this.connection === undefined) {
