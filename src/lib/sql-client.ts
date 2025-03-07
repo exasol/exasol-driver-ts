@@ -139,7 +139,7 @@ export class ExasolDriver implements IExasolDriver {
               reject(data.exception);
               return;
             }
-            //at this point the user should be logged in, he asked for the PK and sent credentials and info in login...Auth() methods
+            //at this point the user should be logged in, asked for the Public Key and sent credentials and info in login...Auth() methods
             connection.setCompression(this.config.compression);
             resolve();
             return;
