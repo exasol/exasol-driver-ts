@@ -47,6 +47,7 @@ export const basicCompressionTests = (name: string, factory: websocketFactory) =
       console.log("value:" + data1.getRows()[0]['X']);
   
       await clientWithCompression.close();
+
       await setupClient.execute('DROP SCHEMA ' + schemaName + ' CASCADE;');
       await setupClient.close();
     });
@@ -55,12 +56,6 @@ export const basicCompressionTests = (name: string, factory: websocketFactory) =
 
     afterAll(async () => {});
   });
-
-// async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: string) {
-//   await setupClient.execute('CREATE SCHEMA ' + schemaName);
-//   await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
-//   await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
-// }
 
 function createClient(factory: websocketFactory, container: StartedTestContainer, compression: boolean,logLevel: LogLevel) {
   return new ExasolDriver(factory, {
