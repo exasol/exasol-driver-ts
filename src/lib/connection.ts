@@ -117,74 +117,45 @@ export class Connection implements PoolItem {
       this.isBroken = true;
       return Promise.reject(ErrClosed);
     }
-    console.log("Entered sendCommand");
+    this.logger.debug("Entered sendCommand");
     const cancelQuery = () => {
       this.sendCommandWithNoResult(new AbortQueryCommand());
     };
-    console.log(`[useCompression is: ${this.useCompression}]`);
+    this.logger.debug(`[useCompression is: ${this.useCompression}]`);
 
     getCancel && getCancel(cancelQuery);
     //TODO: verify this : you "lose" class state here, see this.connection as soon as you step into the promise code below
     //TODO verify this: you can still access the encapsulating function parameters
     return new Promise<SQLResponse<T>>((resolve, reject) => {
-      console.log('Entered promise block');
-      console.log(`[useCompression is: ${this.useCompression}]`);
+
       if (this.connection === undefined) {
         this.isBroken = true;
         reject(ErrInvalidConn);
       } else {
 
         this.connection.onmessage = (event) => {
-          //(event: { data: string }) => {
-            console.log(`[Entered OnMessage for :${this.name}]`);
-            console.log(`[useCompression is: ${this.useCompression}]`);
-            console.log(`[Cmd called is: ${JSON.stringify(cmd)}]`);
-            console.log(`[DEBUGGING:]`);
-            console.log(`[DEBUGGING:  value of this.logger is: ${JSON.stringify(this.logger)}]`);
-            if (this.logger == undefined) {
-              console.log('DEBUGGING: the variable is not defined!');
-            } else {
-              console.log('DEBUGGING: the variable is defined!');
-            }
-            this.logger.debug("DEBUG LOGGER HELP");
-            
-            //console.log(`[event status: ${event.data.status}]`);
+
+            this.logger.debug(`[Entered OnMessage for :${this.name}]`);
+            this.logger.debug(`[Cmd sent was: ${JSON.stringify(cmd)}]`);
+            this.logger.debug(`[Compression enabled: ${this.useCompression}]`);
+
           this.active = false;
           let data :SQLResponse<T>;
           if (this.useCompression) {
             
-            console.log("Using compression");
-
-            // if (event.status !== 'ok') {
-            //   console.log(`[Connection:${this.name}] Received invalid data or error`);
-            // }
-            //const eventDataStr : string = event.data;
-
-            //const encoder = new TextEncoder();
-            //const uint8Array = encoder.encode(eventDataStr);
-
-
-            //const uint8Array = this.stringToUint8Array(eventDataStr);
-            //const deCompressedData = pako.inflate(uint8Array, { to: 'string' })
-
-            //const compressedData = eventDataStr;
-            //const textDecoder =  new TextDecoder();
-            //const decoded = textDecoder.decode(pako.inflate(compressedData));
-            //console.log("To arraybuffer");
-            //const arrayBuffer = event.data.arrayBuffer(); // Convert Blob to ArrayBuffer
-            console.log("inflate");
+            this.logger.debug("inflate");
             const decompressed = inflate(new Uint8Array(event.data));
-            console.log("decode")
+            this.logger.debug("decode")
             const decoded  = new TextDecoder().decode(decompressed);
-            console.log("parse");
+            this.logger.debug("parse");
             data = JSON.parse(decoded) as SQLResponse<T> ;
           } else {
             data = JSON.parse(event.data) as SQLResponse<T>;
           }
-          console.log(`[Connection:${this.name}] Received data`);
+          this.logger.debug(`[Connection:${this.name}] Received data`);
 
           if (data.status !== 'ok') {
-            console.log(`[Connection:${this.name}] Received invalid data or error`);
+            this.logger.debug(`[Connection:${this.name}] Received invalid data or error`);
 
             if (data.exception) {
               resolve(data);
@@ -207,29 +178,19 @@ export class Connection implements PoolItem {
           reject(ErrJobAlreadyRunning);
           return;
         }
-        console.log(`[Connection:${this.name}] Send request:`, cmd);
+        this.logger.debug(`[Connection:${this.name}] Send request:`, cmd);
         const cmdStr : string = JSON.stringify(cmd);
-        console.log(`[useCompression is: ${this.useCompression}]`);
-
-        console.log(`[DEBUGGING:`);
-        console.log(`[DEBUGGING:  value of this.logger is: ${JSON.stringify(this.logger)}]`);
-        if (this.logger == undefined) {
-          console.log('DEBUGGING: the variable is not defined!');
-        } else {
-          console.log('DEBUGGING: the variable is defined!');
-        }
-
+        this.logger.debug(`[useCompression is: ${this.useCompression}]`);
 
         if (this.useCompression) {
-          //const deflated : Uint8Array = pako.deflate(cmdStr);
-          console.log("Debug: Using compression");
+          this.logger.debug("Debug: Using compression");
           const data = typeof cmdStr === 'string' ? new TextEncoder().encode(cmdStr) : cmdStr;
           const deflatedData = deflate(data);
-          this.connection.send(deflatedData); //,this.handleErrorOnSend); 
+          this.connection.send(deflatedData);
         }
           else {
-            console.log("Debug: Not using compression");
-          this.connection.send(cmdStr); //,this.handleErrorOnSend)
+            this.logger.debug("Debug: Not using compression");
+          this.connection.send(cmdStr);
         }
 
       }
