@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.3.0, released 2025-??-??
+# Exasol Driver ts 0.3.0, released 2025-03-11
 
 Code name: Compression
 
