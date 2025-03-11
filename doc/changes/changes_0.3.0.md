@@ -15,4 +15,7 @@ Adds compression support to the driver.
 ### Compile Dependency Updates
 
 * Added `pako:^2.1.0`
+
+### Development Dependency Updates
+
 * Added `@types/pako:^2.0.3`
