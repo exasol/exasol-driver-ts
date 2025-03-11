@@ -64,12 +64,6 @@ export class Connection implements PoolItem {
     this.name = name;
   }
 
-  private cleanupConnection() {
-    this.connection.onerror = null;
-    this.connection.onclose = null;
-    this.connection.close();
-  }
-
   async close() {
     if (this.connection && this.connection.readyState === OPEN) {
       try {
@@ -79,7 +73,13 @@ export class Connection implements PoolItem {
       }
     }
     this.cleanupConnection();
-    this.logger.debug(`[Connection:${this.name}] Closed connection`);
+    this.logger.trace(`[Connection:${this.name}] Closed connection`);
+  }
+
+  private cleanupConnection() {
+    this.connection.onerror = null;
+    this.connection.onclose = null;
+    this.connection.close();
   }
 
   async sendCommandWithNoResult(cmd: CommandsNoResult) {
@@ -88,7 +88,7 @@ export class Connection implements PoolItem {
       return Promise.reject(ErrClosed);
     }
 
-    this.logger.debug('[WebSQL]: Send request with no result:', cmd);
+    this.logger.trace('[WebSQL]: Send request with no result:', cmd);
     this.sendCmd(cmd);
     return;
   }
@@ -102,11 +102,11 @@ export class Connection implements PoolItem {
     const cmdStr: string = JSON.stringify(cmd);
 
     if (this.useCompression) {
-      this.logger.debug('Using compression');
+      this.logger.trace('Using compression');
       const deflatedData = this.encodeAndCompressData(cmdStr);
       this.connection.send(deflatedData);
     } else {
-      this.logger.debug('Not using compression');
+      this.logger.trace('Not using compression');
       this.connection.send(cmdStr);
     }
   }
@@ -116,11 +116,11 @@ export class Connection implements PoolItem {
       this.isBroken = true;
       return Promise.reject(ErrClosed);
     }
-    this.logger.debug('Entered sendCommand');
+    this.logger.trace('Entered sendCommand');
     const cancelQuery = () => {
       this.sendCommandWithNoResult(new AbortQueryCommand());
     };
-    this.logger.debug(`[useCompression is: ${this.useCompression}]`);
+    this.logger.trace(`[useCompression is: ${this.useCompression}]`);
 
     getCancel && getCancel(cancelQuery);
 
@@ -131,27 +131,27 @@ export class Connection implements PoolItem {
       } else {
         this.connection.onmessage = (event) => {
           try {
-            this.logger.debug(`[Entered OnMessage for :${this.name}]`);
-            this.logger.debug(`[Cmd sent was: ${JSON.stringify(cmd)}]`);
-            this.logger.debug(`[Compression enabled: ${this.useCompression}]`);
+            this.logger.trace(`[Entered OnMessage for :${this.name}]`);
+            this.logger.trace(`[Cmd sent was: ${JSON.stringify(cmd)}]`);
+            this.logger.trace(`[Compression enabled: ${this.useCompression}]`);
 
             this.active = false;
             let data: SQLResponse<T>;
             if (this.useCompression) {
-              this.logger.debug('inflate');
+              this.logger.trace('inflate');
               const decompressed = inflate(new Uint8Array(event.data));
-              this.logger.debug('decode');
+              this.logger.trace('decode');
               const decoded = new TextDecoder().decode(decompressed);
 
-              this.logger.debug('parse');
+              this.logger.trace('parse');
               data = JSON.parse(decoded) as SQLResponse<T>;
             } else {
               data = JSON.parse(event.data) as SQLResponse<T>;
             }
-            this.logger.debug(`[Connection:${this.name}] Received data`);
+            this.logger.trace(`[Connection:${this.name}] Received data`);
 
             if (data.status !== 'ok') {
-              this.logger.debug(`[Connection:${this.name}] Received invalid data or error`);
+              this.logger.trace(`[Connection:${this.name}] Received invalid data or error`);
 
               if (data.exception) {
                 resolve(data);
@@ -167,14 +167,14 @@ export class Connection implements PoolItem {
             if (error instanceof Error) {
               errorMessage = error.message;
             }
-            console.log(`[Unhandled error in onmessage: ${errorMessage}]`);
+            this.logger.error(`[Unhandled error in onmessage: ${errorMessage}]`);
             reject(new Error(errorMessage));
           }
         };
         //end of onMessage
 
         this.connection.onerror = (event: unknown) => {
-          this.logger.trace('WebSocket error:', event);
+          this.logger.error('WebSocket error:', event);
         };
 
         //sendCommand 'resumes'
@@ -182,7 +182,7 @@ export class Connection implements PoolItem {
           reject(ErrJobAlreadyRunning);
           return;
         }
-        this.logger.debug(`[Connection:${this.name}] Send request:`, cmd);
+        this.logger.trace(`[Connection:${this.name}] Send request:`, cmd);
         this.sendCmd(cmd);
       }
     }); //end of return new promise
