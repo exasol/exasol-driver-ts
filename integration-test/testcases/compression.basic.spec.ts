@@ -26,7 +26,7 @@ export const basicCompressionTests = (name: string, factory: websocketFactory) =
     });
 
     it('Exec and fetch', async () => {
-      const setupClient = createClient(factory, container, false, LogLevel.Off);
+      const setupClient = createClient(factory, container, LogLevel.Off);
 
       await setupClient.connect();
 
@@ -34,7 +34,7 @@ export const basicCompressionTests = (name: string, factory: websocketFactory) =
       await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
       await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 
-      const clientWithCompression = createClient(factory, container, true, LogLevel.Trace);
+      const clientWithCompression = createClient(factory, container, LogLevel.Off);
 
       await clientWithCompression.connect();
       const dataPromise1 = clientWithCompression.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
@@ -51,9 +51,9 @@ export const basicCompressionTests = (name: string, factory: websocketFactory) =
       await setupClient.close();
     });
     it('Fetch multiple queries simultaneously/asynchronously', async () => {
-      const setupClient = createClient(factory, container, false, LogLevel.Off);
+      const setupClient = createClient(factory, container, LogLevel.Off);
 
-      const poolToQuery = createPool(factory, container, 1, 10, true, LogLevel.Debug);
+      const poolToQuery = createPool(factory, container, 1, 10, LogLevel.Off);
 
       await setupClient.connect();
 
@@ -98,7 +98,6 @@ function createPool(
   container: StartedTestContainer,
   minimumPoolSize: number,
   maximumPoolSize: number,
-  compression: boolean,
   logLevel: LogLevel,
 ) {
   return new ExasolPool(
@@ -111,12 +110,12 @@ function createPool(
       encryption: false,
       minimumPoolSize: minimumPoolSize,
       maximumPoolSize: maximumPoolSize,
-      compression: compression,
+      compression: true,
     },
     new Logger(logLevel),
   );
 }
-function createClient(factory: websocketFactory, container: StartedTestContainer, compression: boolean, logLevel: LogLevel) {
+function createClient(factory: websocketFactory, container: StartedTestContainer, logLevel: LogLevel) {
   return new ExasolDriver(
     factory,
     {
@@ -125,7 +124,7 @@ function createClient(factory: websocketFactory, container: StartedTestContainer
       user: 'sys',
       password: 'exasol',
       encryption: false,
-      compression: compression,
+      compression: true,
     },
     new Logger(logLevel),
   );
