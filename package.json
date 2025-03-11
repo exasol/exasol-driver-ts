@@ -16,7 +16,6 @@
     "itest:node": "jest --selectProjects itest-node --coverage"
   },
   "dependencies": {
-    "@types/pako": "^2.0.3",
     "generic-pool": "^3.9.0",
     "node-forge": "^1.3.1",
     "pako": "^2.1.0"
@@ -26,6 +25,7 @@
     "@trendyol/jest-testcontainers": "^2.1.1",
     "@types/jest": "^29.5.4",
     "@types/node-forge": "^1.3.11",
+    "@types/pako": "^2.0.3",
     "@types/ws": "^8.5.5",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",
