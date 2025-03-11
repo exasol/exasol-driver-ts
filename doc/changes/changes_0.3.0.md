@@ -8,7 +8,7 @@ Adds compression support to the driver.
 
 ## Features
 
-* #30 : Add support for compression 
+* #30: Add support for compression 
 
 ## Dependency Updates
 
