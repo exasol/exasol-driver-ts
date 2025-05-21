@@ -1,9 +1,9 @@
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
-import { RandomUuid } from 'testcontainers/dist/uuid';
 import { QueryResult } from '../../src/lib/query-result';
 import { DOCKER_CONTAINER_VERSION } from '../runner.config';
+import { RandomUuid } from 'testcontainers/build/common/uuid';
 
 export const basicPoolTests = (name: string, factory: websocketFactory) =>
   describe(name, () => {

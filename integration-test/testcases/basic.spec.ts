@@ -1,6 +1,6 @@
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
-import { RandomUuid } from 'testcontainers/dist/uuid';
+import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { DOCKER_CONTAINER_VERSION } from '../runner.config';
 
 export const basicTests = (name: string, factory: websocketFactory) =>
@@ -108,7 +108,7 @@ export const basicTests = (name: string, factory: websocketFactory) =>
         port: container.getMappedPort(8563),
         user: 'sys',
         password: 'exasol',
-        encryption: false,
+        encryption: true,
       });
       await driver.connect();
       tmpDriver = driver;

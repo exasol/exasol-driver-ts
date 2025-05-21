@@ -1,8 +1,8 @@
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
-import { RandomUuid } from 'testcontainers/dist/uuid';
 import { DOCKER_CONTAINER_VERSION } from '../runner.config';
 import { ExasolPool, LogLevel, Logger } from '../../src';
+import { RandomUuid } from 'testcontainers/build/common/uuid';
 
 export const basicCompressionTests = (name: string, factory: websocketFactory) =>
   describe(name, () => {
