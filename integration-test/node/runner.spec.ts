@@ -6,4 +6,5 @@ basicTests('Node', (url) => {
   return new WebSocket(url, {
     rejectUnauthorized: false,
   }) as ExaWebsocket;
-});
+}
+);
