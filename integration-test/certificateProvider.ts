@@ -1,0 +1,176 @@
+//import { readFileSync } from 'fs';
+import { createHash, X509Certificate } from 'crypto';
+import { StartedTestContainer } from 'testcontainers';
+//import Docker from 'dockerode';
+//import { text } from 'stream/consumers';
+import * as tar from "tar-stream";
+//import { Readable } from "stream";
+
+export class CertificateProvider {
+  constructor(container: StartedTestContainer) {
+    this.container = container;
+  }
+  container: StartedTestContainer;
+
+  public getTlsCertificatePath(): string {
+    //return '/exa/etc/ssl/ssl.crt';
+    return '/exa/etc/ssl/ssl.ca';
+  }
+
+  /**
+   * Read and convert the self-signed TLS certificate used by the database in the container for database connections
+   * and the RPC interface.
+   *
+   * @return the TLS certificate or an empty {@link Optional} when the certificate file does not exist.
+   */
+  public async getTlsCertificate(): Promise<X509Certificate | undefined> {
+    return this.getCertificate();
+  }
+
+  /**
+   * Get the SHA256 fingerprint of the TLS certificate used by the database in the container for database connections
+   * and the RPC interface.
+   *
+   * @return SHA256 fingerprint of the TLS certificate or an empty {@link Optional} when the certificate file does not
+   *         exist.
+   */
+  public async getTlsCertificateFingerprint(): Promise<string | undefined> {
+    return await this.getSha256Fingerprint();
+  }
+
+  public async downloadFileFromContainer(container: StartedTestContainer, containerFilePath: string) {
+    //const tarStream = await container.copyFileFromContainer(containerFilePath);
+    // const docker = new Docker();
+    // const containerId = container.getId();
+    // const dockerContainer = docker.getContainer(containerId);
+    // const tarStream = await dockerContainer.getArchive(containerFilePath);
+    const tarStream = await container.copyArchiveFromContainer(containerFilePath);
+    //return tarStream;
+    return tarStream;
+  }
+
+  /**
+   * Read and convert the self-signed TLS certificate used by the database in the container for database connections
+   * and the RPC interface.
+   *
+   * @return the TLS certificate or an empty {@link Optional} when no configuration exists or the certificate file
+   *         does not exist.
+   */
+  public async getCertificate(): Promise<X509Certificate | undefined> {
+    const certString = await this.readCertificate();
+    //TDOD: parses from string to buffer, this step can be eliminated
+    if (certString) {
+      return this.parseCertificate(certString);
+    } else {
+      return undefined;
+    }
+  }
+
+  /**
+ * Reads a file from the container using copyArchiveFromContainer.
+ *
+ * @param container - The StartedTestContainer instance
+ * @param containerFilePath - The absolute path of the file inside the container
+ * @returns The contents of the file as a string
+ */
+private async readFileFromContainer(
+  container: StartedTestContainer,
+  containerFilePath: string
+): Promise<string> {
+  const archiveStream = await container.copyArchiveFromContainer(containerFilePath);
+
+  return new Promise<string>((resolve, reject) => {
+    const extract = tar.extract();
+    let fileContent = "";
+
+    extract.on("entry", (header, stream, next) => {
+      const chunks: Buffer[] = [];
+      stream.on("data", (chunk) => chunks.push(chunk));
+      stream.on("end", () => {
+        fileContent = Buffer.concat(chunks).toString("utf-8");
+        next();
+      });
+      stream.on("error", reject);
+    });
+
+    extract.on("finish", () => resolve(fileContent));
+    extract.on("error", reject);
+
+    archiveStream.pipe(extract);
+  });
+}
+  
+  public async readCertificate(): Promise<string | undefined> {
+    // final Optional<ClusterConfiguration> configuration = this.configProvider.get();
+    // if (configuration.isEmpty()) {
+    //     return Optional.empty();
+    // }
+    //TODO: figure out if path differs or how is this handled in v7 vs v8, rewrite the above as return undefined
+    const certPath: string = this.getTlsCertificatePath();
+    try {
+      // final String certContent = this.fileOperations.readFile(certPath, StandardCharsets.UTF_8);
+      // return Optional.of(certContent);
+
+      // const stream = await this.downloadFileFromContainer(this.container, certPath);
+      // const certContent: string = await text(stream);
+      const fileContents = await this.readFileFromContainer(this.container, certPath);
+      //return certContent;
+      return fileContents;
+    } catch (error) {
+      return undefined;
+    }
+  }
+
+  private parseCertificate(certContent: string): X509Certificate {
+    // try (final InputStream is = new ByteArrayInputStream(certContent.getBytes(StandardCharsets.UTF_8))) {
+    //     final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+    //     return (X509Certificate) cf.generateCertificate(is);
+    // } catch (final CertificateException | IOException exception) {
+    //     throw new IllegalStateException(
+    //             messageBuilder("F-ETC-7").message("Error parsing certificate {{certificateContent}}.", certContent)
+    //                     .ticketMitigation().toString(),
+    //             exception);
+    // }
+    //TODO: do I need to convert to byters array/UTF-8 or not
+    try {
+      return new X509Certificate(certContent);
+    } catch (error) {
+      throw new Error(`Error parsing certificate: ${certContent}`);
+    }
+  }
+
+  public async getSha256Fingerprint(): Promise<string | undefined> {
+    const encodedCert = await this.getEncodedCertificate();
+    if (encodedCert) {
+      const sha = CertificateProvider.sha256(encodedCert); //
+      return CertificateProvider.bytesToHexWithPadding(32, sha);
+    }
+    return undefined;
+  }
+
+  private async getEncodedCertificate(): Promise<Buffer | undefined> {
+    const cert = await this.getCertificate();
+    if (cert) {
+      return this.encodeX509Certificate(cert);
+    }
+    return undefined;
+  }
+
+  private encodeX509Certificate(certificate: X509Certificate): Buffer {
+    //return new Uint8Array(certificate.raw);
+    return certificate.raw;
+  }
+
+  private static sha256(data: Buffer): Buffer {
+    return createHash('sha256').update(data).digest();
+  }
+
+  private static bytesToHexWithPadding(byteCount: number, bytes: Buffer): string {
+    const hex = CertificateProvider.bytesToHex(bytes);
+    return hex.padStart(byteCount * 2, '0');
+  }
+
+  private static bytesToHex(bytes: Buffer): string {
+    return bytes.toString('hex');
+  }
+}
