@@ -33,23 +33,6 @@ export const basicTests = (name: string, factory: websocketFactory) =>
         .withWaitStrategy(Wait.forLogMessage('All stages finished'))
         .start();
         const certString = await loadCert(container);
-//         const currentCert = `-----BEGIN CERTIFICATE-----
-// MIIB0zCCAXmgAwIBAgIBAzAKBggqhkjOPQQDAjAbMRkwFwYDVQQDDBBleGFjbHVz
-// dGVyLmxvY2FsMB4XDTI1MDUyMDEyMzIxMloXDTMzMDUxODEyMzIxMlowGzEZMBcG
-// A1UEAwwQZXhhY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IA
-// BFZOl0LQ3FnxzA3qedLt1+ZN+MK4gXpJngykK6y1kLb2eU6bqLqiNRNVc34/7RPN
-// MVA6qjDU3+kS46ZkKw4qtTOjga0wgaowDgYDVR0PAQH/BAQDAgWgMBYGA1UdJQEB
-// /wQMMAoGCCsGAQUFBwMBMC8GA1UdEQQoMCaCEiouZXhhY2x1c3Rlci5sb2NhbIIQ
-// ZXhhY2x1c3Rlci5sb2NhbDAdBgNVHQ4EFgQUHcWw0hzdy2H5q/g2GhjVWP/qFnYw
-// HwYDVR0jBBgwFoAUFxQEbggbRcjto2c70XSOJVAXbTYwDwYDVR0TAQH/BAUwAwEB
-// /zAKBggqhkjOPQQDAgNIADBFAiAUhxaY/hrjOWvOYus11o9uT80pZHD3hLjLXrc/
-// phQioAIhALuICYxXD1ddGTOETbEvUsMcZbTrMPNCkMBaMH4eEZ9/
-// -----END CERTIFICATE-----
-// `
-//         if (certString != currentCert) {
-//           certString = currentCert;
-//         }
-//`
         factoryWithCertificate =  (url) => {
           return new WebSocket(url, {
             rejectUnauthorized: true,
