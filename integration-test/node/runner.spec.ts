@@ -2,9 +2,20 @@ import { WebSocket } from 'ws';
 import { ExaWebsocket } from '../../src/lib/connection';
 import { basicTests } from '../testcases/basic.spec';
 
-basicTests('Node', (url) => {
+function createWebsocketFactoryWithCertificate(certString?: string | undefined ) {
+//define the function
+const factoryWithCertificate =  (url: string | URL) => {
   return new WebSocket(url, {
-    rejectUnauthorized: false,
-  }) as ExaWebsocket;
+    rejectUnauthorized: true,
+    ca: certString,
+    checkServerIdentity: () => {
+      return false;
+    }
+  }) as ExaWebsocket; 
 }
-);
+//pass it on
+return factoryWithCertificate;
+}
+
+basicTests('Node',createWebsocketFactoryWithCertificate);
+

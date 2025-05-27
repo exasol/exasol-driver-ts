@@ -1,49 +1,26 @@
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
+import { StartedTestContainer} from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
-import { DOCKER_CONTAINER_VERSION } from '../runner.config';
-import { WebSocket } from 'ws';
-import { ExaWebsocket } from '../../src/lib/connection';
-import { CertificateProvider } from '../certificateProvider';
-//import * as tls from 'tls';
+import { startNewDockerContainer } from '../startNewDockerContainer';
+import { loadCert } from '../loadCert';
 
-export const basicTests = (name: string, factory: websocketFactory) =>
+type CreateWebsocketFactoryFunctionType = (cert? : string | undefined) => websocketFactory;
+
+export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType) =>
   describe(name, () => {
+
     const randomId = new RandomUuid();
     let tmpDriver: ExasolDriver | undefined;
     let container: StartedTestContainer;
+    let factory: websocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
-    let factoryWithCertificate : websocketFactory;
-
-    async function loadCert(container : StartedTestContainer) {
-      const certProvider : CertificateProvider= new CertificateProvider(container)
-      const certStr = await certProvider.readCertificate(); 
-      //throw new Error('Function not implemented.');
-        return certStr;
-    }
   
 
     beforeAll(async () => {
-      container = await new GenericContainer(DOCKER_CONTAINER_VERSION)
-        .withExposedPorts(8563, 2580)
-        .withPrivilegedMode()
-        .withDefaultLogDriver()
-        .withReuse()
-        .withWaitStrategy(Wait.forLogMessage('All stages finished'))
-        .start();
-        const certString = await loadCert(container);
-        factoryWithCertificate =  (url) => {
-          return new WebSocket(url, {
-            rejectUnauthorized: true,
-            ca: certString,
-            checkServerIdentity: () => {
-              return false;
-            }
-          }) as ExaWebsocket;
-        }
-
-
+      container = await startNewDockerContainer();
+      const certString = await loadCert(container);
+      factory = createWSFactory(certString);
     });
 
     beforeEach(() => {
@@ -51,7 +28,7 @@ export const basicTests = (name: string, factory: websocketFactory) =>
     });
 
     it('Connect to DB', async () => {
-      const driver = await openConnection(factoryWithCertificate, container);
+      const driver = await openConnection(factory, container);
       await driver.close();
     });
 
@@ -139,6 +116,10 @@ export const basicTests = (name: string, factory: websocketFactory) =>
       tmpDriver = driver;
       return driver;
     };
+
   });
+
+
+
 
 
