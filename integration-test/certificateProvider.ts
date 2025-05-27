@@ -39,13 +39,7 @@ export class CertificateProvider {
   }
 
   public async downloadFileFromContainer(container: StartedTestContainer, containerFilePath: string) {
-    //const tarStream = await container.copyFileFromContainer(containerFilePath);
-    // const docker = new Docker();
-    // const containerId = container.getId();
-    // const dockerContainer = docker.getContainer(containerId);
-    // const tarStream = await dockerContainer.getArchive(containerFilePath);
     const tarStream = await container.copyArchiveFromContainer(containerFilePath);
-    //return tarStream;
     return tarStream;
   }
 
@@ -58,7 +52,6 @@ export class CertificateProvider {
    */
   public async getCertificate(): Promise<X509Certificate | undefined> {
     const certString = await this.readCertificate();
-    //TDOD: parses from string to buffer, this step can be eliminated
     if (certString) {
       return this.parseCertificate(certString);
     } else {
@@ -101,20 +94,10 @@ private async readFileFromContainer(
 }
   
   public async readCertificate(): Promise<string | undefined> {
-    // final Optional<ClusterConfiguration> configuration = this.configProvider.get();
-    // if (configuration.isEmpty()) {
-    //     return Optional.empty();
-    // }
-    //TODO: figure out if path differs or how is this handled in v7 vs v8, rewrite the above as return undefined
+    //TODO: figure out if path differs or how is this handled in v7 vs v8
     const certPath: string = this.getTlsCertificatePath();
     try {
-      // final String certContent = this.fileOperations.readFile(certPath, StandardCharsets.UTF_8);
-      // return Optional.of(certContent);
-
-      // const stream = await this.downloadFileFromContainer(this.container, certPath);
-      // const certContent: string = await text(stream);
       const fileContents = await this.readFileFromContainer(this.container, certPath);
-      //return certContent;
       return fileContents;
     } catch (error) {
       return undefined;
@@ -122,16 +105,7 @@ private async readFileFromContainer(
   }
 
   private parseCertificate(certContent: string): X509Certificate {
-    // try (final InputStream is = new ByteArrayInputStream(certContent.getBytes(StandardCharsets.UTF_8))) {
-    //     final CertificateFactory cf = CertificateFactory.getInstance("X.509");
-    //     return (X509Certificate) cf.generateCertificate(is);
-    // } catch (final CertificateException | IOException exception) {
-    //     throw new IllegalStateException(
-    //             messageBuilder("F-ETC-7").message("Error parsing certificate {{certificateContent}}.", certContent)
-    //                     .ticketMitigation().toString(),
-    //             exception);
-    // }
-    //TODO: do I need to convert to byters array/UTF-8 or not
+    //TODO: do I need to convert to bytes array/UTF-8 or not
     try {
       return new X509Certificate(certContent);
     } catch (error) {
@@ -157,7 +131,6 @@ private async readFileFromContainer(
   }
 
   private encodeX509Certificate(certificate: X509Certificate): Buffer {
-    //return new Uint8Array(certificate.raw);
     return certificate.raw;
   }
 
