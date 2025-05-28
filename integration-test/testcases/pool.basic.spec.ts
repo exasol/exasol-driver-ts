@@ -1,25 +1,25 @@
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
+import { StartedTestContainer} from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
-import { ExasolPool } from '../../src/lib/sql-pool';
-import { QueryResult } from '../../src/lib/query-result';
-import { DOCKER_CONTAINER_VERSION } from '../runner.config';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
+import { startNewDockerContainer } from '../startNewDockerContainer';
+import { loadCert } from '../loadCert';
+import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
+import { QueryResult } from '../../src/lib/query-result';
+import { ExasolPool } from '../../src/lib/sql-pool';
 
-export const basicPoolTests = (name: string, factory: websocketFactory) =>
+
+export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType)  =>
   describe(name, () => {
     const randomId = new RandomUuid();
     let container: StartedTestContainer;
+    let factory: websocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
     beforeAll(async () => {
-      container = await new GenericContainer(DOCKER_CONTAINER_VERSION)
-        .withExposedPorts(8563, 2580)
-        .withPrivilegedMode()
-        .withDefaultLogDriver()
-        .withReuse()
-        .withWaitStrategy(Wait.forLogMessage('All stages finished'))
-        .start();
+      container = await startNewDockerContainer();
+      const certString = await loadCert(container);
+      factory = createWSFactory(certString);
     });
 
     beforeEach(() => {
@@ -160,7 +160,7 @@ function createSetupClient(factory: websocketFactory, container: StartedTestCont
     port: container.getMappedPort(8563),
     user: 'sys',
     password: 'exasol',
-    encryption: false,
+    encryption: true,
   });
 }
 
@@ -170,7 +170,7 @@ function createPoolWithDefaultSize(factory: websocketFactory, container: Started
     port: container.getMappedPort(8563),
     user: 'sys',
     password: 'exasol',
-    encryption: false,
+    encryption: true,
   });
 }
 
@@ -180,7 +180,7 @@ function createPool(factory: websocketFactory, container: StartedTestContainer, 
     port: container.getMappedPort(8563),
     user: 'sys',
     password: 'exasol',
-    encryption: false,
+    encryption: true,
     minimumPoolSize: minimumPoolSize,
     maximumPoolSize: maximumPoolSize,
   });
