@@ -12,9 +12,21 @@ export class CertificateProvider {
   }
   container: StartedTestContainer;
 
-  public getTlsCertificatePath(): string {
+  public getTlsCertificateCAPath(): string {
     //return '/exa/etc/ssl/ssl.crt';
     return '/exa/etc/ssl/ssl.ca';
+  }
+  public getTlsCertificatePath(): string {
+    //return '/exa/etc/ssl/ssl.crt';
+    return '/exa/etc/ssl/ssl.crt';
+  }
+  public getTlsCertificateCAKeyPath(): string {
+    //return '/exa/etc/ssl/ssl.crt';
+    return '/exa/etc/ssl/ssl.ca.key';
+  }
+  public getTlsCertificateKeyPath(): string {
+    //return '/exa/etc/ssl/ssl.crt';
+    return '/exa/etc/ssl/ssl.key';
   }
 
   /**
@@ -103,7 +115,36 @@ private async readFileFromContainer(
       return undefined;
     }
   }
-
+  public async readCA(): Promise<string | undefined> {
+    //TODO: figure out if path differs or how is this handled in v7 vs v8
+    const certCAPath: string = this.getTlsCertificateCAPath();
+    try {
+      const fileContents = await this.readFileFromContainer(this.container, certCAPath);
+      return fileContents;
+    } catch (error) {
+      return undefined;
+    }
+  }
+  public async readKey(): Promise<string | undefined> {
+    //TODO: figure out if path differs or how is this handled in v7 vs v8
+    const certKeyPath: string = this.getTlsCertificateKeyPath();
+    try {
+      const fileContents = await this.readFileFromContainer(this.container, certKeyPath);
+      return fileContents;
+    } catch (error) {
+      return undefined;
+    }
+  }
+  public async readCAKey(): Promise<string | undefined> {
+    //TODO: figure out if path differs or how is this handled in v7 vs v8
+    const certCAKeyPath: string = this.getTlsCertificateCAKeyPath();
+    try {
+      const fileContents = await this.readFileFromContainer(this.container, certCAKeyPath);
+      return fileContents;
+    } catch (error) {
+      return undefined;
+    }
+  }
   private parseCertificate(certContent: string): X509Certificate {
     //TODO: do I need to convert to bytes array/UTF-8 or not
     try {
