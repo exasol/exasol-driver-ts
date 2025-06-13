@@ -2,7 +2,7 @@ import { StartedTestContainer} from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { startNewDockerContainer } from '../startNewDockerContainer';
-import { loadCert } from '../loadCert';
+import { loadCA } from '../loadCert';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 import { Logger, LogLevel } from '../../src/lib/logger/logger';
 import { ExasolPool } from '../../src/lib/sql-pool';
@@ -17,7 +17,7 @@ export const basicCompressionTests = (name: string, createWSFactory: CreateWebso
 
     beforeAll(async () => {
       container = await startNewDockerContainer();
-      const certString = await loadCert(container);
+      const certString = await loadCA(container);
       factory = createWSFactory(certString);
     });
 

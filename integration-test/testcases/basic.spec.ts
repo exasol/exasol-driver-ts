@@ -2,7 +2,7 @@ import { StartedTestContainer} from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { startNewDockerContainer } from '../startNewDockerContainer';
-import { loadCert } from '../loadCert';
+import { loadCA } from '../loadCert';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType) =>
@@ -18,8 +18,8 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
 
     beforeAll(async () => {
       container = await startNewDockerContainer();
-      const certString = await loadCert(container);
-      factory = createWSFactory(certString);
+      const caString = await loadCA(container);
+      factory = createWSFactory(caString);
     });
 
     beforeEach(() => {
@@ -117,8 +117,3 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
     };
 
   });
-
-
-
-
-
