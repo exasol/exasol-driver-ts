@@ -1,5 +1,5 @@
-import { ExaWebsocket } from '../../src';
+import { createWebsocketFactoryNoCert } from '../node/createWebsocketFactoryNoCert';
+import { DOCKER_CONTAINER_VERSION_V7 } from '../runner.config';
 import { basicCompressionTests } from '../testcases/compression.basic.spec';
-basicCompressionTests('Browser', (url) => {
-  return new WebSocket(url) as ExaWebsocket;
-});
+
+basicCompressionTests('Browser', createWebsocketFactoryNoCert,DOCKER_CONTAINER_VERSION_V7,false);

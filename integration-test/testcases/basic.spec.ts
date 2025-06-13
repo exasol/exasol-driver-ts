@@ -5,7 +5,7 @@ import { startNewDockerContainer } from '../startNewDockerContainer';
 import { loadCA } from '../loadCert';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
-export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType) =>
+export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType,dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
 
     const randomId = new RandomUuid();
@@ -17,7 +17,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
   
 
     beforeAll(async () => {
-      container = await startNewDockerContainer();
+      container = await startNewDockerContainer(dockerDbVersion);
       const caString = await loadCA(container);
       factory = createWSFactory(caString);
     });
@@ -109,7 +109,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
         port: container.getMappedPort(8563),
         user: 'sys',
         password: 'exasol',
-        encryption: true,
+        encryption: useEncryption,
       });
       await driver.connect();
       tmpDriver = driver;
