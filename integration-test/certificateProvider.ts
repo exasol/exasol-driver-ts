@@ -1,11 +1,6 @@
-//import { readFileSync } from 'fs';
 import { createHash, X509Certificate } from 'crypto';
 import { StartedTestContainer } from 'testcontainers';
-//import Docker from 'dockerode';
-//import { text } from 'stream/consumers';
 import * as tar from "tar-stream";
-//import { Readable } from "stream";
-
 export class CertificateProvider {
   constructor(container: StartedTestContainer) {
     this.container = container;
@@ -13,19 +8,15 @@ export class CertificateProvider {
   container: StartedTestContainer;
 
   public getTlsCertificateCAPath(): string {
-    //return '/exa/etc/ssl/ssl.crt';
     return '/exa/etc/ssl/ssl.ca';
   }
   public getTlsCertificatePath(): string {
-    //return '/exa/etc/ssl/ssl.crt';
     return '/exa/etc/ssl/ssl.crt';
   }
   public getTlsCertificateCAKeyPath(): string {
-    //return '/exa/etc/ssl/ssl.crt';
     return '/exa/etc/ssl/ssl.ca.key';
   }
   public getTlsCertificateKeyPath(): string {
-    //return '/exa/etc/ssl/ssl.crt';
     return '/exa/etc/ssl/ssl.key';
   }
 
@@ -106,7 +97,6 @@ private async readFileFromContainer(
 }
   
   public async readCertificate(): Promise<string | undefined> {
-    //TODO: figure out if path differs or how is this handled in v7 vs v8
     const certPath: string = this.getTlsCertificatePath();
     try {
       const fileContents = await this.readFileFromContainer(this.container, certPath);
@@ -116,7 +106,6 @@ private async readFileFromContainer(
     }
   }
   public async readCA(): Promise<string | undefined> {
-    //TODO: figure out if path differs or how is this handled in v7 vs v8
     const certCAPath: string = this.getTlsCertificateCAPath();
     try {
       const fileContents = await this.readFileFromContainer(this.container, certCAPath);
@@ -126,7 +115,6 @@ private async readFileFromContainer(
     }
   }
   public async readKey(): Promise<string | undefined> {
-    //TODO: figure out if path differs or how is this handled in v7 vs v8
     const certKeyPath: string = this.getTlsCertificateKeyPath();
     try {
       const fileContents = await this.readFileFromContainer(this.container, certKeyPath);
@@ -136,7 +124,6 @@ private async readFileFromContainer(
     }
   }
   public async readCAKey(): Promise<string | undefined> {
-    //TODO: figure out if path differs or how is this handled in v7 vs v8
     const certCAKeyPath: string = this.getTlsCertificateCAKeyPath();
     try {
       const fileContents = await this.readFileFromContainer(this.container, certCAKeyPath);
@@ -146,7 +133,6 @@ private async readFileFromContainer(
     }
   }
   private parseCertificate(certContent: string): X509Certificate {
-    //TODO: do I need to convert to bytes array/UTF-8 or not
     try {
       return new X509Certificate(certContent);
     } catch (error) {
@@ -157,7 +143,7 @@ private async readFileFromContainer(
   public async getSha256Fingerprint(): Promise<string | undefined> {
     const encodedCert = await this.getEncodedCertificate();
     if (encodedCert) {
-      const sha = CertificateProvider.sha256(encodedCert); //
+      const sha = CertificateProvider.sha256(encodedCert);
       return CertificateProvider.bytesToHexWithPadding(32, sha);
     }
     return undefined;
