@@ -67,7 +67,7 @@ export class CertificateProvider {
  *
  * @param container - The StartedTestContainer instance
  * @param containerFilePath - The absolute path of the file inside the container
- * @returns The contents of the file as a string
+ * @return The contents of the file as a string
  */
 private async readFileFromContainer(
   container: StartedTestContainer,
@@ -105,6 +105,7 @@ private async readFileFromContainer(
       return undefined;
     }
   }
+  
   public async readCA(): Promise<string | undefined> {
     const certCAPath: string = this.getTlsCertificateCAPath();
     try {

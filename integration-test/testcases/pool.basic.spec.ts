@@ -27,15 +27,15 @@ export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFac
     });
 
     it('Connect to DB', async () => {
-      const poolToQuery = createPool(factory, container, 1, 10,useEncryption);
+      const poolToQuery = createPool(factory, container, 1, 10, useEncryption);
       await poolToQuery.drain();
       await poolToQuery.clear();
     });
 
     it('Exec and fetch (default min / max connection settings)', async () => {
-      const setupClient = createSetupClient(factory, container,useEncryption);
+      const setupClient = createSetupClient(factory, container, useEncryption);
 
-      const poolToQuery = createPoolWithDefaultSize(factory, container,useEncryption);
+      const poolToQuery = createPoolWithDefaultSize(factory, container, useEncryption);
 
       await setupClient.connect();
 
@@ -53,9 +53,9 @@ export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFac
     });
 
     it('Exec and fetch', async () => {
-      const setupClient = createSetupClient(factory, container,useEncryption);
+      const setupClient = createSetupClient(factory, container, useEncryption);
 
-      const poolToQuery = createPool(factory, container, 1, 10,useEncryption);
+      const poolToQuery = createPool(factory, container, 1, 10, useEncryption);
 
       await setupClient.connect();
 
@@ -73,9 +73,9 @@ export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFac
     });
 
     it('Fetch multiple queries simultaneously/asynchronously', async () => {
-      const setupClient = createSetupClient(factory, container,useEncryption);
+      const setupClient = createSetupClient(factory, container, useEncryption);
 
-      const poolToQuery = createPool(factory, container, 1, 10,useEncryption);
+      const poolToQuery = createPool(factory, container, 1, 10, useEncryption);
 
       await setupClient.connect();
 
@@ -109,9 +109,9 @@ export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFac
     });
 
     it('Fetch multiple queries asynchronously (20)', async () => {
-      const setupClient = createSetupClient(factory, container,useEncryption);
+      const setupClient = createSetupClient(factory, container, useEncryption);
 
-      const poolToQuery = createPool(factory, container, 1, 10,useEncryption);
+      const poolToQuery = createPool(factory, container, 1, 10, useEncryption);
 
       await setupClient.connect();
 
@@ -127,9 +127,9 @@ export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFac
       await setupClient.close();
     });
     it('Fetch multiple queries asynchronously (100)', async () => {
-      const setupClient = createSetupClient(factory, container,useEncryption);
+      const setupClient = createSetupClient(factory, container, useEncryption);
 
-      const poolToQuery = createPool(factory, container, 1, 10,useEncryption);
+      const poolToQuery = createPool(factory, container, 1, 10, useEncryption);
 
       await setupClient.connect();
 
@@ -154,7 +154,7 @@ async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: stri
   await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 }
 
-function createSetupClient(factory: websocketFactory, container: StartedTestContainer,useEncryption:boolean) {
+function createSetupClient(factory: websocketFactory, container: StartedTestContainer, useEncryption: boolean) {
   return new ExasolDriver(factory, {
     host: container.getHost(),
     port: container.getMappedPort(8563),
@@ -164,7 +164,7 @@ function createSetupClient(factory: websocketFactory, container: StartedTestCont
   });
 }
 
-function createPoolWithDefaultSize(factory: websocketFactory, container: StartedTestContainer,useEncryption:boolean) {
+function createPoolWithDefaultSize(factory: websocketFactory, container: StartedTestContainer, useEncryption: boolean) {
   return new ExasolPool(factory, {
     host: container.getHost(),
     port: container.getMappedPort(8563),
@@ -174,7 +174,7 @@ function createPoolWithDefaultSize(factory: websocketFactory, container: Started
   });
 }
 
-function createPool(factory: websocketFactory, container: StartedTestContainer, minimumPoolSize: number, maximumPoolSize: number,useEncryption:boolean) {
+function createPool(factory: websocketFactory, container: StartedTestContainer, minimumPoolSize: number, maximumPoolSize: number, useEncryption: boolean) {
   return new ExasolPool(factory, {
     host: container.getHost(),
     port: container.getMappedPort(8563),

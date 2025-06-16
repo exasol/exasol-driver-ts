@@ -4,14 +4,14 @@ Code name: Minor logger update / CI tests update
 
 ## Summary
 
-- Made logger a bit less 'verbose' when used in trace mode as it could possibly leak sensitive info in a trace statement.
-- Added a better error message when handling some connection issues.
-- Updated CI tests to use Exasol docker db v8 with encryption enabled in a node context:
-Exasol docker db v7.1.x without encryption is used in the browser based CI tests.
-Exasol docker db v8.30.x with encryption is used in the node based CI tests.
-There are no Docker db v7.1.x with encryption tests currently possible due to a problem with an SSL version used in Exasol docker db v7.1.x.
-To run Docker db v8 tests with encryption in a browser based context a wholly new approach will be necessary and the CI tests will need to be party re-engineered. 
-Due to time constraints this will be implemented at a later date. A separate ticket has been created for this task.
+- Reduced logger verbosity in trace mode to prevent potential leakage of sensitive information in trace statements.
+- Improved error messages for certain connection issues.
+- Updated CI tests to use Exasol Docker DB v8 with encryption enabled in Node.js context:
+  - **Browser-based CI tests** use Exasol Docker DB v7.1.x **without** encryption.
+  - **Node-based CI tests** use Exasol Docker DB v8.30.x **with** encryption.
+- Currently, encryption testing is **not possible** with Exasol Docker DB v7.1.x due to incompatibilities with its SSL version.
+- Enabling encryption in browser-based CI tests using Docker DB v8 will require a completely new approach. CI test infrastructure will need to be partially re-engineered to support this.
+- Due to time constraints this will be implemented at a later date. A separate ticket has been created for this task.
 
 ## Features
 

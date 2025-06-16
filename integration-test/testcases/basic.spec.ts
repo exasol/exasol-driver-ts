@@ -5,7 +5,7 @@ import { startNewDockerContainer } from '../startNewDockerContainer';
 import { loadCA } from '../loadCert';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
-export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType,dockerDbVersion: string, useEncryption: boolean) =>
+export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
 
     const randomId = new RandomUuid();
