@@ -15,7 +15,7 @@ Code name: Minor logger update / CI tests update
 
 ## Features
 
-* #24: Add Exasol 8 to integration test
+* #21: Add Exasol 8 to integration test
 
 ## Dependency Updates
 
