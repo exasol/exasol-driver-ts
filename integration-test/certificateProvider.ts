@@ -115,6 +115,7 @@ private async readFileFromContainer(
       return undefined;
     }
   }
+
   public async readKey(): Promise<string | undefined> {
     const certKeyPath: string = this.getTlsCertificateKeyPath();
     try {
@@ -124,6 +125,7 @@ private async readFileFromContainer(
       return undefined;
     }
   }
+
   public async readCAKey(): Promise<string | undefined> {
     const certCAKeyPath: string = this.getTlsCertificateCAKeyPath();
     try {
@@ -133,6 +135,7 @@ private async readFileFromContainer(
       return undefined;
     }
   }
+  
   private parseCertificate(certContent: string): X509Certificate {
     try {
       return new X509Certificate(certContent);
