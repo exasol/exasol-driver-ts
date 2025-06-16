@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.3.1, released 2025-06-16
+# Exasol Driver ts 0.3.1, released 2025-06-17
 
 Code name: Minor logger update / CI tests update
 
