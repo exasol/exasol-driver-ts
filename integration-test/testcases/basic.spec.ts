@@ -1,24 +1,25 @@
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
+import { StartedTestContainer} from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
-import { RandomUuid } from 'testcontainers/dist/uuid';
-import { DOCKER_CONTAINER_VERSION } from '../runner.config';
+import { RandomUuid } from 'testcontainers/build/common/uuid';
+import { startNewDockerContainer } from '../startNewDockerContainer';
+import { loadCA } from '../loadCert';
+import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
-export const basicTests = (name: string, factory: websocketFactory) =>
+export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
+
     const randomId = new RandomUuid();
     let tmpDriver: ExasolDriver | undefined;
     let container: StartedTestContainer;
+    let factory: websocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
+  
 
     beforeAll(async () => {
-      container = await new GenericContainer(DOCKER_CONTAINER_VERSION)
-        .withExposedPorts(8563, 2580)
-        .withPrivilegedMode()
-        .withDefaultLogDriver()
-        .withReuse()
-        .withWaitStrategy(Wait.forLogMessage('All stages finished'))
-        .start();
+      container = await startNewDockerContainer(dockerDbVersion);
+      const caString = await loadCA(container);
+      factory = createWSFactory(caString);
     });
 
     beforeEach(() => {
@@ -108,10 +109,11 @@ export const basicTests = (name: string, factory: websocketFactory) =>
         port: container.getMappedPort(8563),
         user: 'sys',
         password: 'exasol',
-        encryption: false,
+        encryption: useEncryption,
       });
       await driver.connect();
       tmpDriver = driver;
       return driver;
     };
+
   });

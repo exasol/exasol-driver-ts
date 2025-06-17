@@ -1,7 +1,6 @@
-import { WebSocket } from 'ws';
-import { ExaWebsocket } from '../../src/lib/connection';
+import { DOCKER_CONTAINER_VERSION_V8 } from '../runner.config';
 import { basicTests } from '../testcases/basic.spec';
+import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
-basicTests('Node', (url) => {
-  return new WebSocket(url) as ExaWebsocket;
-});
+basicTests('Node', createWebsocketFactoryWithCertificate, DOCKER_CONTAINER_VERSION_V8, true);
+

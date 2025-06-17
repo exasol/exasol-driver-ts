@@ -1,6 +1,5 @@
-import { WebSocket } from 'ws';
-import { ExaWebsocket } from '../../src/lib/connection';
+
+import { DOCKER_CONTAINER_VERSION_V8 } from '../runner.config';
 import { basicCompressionTests } from '../testcases/compression.basic.spec';
-basicCompressionTests('Node', (url) => {
-  return new WebSocket(url) as ExaWebsocket;
-});
+import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
+basicCompressionTests('Node', createWebsocketFactoryWithCertificate, DOCKER_CONTAINER_VERSION_V8, true);

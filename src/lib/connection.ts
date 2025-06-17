@@ -132,7 +132,6 @@ export class Connection implements PoolItem {
         this.connection.onmessage = (event) => {
           try {
             this.logger.trace(`[Entered OnMessage for :${this.name}]`);
-            this.logger.trace(`[Cmd sent was: ${JSON.stringify(cmd)}]`);
             this.logger.trace(`[Compression enabled: ${this.useCompression}]`);
 
             this.active = false;

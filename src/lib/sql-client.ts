@@ -421,6 +421,12 @@ export class ExasolDriver implements IExasolDriver {
       command: 'login',
       protocolVersion: this.config.apiVersion,
     }).then((response) => {
+
+      if (response.status == 'error') {
+        const errorString: string = this.buildConnectionError(response);
+        return Promise.reject(new Error(errorString));
+      }
+
       const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);
       const e = new forge.jsbn.BigInteger(response.responseData.publicKeyExponent, 16);
 
@@ -443,6 +449,15 @@ export class ExasolDriver implements IExasolDriver {
         },
       });
     });
+  }
+
+  private buildConnectionError(response: SQLResponse<PublicKeyResponse>) {
+    let errorString: string = "Error sending 'login' command: ";
+    if (response.exception?.text && response.exception.sqlCode) {
+      errorString += response.exception.text + 'sqlCode: ' + response.exception.sqlCode;
+    }
+    this.logger.error(errorString);
+    return errorString;
   }
 
   private async loginTokenAuth() {
