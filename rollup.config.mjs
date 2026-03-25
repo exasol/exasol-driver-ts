@@ -16,7 +16,11 @@ export default [
         format: 'esm',
       },
     ],
-    external: [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})],
+    external: [
+      ...Object.keys(pkg.dependencies || {}),
+      ...Object.keys(pkg.peerDependencies || {}),
+      'fs', 'net', 'tls', 'stream', 'crypto',
+    ],
     plugins: [typescript()],
   },
 ];

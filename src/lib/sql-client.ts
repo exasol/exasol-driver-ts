@@ -19,6 +19,9 @@ import {
 import { Connection, ExaWebsocket } from './connection';
 import { CommandsNoResult, Attributes, Commands, OIDCSQLCommand, SQLSingleCommand, SQLBatchCommand } from './commands';
 import { QueryResult } from './query-result';
+import { CsvFormatOptions, ParquetImportOptions } from './import/types';
+import { importCsvFile } from './import/csv-file-import';
+import { importParquetFile } from './import/parquet-file-import';
 
 export interface Config {
   host: string;
@@ -397,6 +400,52 @@ export class ExasolDriver implements IExasolDriver {
         }
         throw err;
       });
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public async importFromFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number> {
+    if (filePath.endsWith('.parquet')) {
+      return this.importFromParquetFile(tableName, filePath, { csvOptions });
+    }
+    return this.importFromCsvFile(tableName, filePath, csvOptions);
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public async importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number> {
+    if (this.closed) {
+      return Promise.reject(ErrClosed);
+    }
+    return importCsvFile(
+      this.config.host,
+      this.config.port,
+      tableName,
+      filePath,
+      this.config.encryption,
+      (sql: string) => this.execute(sql),
+      csvOptions,
+    );
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public async importFromParquetFile(tableName: string, filePath: string, options?: ParquetImportOptions): Promise<number> {
+    if (this.closed) {
+      return Promise.reject(ErrClosed);
+    }
+    return importParquetFile(
+      this.config.host,
+      this.config.port,
+      tableName,
+      filePath,
+      this.config.encryption,
+      (sql: string) => this.execute(sql),
+      options,
+    );
   }
 
   private async acquire() {

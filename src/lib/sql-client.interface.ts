@@ -5,6 +5,7 @@
 import { SQLQueriesResponse, SQLResponse } from './types';
 import { CommandsNoResult, Attributes, Commands } from './commands';
 import { QueryResult } from './query-result';
+import { CsvFormatOptions, ParquetImportOptions } from './import/types';
 
 export type Cancelable = () => void;
 
@@ -126,6 +127,41 @@ export interface IExasolDriver {
    * @returns {Promise.<SQLResponse<T>>}
    */
   sendCommand<T>(cmd: Commands): Promise<SQLResponse<T>>;
+
+  /**
+   * Import data from a local file into an Exasol table.
+   * Auto-detects format by file extension (.parquet → Parquet, else → CSV).
+   * Node.js only.
+   *
+   * @param tableName Target table name (optionally schema-qualified)
+   * @param filePath Path to the local file
+   * @param csvOptions Optional CSV format options (used for CSV files)
+   * @returns Number of rows imported
+   */
+  importFromFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number>;
+
+  /**
+   * Import data from a local CSV file into an Exasol table.
+   * Node.js only.
+   *
+   * @param tableName Target table name (optionally schema-qualified)
+   * @param filePath Path to the local CSV file
+   * @param csvOptions Optional CSV format options
+   * @returns Number of rows imported
+   */
+  importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number>;
+
+  /**
+   * Import data from a local Parquet file into an Exasol table.
+   * Reads Parquet data using hyparquet, converts to CSV on-the-fly, and streams via HTTP tunnel.
+   * Node.js only.
+   *
+   * @param tableName Target table name (optionally schema-qualified)
+   * @param filePath Path to the local Parquet file
+   * @param options Optional Parquet import options (column selection, auto-create table, etc.)
+   * @returns Number of rows imported
+   */
+  importFromParquetFile(tableName: string, filePath: string, options?: ParquetImportOptions): Promise<number>;
 }
 
 export interface IStatement {
