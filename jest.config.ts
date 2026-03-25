@@ -6,6 +6,7 @@ const config: Config = {
       displayName: 'unit-dom',
       testEnvironment: 'jsdom',
       testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/src/**/*.spec.dom.ts'],
+      testPathIgnorePatterns: ['<rootDir>/src/lib/import/'],
       transform: {
         '^.+\\.[tj]s$': [
           'ts-jest',
@@ -30,6 +31,9 @@ const config: Config = {
             diagnostics: true,
           },
         ],
+      },
+      moduleNameMapper: {
+        '^hyparquet$': '<rootDir>/src/lib/import/__mocks__/hyparquet.ts',
       },
     },
     {

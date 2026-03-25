@@ -7,3 +7,5 @@ export * from './lib/sql-client.interface';
 export * from './lib/statement';
 export * from './lib/connection';
 export * from './lib/logger/logger';
+export * from './lib/import/types';
+export { inferParquetSchema } from './lib/import/parquet-schema';
