@@ -1,4 +1,3 @@
-/* eslint-disable jest/no-conditional-expect */
 import { ExaWebsocket } from './connection';
 import { ExasolDriver } from './sql-client';
 

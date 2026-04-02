@@ -35,7 +35,7 @@ export const fetchData = async (
 ): Promise<SQLResponse<SQLQueriesResponse>> => {
   const batchResponse = rawData.responseData;
 
-  for (let index = 0; index < batchResponse?.numResults ?? 0; index++) {
+  for (let index = 0; index < (batchResponse?.numResults ?? 0); index++) {
     const response = batchResponse.results[index];
     logger.debug('[WebSQL]: Fetch more data for: ', response?.resultSet?.resultSetHandle);
 
@@ -103,7 +103,7 @@ const fetchMoreData = async (
         connection,
         logger
       );
-      return;
+      return undefined;
     });
   }
   return resultSet;
