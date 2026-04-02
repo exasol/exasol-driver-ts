@@ -58,7 +58,7 @@
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/exasol/exasol-driver-ts.git"
+    "url": "https://github.com/exasol/exasol-driver-ts"
   },
   "keywords": [],
   "license": "ISC",
