@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.3.2, released 2026-??-??
+# Exasol Driver ts 0.3.2, released 2026-04-02
 
 Code name: Upgrade dependencies on top of 0.3.1
 

@@ -7,14 +7,14 @@
 
 ### Linting
 
-```bash
-npm run lint // Will autofix issues
-npm run lint:ci // No autofix enabled
+```sh
+npm run lint    # Will autofix issues
+npm run lint:ci # No autofix enabled
 ```
 
 ### Unit tests
 
-```bash
+```sh
 npm run test # Runs both test in parallel
 npm run test:dom
 npm run test:node
@@ -22,7 +22,7 @@ npm run test:node
 
 ### Integration tests
 
-```bash
+```sh
 npm run itest # Runs both test in parallel
 npm run itest:dom
 npm run itest:node
@@ -32,7 +32,7 @@ npm run itest:node
 
 If you're using Docker Desktop, please set
 
-```bash
+```sh
 export DOCKER_HOST=unix:///Users/$(whoami)/Library/Containers/com.docker.docker/Data/docker.raw.sock
 ```
 
@@ -44,11 +44,13 @@ In case of unexplainable errors in your tests it might help to remove the entire
 
 ### Release Process
 
-- Run project-keeper and release-droid to create a GitHub release draft as you usually would.
-- Upon publishing the draft release on github the release workflow for npm will be triggered.
+Currently we release this project by hand.
 
-#### More info on the release workflow.
+#### Steps
 
-- The npm token is kept in a secret, then set as an environment variable in the `release.yml` workflow.
-- The added `.npmrc` file contains a setting that enables reading out this environment variable while publishing.
-- For a scoped release you need to explicitly specify that you wish to release a public release using `publish --access public`.
+- Write a changelog file
+- Add a link to `doc/changes/changelog.md`
+- Update the version in `package.json`
+- Merge Pull Request to `main`
+- Make a [new release](https://github.com/exasol/exasol-driver-ts/releases/new) on GitHub
+  - This will trigger the [release workflow](../../.github/workflows/release.yml) and publish to [npmjs.com](https://www.npmjs.com/package/@exasol/extension-manager-interface)
