@@ -84,7 +84,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
         try {
           await tmpDriver?.close();
         } catch (error) {
-          console.log('Could not close driver');
+          console.log('Could not close driver', error);
         }
       }
 
@@ -93,12 +93,8 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
         await driver.execute('DROP SCHEMA IF EXISTS ' + schemaName + ' CASCADE');
         await driver.close();
       } catch (error) {
-        console.log('Could not cleanup schema', schemaName);
+        console.log('Could not cleanup schema', schemaName, error);
       }
-    });
-
-    afterAll(async () => {
-      //  await container.stop();
     });
 
     const openConnection = async (factory: websocketFactory, container: StartedTestContainer) => {
@@ -113,5 +109,4 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
       tmpDriver = driver;
       return driver;
     };
-
   });
