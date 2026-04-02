@@ -6,6 +6,8 @@ on:
 jobs:
   distributed-tasks:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: true
       matrix:
@@ -13,14 +15,14 @@ jobs:
     env:
       DEFAULT_TARGET: 'test:node'
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           cache: 'npm'
       - run: npm ci
       - run: npm run ${{ matrix.target }}
       - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v7
         if: ${{ matrix.target == env.DEFAULT_TARGET }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
