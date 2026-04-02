@@ -9,5 +9,9 @@
   },
   "files.watcherExclude": {
     "**/target": true
+  },
+  "sonarlint.connectedMode.project": {
+    "connectionId": "exasol",
+    "projectKey": "@exasol/exasol-driver-ts"
   }
 }
