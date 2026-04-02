@@ -4,7 +4,7 @@ Code name: Upgrade dependencies on top of 0.3.1
 
 ## Summary
 
-This release migrates the release process to [trusted publishing](https://docs.npmjs.com/trusted-publishers). This improves security of the release process by avoiding tokens. Starting with this release, the driver is not tested against deprecated NodeJS version 16 and 18. Instead NodeJS version 22, 24 and 26 are now supported. The release also upgrades dependencies.
+This release migrates the release process to [trusted publishing](https://docs.npmjs.com/trusted-publishers). This improves security of the release process by avoiding tokens. Starting with this release, the driver is not tested against deprecated NodeJS version 16 and 18. Instead NodeJS version 22 and 24 are now supported. The release also upgrades dependencies.
 
 ## Security
 

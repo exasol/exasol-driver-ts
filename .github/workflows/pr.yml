@@ -25,9 +25,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20', '22', '24', '26']
+        node: ['20', '22', '24']
     env:
-      DEFAULT_NODE_VERSION: '26'
+      DEFAULT_NODE_VERSION: '24'
     name: Node ${{ matrix.node }} integration test
     steps:
       - uses: actions/checkout@v6
