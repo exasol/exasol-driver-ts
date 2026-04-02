@@ -9,7 +9,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: ['lint:ci', 'test:dom', 'test:node', 'itest:dom', 'build']
+        target: ['lint:ci', 'test:dom', 'test:node', 'itest:node', 'itest:dom', 'build']
+    env:
+      DEFAULT_TARGET: 'test:node'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -18,6 +20,12 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run ${{ matrix.target }}
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        if: ${{ matrix.target == env.DEFAULT_TARGET }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   integration-test-node:
     runs-on: ubuntu-latest
