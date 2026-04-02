@@ -1,5 +1,3 @@
-/* eslint-disable jest/no-conditional-expect */
-
 import { DisconnectCommand } from './commands';
 import { Connection, ExaWebsocket } from './connection';
 import { Logger } from './logger/logger';
@@ -16,7 +14,6 @@ describe('connection', () => {
 
     await connection.sendCommandWithNoResult(new DisconnectCommand());
 
-    // eslint-disable-next-line quotes
     expect(sendFunction).toHaveBeenCalledWith('{"command":"disconnect"}');
   });
 
@@ -73,7 +70,6 @@ describe('connection', () => {
     expect(data).toEqual({
       status: 'ok',
     });
-    // eslint-disable-next-line quotes
     expect(sendFunction).toHaveBeenCalledWith('{"command":"closePreparedStatement","statementHandle":2}');
   });
 });

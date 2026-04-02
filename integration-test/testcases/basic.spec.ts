@@ -1,4 +1,4 @@
-import { StartedTestContainer} from 'testcontainers';
+import { StartedTestContainer } from 'testcontainers';
 import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { startNewDockerContainer } from '../startNewDockerContainer';
@@ -14,7 +14,6 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
     let factory: websocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
-  
 
     beforeAll(async () => {
       container = await startNewDockerContainer(dockerDbVersion);
@@ -57,7 +56,6 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
       expect(data.status).toBe('ok');
       expect(data.responseData.numResults).toBe(1);
       expect(data.responseData.results[0].resultType).toBe('resultSet');
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(data.responseData.results[0].resultSet?.data![0][0]).toBe(15);
 
       await driver.close();

@@ -1,4 +1,3 @@
-/* eslint-disable jest/no-conditional-expect */
 import { Logger } from '../logger/logger';
 import { ConnectionPool, PoolItem } from './pool';
 
