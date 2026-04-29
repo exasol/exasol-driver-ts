@@ -25,4 +25,5 @@ Please note that the following vulnerability in a transitive test dependency is 
 * Updated `testcontainers:^11.13.0` to `^11.14.0`
 * Updated `prettier:^3.8.1` to `^3.8.3`
 * Updated `@types/node:^25.5.0` to `^25.6.0`
+* Added `audit-ci:^7.1.0`
 * Updated `typescript-eslint:^8.58.0` to `^8.59.1`
