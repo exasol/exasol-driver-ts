@@ -48,7 +48,7 @@ jobs:
       - run: npm ci
       - name: Run audit
         if: ${{ matrix.node == env.DEFAULT_NODE_VERSION }}
-        run: npm audit
+        run: npm run audit
       - run: npm run itest:dom
 
   build:

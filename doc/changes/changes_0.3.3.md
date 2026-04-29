@@ -4,8 +4,10 @@ Code name: Fix vulnerabilities in dependencies
 
 ## Summary
 
-This release fixes the following vulnerabilities reported by dependabot:
+This release fixes the following vulnerability reported by dependabot:
 * https://github.com/exasol/exasol-driver-ts/security/dependabot/63: Arbitrary code execution in protobufjs
+
+Please note that the following vulnerability in a transitive test dependency is not fixed:
 * https://github.com/exasol/exasol-driver-ts/security/dependabot/64: uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided
 
 ## Security

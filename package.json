@@ -3,6 +3,9 @@
   "version": "0.3.3",
   "description": "Exasol SQL Driver",
   "scripts": {
+    "audit": "npm run audit:prod && npm run audit:full",
+    "audit:prod": "npm audit --omit=dev",
+    "audit:full": "audit-ci --config ./audit-ci.jsonc",
     "build": "rollup -c",
     "watch": "rollup -cw",
     "test": "jest --selectProjects unit-dom unit-node --coverage",
@@ -33,6 +36,7 @@
     "@types/pako": "^2.0.4",
     "@types/tar-stream": "^3.1.4",
     "@types/ws": "^8.18.1",
+    "audit-ci": "^7.1.0",
     "babel-jest": "^30.3.0",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
