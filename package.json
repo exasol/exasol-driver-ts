@@ -1,6 +1,6 @@
 {
   "name": "@exasol/exasol-driver-ts",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Exasol SQL Driver",
   "scripts": {
     "build": "rollup -c",
