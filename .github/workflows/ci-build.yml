@@ -24,7 +24,7 @@ jobs:
       - run: npm run ${{ matrix.target }}
       - name: Run audit
         if: ${{ matrix.target == env.DEFAULT_TARGET }}
-        run: npm audit
+        run: npm run audit
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v7
         if: ${{ matrix.target == env.DEFAULT_TARGET }}

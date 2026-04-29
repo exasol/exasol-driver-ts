@@ -12,6 +12,15 @@ npm run lint    # Will autofix issues
 npm run lint:ci # No autofix enabled
 ```
 
+### Security Audit
+
+```sh
+npm run audit
+```
+
+* Production dependencies may not have any audit findings.
+* Findings in dev dependencies can be excluded via [audit-ci.jsonc](../../audit-ci.jsonc) 
+
 ### Unit tests
 
 ```sh
