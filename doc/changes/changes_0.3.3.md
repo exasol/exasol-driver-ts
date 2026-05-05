@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.3.3, released 2026-04-29
+# Exasol Driver ts 0.3.3, released 2026-05-05
 
 Code name: Fix vulnerabilities in dependencies
 
