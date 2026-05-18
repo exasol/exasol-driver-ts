@@ -1,6 +1,11 @@
 {
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.generate.finalModifiers": "explicit",
+    "source.fixAll": "explicit"
+  },
+  "js/ts.format.enabled": true,
   "[typescript]": {
     "editor.tabSize": 2
   },
