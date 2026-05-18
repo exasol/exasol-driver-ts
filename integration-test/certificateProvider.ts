@@ -69,49 +69,51 @@ export class CertificateProvider {
  * @param containerFilePath - The absolute path of the file inside the container
  * @return The contents of the file as a string
  */
-private async readFileFromContainer(
-  container: StartedTestContainer,
-  containerFilePath: string
-): Promise<string> {
-  const archiveStream = await container.copyArchiveFromContainer(containerFilePath);
+  private async readFileFromContainer(
+    container: StartedTestContainer,
+    containerFilePath: string
+  ): Promise<string> {
+    const archiveStream = await container.copyArchiveFromContainer(containerFilePath);
 
-  return new Promise<string>((resolve, reject) => {
-    const extract = tar.extract();
-    let fileContent = "";
+    return new Promise<string>((resolve, reject) => {
+      const extract = tar.extract();
+      let fileContent = "";
 
-    extract.on("entry", (header, stream, next) => {
-      const chunks: Buffer[] = [];
-      stream.on("data", (chunk) => chunks.push(chunk));
-      stream.on("end", () => {
-        fileContent = Buffer.concat(chunks).toString("utf-8");
-        next();
+      extract.on("entry", (header, stream, next) => {
+        const chunks: Buffer[] = [];
+        stream.on("data", (chunk) => chunks.push(chunk));
+        stream.on("end", () => {
+          fileContent = Buffer.concat(chunks).toString("utf-8");
+          next();
+        });
+        stream.on("error", reject);
       });
-      stream.on("error", reject);
+
+      extract.on("finish", () => resolve(fileContent));
+      extract.on("error", reject);
+
+      archiveStream.pipe(extract);
     });
+  }
 
-    extract.on("finish", () => resolve(fileContent));
-    extract.on("error", reject);
-
-    archiveStream.pipe(extract);
-  });
-}
-  
   public async readCertificate(): Promise<string | undefined> {
     const certPath: string = this.getTlsCertificatePath();
     try {
       const fileContents = await this.readFileFromContainer(this.container, certPath);
       return fileContents;
     } catch (error) {
+      console.warn(`Could not read certificate from path: ${certPath}`, error);
       return undefined;
     }
   }
-  
+
   public async readCA(): Promise<string | undefined> {
     const certCAPath: string = this.getTlsCertificateCAPath();
     try {
       const fileContents = await this.readFileFromContainer(this.container, certCAPath);
       return fileContents;
     } catch (error) {
+      console.warn(`Could not read CA certificate from path: ${certCAPath}`, error);
       return undefined;
     }
   }
@@ -122,6 +124,7 @@ private async readFileFromContainer(
       const fileContents = await this.readFileFromContainer(this.container, certKeyPath);
       return fileContents;
     } catch (error) {
+      console.warn(`Could not read key from path: ${certKeyPath}`, error);
       return undefined;
     }
   }
@@ -132,15 +135,16 @@ private async readFileFromContainer(
       const fileContents = await this.readFileFromContainer(this.container, certCAKeyPath);
       return fileContents;
     } catch (error) {
+      console.warn(`Could not read CA key from path: ${certCAKeyPath}`, error);
       return undefined;
     }
   }
-  
+
   private parseCertificate(certContent: string): X509Certificate {
     try {
       return new X509Certificate(certContent);
     } catch (error) {
-      throw new Error(`Error parsing certificate: ${certContent}`);
+      throw new Error(`Error parsing certificate: ${certContent}`, { cause: error });
     }
   }
 

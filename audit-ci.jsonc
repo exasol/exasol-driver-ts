@@ -1,0 +1,13 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "moderate": true,
+  "package-manager": "npm",
+  "allowlist": [
+    {
+      "GHSA-w5hq-g745-h8pq|testcontainers>dockerode>uuid": {
+        "active": true,
+        "notes": "Transitive dependency of dev-only dependency testcontainers"
+      }
+    }
+  ]
+}

@@ -69,7 +69,7 @@ export class Connection implements PoolItem {
       try {
         await this.sendCommand(new DisconnectCommand());
       } catch (error) {
-        this.logger.warn(`[Connection:${this.name}] Graceful closing failed`);
+        this.logger.warn(`[Connection:${this.name}] Graceful closing failed`, error);
       }
     }
     this.cleanupConnection();
@@ -122,7 +122,7 @@ export class Connection implements PoolItem {
     };
     this.logger.trace(`[useCompression is: ${this.useCompression}]`);
 
-    getCancel && getCancel(cancelQuery);
+    getCancel?.(cancelQuery);
 
     return new Promise<SQLResponse<T>>((resolve, reject) => {
       if (this.connection === undefined) {

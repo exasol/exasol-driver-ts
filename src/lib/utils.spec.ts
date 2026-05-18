@@ -1,4 +1,3 @@
-/* eslint-disable jest/no-conditional-expect */
 import { resolveHosts } from './utils';
 
 describe('utils', () => {
@@ -9,7 +8,6 @@ describe('utils', () => {
     ${'exasol1..3'}                | ${['exasol1', 'exasol2', 'exasol3']}
     ${'exasolX..Y'}                | ${['exasolX..Y']}
   `(
-    // eslint-disable-next-line quotes
     `should work resolve host for "$host"`,
     async ({ host, parsed }: { host: string; parsed: string[] }) => {
       expect(await resolveHosts(host)).toEqual(parsed);

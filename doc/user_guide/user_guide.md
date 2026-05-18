@@ -2,10 +2,10 @@
 
 ### NodeJS
 
-Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
+Install the following dependencies from the [npm](https://www.npmjs.com/) package registry:
 
-```bash
-npm install -S @exasol/exasol-driver-ts ws @types/ws
+```sh
+npm install --save @exasol/exasol-driver-ts ws @types/ws
 ```
 
 Connecting to the database:
@@ -36,8 +36,8 @@ await driver.close();
 
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
 
-```bash
-npm install -S @exasol/exasol-driver-ts
+```sh
+npm install --save @exasol/exasol-driver-ts
 ```
 
 Connecting to the database:
@@ -150,13 +150,13 @@ Install the following dependencies from the [npm](https://www.npmjs.com/) packag
 
 NodeJS:
 
-```bash
+```sh
 npm install --save @exasol/exasol-driver-ts ws @types/ws
 ```
 
 Browser:
 
-```bash
+```sh
 npm install --save @exasol/exasol-driver-ts
 ```
 
