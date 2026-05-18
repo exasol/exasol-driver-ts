@@ -1,6 +1,6 @@
 {
   "name": "@exasol/exasol-driver-ts",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Exasol SQL Driver",
   "scripts": {
     "audit": "npm run audit:prod && npm run audit:full",

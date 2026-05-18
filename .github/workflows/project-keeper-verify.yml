@@ -19,6 +19,9 @@ on:
 jobs:
   project-keeper-verify:
     runs-on: ubuntu-latest
+    permissions: {
+      contents: read
+    }
     concurrency: {
       group: '${{ github.workflow }}-${{ github.ref }}',
       cancel-in-progress: true
@@ -28,7 +31,8 @@ jobs:
         name: Checkout the repository
         uses: actions/checkout@v6
         with: {
-          fetch-depth: 0
+          fetch-depth: 0,
+          persist-credentials: false
         }
       - id: setup-java
         name: Set up JDKs
