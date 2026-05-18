@@ -13,11 +13,13 @@ jobs:
         target: ['lint:ci', 'test:dom', 'test:node', 'itest:dom', 'itest:node']
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run ${{ matrix.target }}
 
   release:
@@ -29,12 +31,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run audit
       - run: npm run build
       - run: npm pack

@@ -14,14 +14,16 @@ jobs:
       DEFAULT_TARGET: 'test:node'
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run ${{ matrix.target }}
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v7
+        uses: SonarSource/sonarqube-scan-action@59db25f34e16620e48ab4bb9e4a5dce155cb5432 # v8.0.0
         if: ${{ matrix.target == env.DEFAULT_TARGET }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,12 +42,14 @@ jobs:
     name: Node ${{ matrix.node }} integration test
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Setup node ${{ matrix.node }}
         uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - name: Run audit
         if: ${{ matrix.node == env.DEFAULT_NODE_VERSION }}
         run: npm run audit
