@@ -165,20 +165,20 @@ describe('parquet-schema', () => {
       expect(ddl).toBe('CREATE TABLE tbl (val DOUBLE)');
     });
 
-    it('should reject with E-EDJS-17 for non-existent file', async () => {
+    it('should reject with E-EDJS-21 for non-existent file', async () => {
       mockedReadFile.mockRejectedValue(new Error('ENOENT'));
 
-      await expect(inferParquetSchema('/nonexistent.parquet')).rejects.toThrow('E-EDJS-17');
+      await expect(inferParquetSchema('/nonexistent.parquet')).rejects.toThrow("E-EDJS-21: Failed to read Parquet file from '/nonexistent.parquet': 'ENOENT' Verify the file path exists and is a valid Parquet file.");
     });
 
-    it('should reject with E-EDJS-17 for invalid Parquet file', async () => {
+    it('should reject with E-EDJS-22 for invalid Parquet file', async () => {
       const buf = Buffer.from('not a parquet file');
       mockedReadFile.mockResolvedValue(buf);
       mockedParquetMetadata.mockImplementation(() => {
         throw new Error('Invalid Parquet');
       });
 
-      await expect(inferParquetSchema('/bad.parquet')).rejects.toThrow('E-EDJS-17');
+      await expect(inferParquetSchema('/bad.parquet')).rejects.toThrow("E-EDJS-22: Invalid Parquet file: '/bad.parquet'. Error: 'Invalid Parquet' Verify the file is a valid Parquet file.");
     });
 
     it('should fall back to VARCHAR(2000000) for unsupported types', async () => {

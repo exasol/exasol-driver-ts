@@ -14,8 +14,9 @@ export async function inferParquetSchema(filePath: string): Promise<ParquetSchem
     const fileBuffer = await fs.promises.readFile(filePath);
     buffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
   } catch (err) {
-    throw new ExaErrorBuilder('E-EDJS-17')
-      .message('Failed to read Parquet file: {{path}}.', filePath)
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    throw new ExaErrorBuilder('E-EDJS-21')
+      .message('Failed to read Parquet file from {{path}}: {{error}}', filePath, errorMessage)
       .mitigation('Verify the file path exists and is a valid Parquet file.')
       .error();
   }
@@ -24,8 +25,9 @@ export async function inferParquetSchema(filePath: string): Promise<ParquetSchem
   try {
     metadata = parquetMetadata(buffer);
   } catch (err) {
-    throw new ExaErrorBuilder('E-EDJS-17')
-      .message('Invalid Parquet file: {{path}}.', filePath)
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    throw new ExaErrorBuilder('E-EDJS-22')
+      .message('Invalid Parquet file: {{path}}. Error: {{error}}', filePath, errorMessage)
       .mitigation('Verify the file is a valid Parquet file.')
       .error();
   }
@@ -162,9 +164,10 @@ export async function readParquetMetadata(
   try {
     const fileBuffer = await fs.promises.readFile(filePath);
     buffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
-  } catch {
-    throw new ExaErrorBuilder('E-EDJS-17')
-      .message('Failed to read Parquet file: {{path}}.', filePath)
+  } catch(err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    throw new ExaErrorBuilder('E-EDJS-23')
+      .message('Failed to read Parquet file {{path}}: {{error}}', filePath, errorMessage)
       .mitigation('Verify the file path exists and is a valid Parquet file.')
       .error();
   }
@@ -172,9 +175,10 @@ export async function readParquetMetadata(
   let metadata: FileMetaData;
   try {
     metadata = parquetMetadata(buffer);
-  } catch {
-    throw new ExaErrorBuilder('E-EDJS-17')
-      .message('Invalid Parquet file: {{path}}.', filePath)
+  } catch(err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    throw new ExaErrorBuilder('E-EDJS-24')
+      .message('Invalid Parquet file {{path}}: {{error}}', filePath, errorMessage)
       .mitigation('Verify the file is a valid Parquet file.')
       .error();
   }
