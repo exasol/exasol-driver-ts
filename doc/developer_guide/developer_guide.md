@@ -45,6 +45,14 @@ If you're using Docker Desktop, please set
 export DOCKER_HOST=unix:///Users/$(whoami)/Library/Containers/com.docker.docker/Data/docker.raw.sock
 ```
 
+#### Linux With Lima
+
+If you are using Lima on Linux, set
+
+```sh
+export DOCKER_HOST=unix:///home/$(whoami)/.lima/default/sock/docker.sock
+```
+
 ### Testing your changes locally before publishing
 
 You can use `npm install <directory of this project>` to install the driver locally in your other node test projects.
