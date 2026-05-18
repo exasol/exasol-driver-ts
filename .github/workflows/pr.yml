@@ -56,10 +56,23 @@ jobs:
         run: npm run audit
       - run: npm run itest:dom
 
+  trace-requirements:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+    name: Trace requirements
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - run: ./.github/workflows/oft-trace.sh
+
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [distributed-tasks, integration-test-node]
+    needs: [distributed-tasks, integration-test-node, trace-requirements]
     steps:
       - run: echo "All checks passed, build successful!"
