@@ -63,3 +63,5 @@ pom.xml.versionsBackup
 *.md.html
 *.flattened-pom.xml
 /.scannerwork/
+/.codex
+/.serena/
