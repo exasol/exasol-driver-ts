@@ -1,5 +1,5 @@
 {
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "js/ts.format.enabled": true,
   "editor.formatOnSave": true,
   "[typescript]": {
     "editor.tabSize": 2
