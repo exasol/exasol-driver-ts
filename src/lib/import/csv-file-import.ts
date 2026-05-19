@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as net from 'net';
+import * as path from 'path';
 import * as tls from 'tls';
 import { CsvFormatOptions } from './types';
 import { createTunnel } from './http-transport';
@@ -17,7 +18,8 @@ export async function importCsvFile(
   executeSql: (sql: string) => Promise<number>,
   csvOptions?: CsvFormatOptions,
 ): Promise<number> {
-  await verifyFileExists(filePath);
+  const absoluteFilePath = path.resolve(filePath);
+  await verifyFileExists(absoluteFilePath);
 
   const { socket, internalAddress } = await createTunnel(host, port);
 
@@ -36,7 +38,7 @@ export async function importCsvFile(
     const sqlPromise = executeSql(importSql);
     const tunnelPromise = (async () => {
       await readHttpRequest(activeSocket);
-      const fileStream = fs.createReadStream(filePath);
+      const fileStream = fs.createReadStream(absoluteFilePath);
       await sendChunkedResponse(activeSocket, fileStream);
     })();
 
