@@ -19,7 +19,7 @@ export default [
     external: [
       ...Object.keys(pkg.dependencies || {}),
       ...Object.keys(pkg.peerDependencies || {}),
-      'fs', 'net', 'tls', 'stream', 'crypto',
+      'fs', 'net', 'tls', 'stream', 'crypto', 'path',
     ],
     plugins: [typescript()],
   },
