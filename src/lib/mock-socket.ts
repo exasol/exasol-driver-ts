@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { ExaWebsocket, ReadyState } from "./connection";
 import { websocketFactory } from "./sql-client";
 import { SQLQueriesResponse } from "./types";

@@ -1,7 +1,7 @@
 import * as forge from 'node-forge';
 
 import { getURIScheme } from './utils';
-import { CreatePreparedStatementResponse, PublicKeyResponse, SQLException, SQLQueriesResponse, SQLResponse } from './types';
+import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
 import { Statement } from './statement';
 import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
 import { ConnectionPool } from './pool/pool';
