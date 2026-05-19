@@ -66,16 +66,16 @@ function buildFormatClauses(csvOptions?: CsvFormatOptions): string[] {
   const clauses: string[] = [];
 
   if (csvOptions.columnSeparator !== undefined) {
-    clauses.push(`COLUMN SEPARATOR = '${csvOptions.columnSeparator}'`);
+    clauses.push(`COLUMN SEPARATOR = '${escapeSqlLiteral(csvOptions.columnSeparator)}'`);
   }
   if (csvOptions.columnDelimiter !== undefined) {
-    clauses.push(`COLUMN DELIMITER = '${csvOptions.columnDelimiter}'`);
+    clauses.push(`COLUMN DELIMITER = '${escapeSqlLiteral(csvOptions.columnDelimiter)}'`);
   }
   if (csvOptions.rowSeparator !== undefined) {
-    clauses.push(`ROW SEPARATOR = '${csvOptions.rowSeparator}'`);
+    clauses.push(`ROW SEPARATOR = '${escapeSqlLiteral(csvOptions.rowSeparator)}'`);
   }
   if (csvOptions.encoding !== undefined) {
-    clauses.push(`ENCODING = '${csvOptions.encoding}'`);
+    clauses.push(`ENCODING = '${escapeSqlLiteral(csvOptions.encoding)}'`);
   }
   if (csvOptions.skip !== undefined) {
     clauses.push(`SKIP = ${csvOptions.skip}`);
@@ -84,8 +84,12 @@ function buildFormatClauses(csvOptions?: CsvFormatOptions): string[] {
     clauses.push(csvOptions.trim.toUpperCase());
   }
   if (csvOptions.null !== undefined) {
-    clauses.push(`NULL = '${csvOptions.null}'`);
+    clauses.push(`NULL = '${escapeSqlLiteral(csvOptions.null)}'`);
   }
 
   return clauses;
+}
+
+function escapeSqlLiteral(value: string): string {
+  return value.replace(/'/g, "''");
 }
