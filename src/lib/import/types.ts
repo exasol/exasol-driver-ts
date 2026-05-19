@@ -39,7 +39,7 @@ export interface CsvFormatOptions {
    * Defines whether spaces are removed at the border of CSV columns.
    * By default, no spaces are removed. 
    */
-  trim?: string;
+  trim?: TrimMode;
 
   /**
    * Additional representation of NULL values. This option is only supported for CSV files and only applies to fields not enclosed in field delimiters.

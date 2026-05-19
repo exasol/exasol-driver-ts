@@ -1,5 +1,5 @@
 import { buildCsvImportSql, buildCreateTableSql } from './import-sql-builder';
-import { RowSeparator } from './types';
+import { RowSeparator, TrimMode } from './types';
 
 describe('import-sql-builder', () => {
   describe('buildCsvImportSql', () => {
@@ -40,7 +40,7 @@ describe('import-sql-builder', () => {
         rowSeparator: RowSeparator.CRLF,
         encoding: 'UTF-8',
         skip: 1,
-        trim: 'LTRIM',
+        trim: TrimMode.LEADING,
         null: 'NULL',
       });
 

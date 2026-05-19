@@ -9,7 +9,7 @@ import { startNewDockerContainer } from '../startNewDockerContainer';
 import { loadCA } from '../loadCert';
 import { DOCKER_CONTAINER_VERSION_LATEST } from '../runner.config';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
-import { CsvFormatOptions, RowSeparator } from '../../src/lib/import/types';
+import { CsvFormatOptions, RowSeparator, TrimMode } from '../../src/lib/import/types';
 import { IExasolDriver } from '../../src/lib/sql-client.interface';
 
 describe("Node Import", () => {
@@ -93,6 +93,41 @@ describe("Node Import", () => {
       description: 'custom row separator', csvOptions: { rowSeparator: RowSeparator.CRLF },
       csvContent: "1,one\r\n2,two\r\n3,three",
       expectedRows: defaultExpectedRows
+    },
+    {
+      description: 'skip header row', csvOptions: { skip: 1 },
+      csvContent: "ignored header row\n1,one\n2,two\n3,three",
+      expectedRows: defaultExpectedRows
+    },
+    {
+      description: 'custom encoding', csvOptions: { encoding: 'ASCII' },
+      csvContent: "1,one\n2,two\n3,three",
+      expectedRows: defaultExpectedRows
+    },
+    {
+      description: 'custom null value', csvOptions: { null: 'CUSTOM_NULL_VALUE' },
+      csvContent: "1,one\n2,two\n3,CUSTOM_NULL_VALUE",
+      expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two' }, { ID: 3, NAME: null }]
+    },
+    {
+      description: 'trim left / leading whitespace', csvOptions: { trim: TrimMode.LEADING },
+      csvContent: "1, one\n2,\ttwo\n3,three ",
+      expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: '\ttwo' }, { ID: 3, NAME: 'three ' }]
+    },
+    {
+      description: 'trim right / trailing whitespace', csvOptions: { trim: TrimMode.TRAILING },
+      csvContent: "1,one \n2,two\t\n3, three",
+      expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two\t' }, { ID: 3, NAME: ' three' }]
+    },
+    {
+      description: 'trim both', csvOptions: { trim: TrimMode.BOTH },
+      csvContent: "1, one \n2,\ttwo\t\n3,three",
+      expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: '\ttwo\t' }, { ID: 3, NAME: 'three' }]
+    },
+    {
+      description: 'do not trim', csvOptions: { trim: TrimMode.NONE },
+      csvContent: "1, one \n2,\ttwo\t\n3,three",
+      expectedRows: [{ ID: 1, NAME: ' one ' }, { ID: 2, NAME: '\ttwo\t' }, { ID: 3, NAME: 'three' }]
     }]
 
     testCases.forEach(({ description, csvContent, csvOptions, expectedRows }) => {
