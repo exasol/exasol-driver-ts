@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 import { ExaWebsocket, ReadyState } from "./connection";
 import { websocketFactory } from "./sql-client";
 import { SQLQueriesResponse } from "./types";
@@ -30,43 +30,40 @@ export class MockExaWebSocket implements ExaWebsocket {
 
   private getResponseForCommand(command: any): any {
     if (command.accessToken == 'access-token') {
-      return {
-        sessionID: 123,
-      }
+      return { sessionID: 123 }
     }
     switch (command.command) {
       case 'loginToken':
         return {};
       case 'execute':
-        return {
-          numResults: 1,
-          results: [
-            {
-              resultType: 'resultSet',
-              resultSet: {
-                numColumns: 1,
-                numRows: 1,
-                numRowsInMessage: 1,
-                columns: [
-                  {
-                    name: 'A',
-                    dataType: {
-                      type: 'INTEGER',
-                    },
-                  },
-                ],
-                data: [
-                  [1],
-                ],
-              },
-            },
-          ],
-        } as SQLQueriesResponse;
+        return this.getMockResultForSQL(command.sqlText);
       default:
         throw new Error(`MockExaWebSocket: No mock response defined for command '${command.command}'.`);
     }
   }
 
+  private getMockResultForSQL(sqlText: string): SQLQueriesResponse {
+    if (sqlText === 'select 1') {
+      return {
+        numResults: 1,
+        results: [{
+          resultType: 'resultSet',
+          resultSet: {
+            numColumns: 1, numRows: 1, numRowsInMessage: 1,
+            columns: [{ name: 'A', dataType: { type: 'INTEGER' } }],
+            data: [[1]]
+          },
+        }],
+      };
+    } else if (sqlText === 'create table test (id int)') {
+      return {
+        numResults: 1,
+        results: [{ resultType: 'rowCount', rowCount: 1 }]
+      };
+    } else {
+      throw new Error(`MockExaWebSocket: No mock response defined for SQL command '${sqlText}'.`);
+    }
+  }
 
 
   public close(): void {
@@ -80,9 +77,9 @@ export class MockExaWebSocket implements ExaWebsocket {
   }
 
 
-  public simulateOpen(event: any) {
+  public simulateOpen() {
     if (this.onopen) {
-      this.onopen(event);
+      this.onopen(undefined);
     } else {
       throw new Error('onopen handler is not set in MockExaWebSocket.');
     }
