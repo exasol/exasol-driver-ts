@@ -1,4 +1,5 @@
 import { buildCsvImportSql, buildCreateTableSql } from './import-sql-builder';
+import { RowSeparator } from './types';
 
 describe('import-sql-builder', () => {
   describe('buildCsvImportSql', () => {
@@ -36,7 +37,7 @@ describe('import-sql-builder', () => {
       const sql = buildCsvImportSql('TEST_TABLE', { host: '192.168.1.10', port: 4362 }, false, undefined, {
         columnSeparator: ',',
         columnDelimiter: '"',
-        rowSeparator: 'CRLF',
+        rowSeparator: RowSeparator.CRLF,
         encoding: 'UTF-8',
         skip: 1,
         trim: 'LTRIM',
@@ -48,7 +49,7 @@ describe('import-sql-builder', () => {
       expect(sql).toContain("ROW SEPARATOR = 'CRLF'");
       expect(sql).toContain("ENCODING = 'UTF-8'");
       expect(sql).toContain('SKIP = 1');
-      expect(sql).toContain("TRIM = 'LTRIM'");
+      expect(sql).toContain("LTRIM");
       expect(sql).toContain("NULL = 'NULL'");
     });
   });

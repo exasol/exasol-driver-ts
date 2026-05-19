@@ -1,7 +1,7 @@
 import * as forge from 'node-forge';
 
 import { getURIScheme } from './utils';
-import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
+import { CreatePreparedStatementResponse, PublicKeyResponse, SQLException, SQLQueriesResponse, SQLResponse } from './types';
 import { Statement } from './statement';
 import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
 import { ConnectionPool } from './pool/pool';
@@ -13,8 +13,10 @@ import {
   ErrInvalidCredentials,
   ErrLoggerNil,
   ErrMalformedData,
+  GeneralSqlError,
   newInvalidReturnValueResultSet,
   newInvalidReturnValueRowCount,
+  newSqlError,
 } from './errors/errors';
 import { Connection, ExaWebsocket } from './connection';
 import { CommandsNoResult, Attributes, Commands, OIDCSQLCommand, SQLSingleCommand, SQLBatchCommand } from './commands';
@@ -50,6 +52,7 @@ interface InternalConfig {
 
 export const driverVersion = 'v1.0.0';
 
+// TODO: rename to WebsocketFactory
 export type websocketFactory = (url: string) => ExaWebsocket;
 
 export class ExasolDriver implements IExasolDriver {
@@ -313,6 +316,14 @@ export class ExasolDriver implements IExasolDriver {
       .then((data) => {
         if (responseType == 'raw') {
           return data;
+        }
+
+        if (data.status === 'error') {
+          if (data.exception) {
+            throw newSqlError(data.exception);
+          } else {
+            throw GeneralSqlError;
+          }
         }
 
         if (data.responseData.numResults === 0) {

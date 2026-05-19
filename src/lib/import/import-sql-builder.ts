@@ -1,4 +1,4 @@
-import { CsvFormatOptions, InternalAddress, ParquetColumnInfo, ColumnNameMode } from './types';
+import { CsvFormatOptions, InternalAddress, ParquetColumnInfo, ColumnNameMode, TrimMode } from './types';
 
 export function buildCsvImportSql(
   tableName: string,
@@ -80,8 +80,8 @@ function buildFormatClauses(csvOptions?: CsvFormatOptions): string[] {
   if (csvOptions.skip !== undefined) {
     clauses.push(`SKIP = ${csvOptions.skip}`);
   }
-  if (csvOptions.trim !== undefined) {
-    clauses.push(`TRIM = '${csvOptions.trim}'`);
+  if (csvOptions.trim !== undefined && csvOptions.trim !== TrimMode.NONE) {
+    clauses.push(csvOptions.trim.toUpperCase());
   }
   if (csvOptions.null !== undefined) {
     clauses.push(`NULL = '${csvOptions.null}'`);
