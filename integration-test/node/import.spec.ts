@@ -9,12 +9,13 @@ import { startNewDockerContainer } from '../startNewDockerContainer';
 import { loadCA } from '../loadCert';
 import { DOCKER_CONTAINER_VERSION_LATEST } from '../runner.config';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
-import { RowSeparator } from '../../src/lib/import/types';
+import { CsvFormatOptions, RowSeparator } from '../../src/lib/import/types';
+import { IExasolDriver } from '../../src/lib/sql-client.interface';
 
-describe("Node Import Tests", () => {
+describe("Node Import", () => {
 
   const randomId = new RandomUuid();
-  let driver: ExasolDriver | undefined;
+  let driver: IExasolDriver;
   let container: StartedTestContainer;
   let factory: websocketFactory;
   jest.setTimeout(7000000);
@@ -33,38 +34,6 @@ describe("Node Import Tests", () => {
     tempDirectory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-import-'));
   });
 
-  async function createFile(fileName: string, fileContent: string): Promise<string> {
-    const path = join(tempDirectory, fileName);
-    await writeFile(path, fileContent, 'utf-8');
-    return path;
-  }
-
-  it('Import from CSV', async () => {
-    await driver?.execute(`CREATE SCHEMA ${schemaName}`);
-    const tableName = `${schemaName}.TEST_TABLE`;
-    await driver?.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0), NAME VARCHAR(2000000))`);
-    const csvContent = 'ID,NAME\n1,one\n2,two\n3,three';
-    const csvFilePath = await createFile('test.csv', csvContent);
-    await driver?.importFromCsvFile(tableName, csvFilePath, {
-      columnDelimiter: '"',
-      columnSeparator: ',',
-      rowSeparator: RowSeparator.LF,
-      encoding: 'UTF-8',
-      skip: 1,
-      //trim: 'both',
-      null: 'NULL',
-    });
-
-    const data = await driver?.query(`SELECT * FROM ${tableName}`);
-    expect(data?.getColumns()[0].name).toBe('ID');
-    expect(data?.getColumns()[1].name).toBe('NAME');
-    expect(data?.getRows()).toStrictEqual([
-      { ID: 1, NAME: 'one' },
-      { ID: 2, NAME: 'two' },
-      { ID: 3, NAME: 'three' },
-    ]);
-  });
-
   afterEach(async () => {
     if (driver) {
       try {
@@ -81,17 +50,89 @@ describe("Node Import Tests", () => {
     } catch (error) {
       console.warn('Could not cleanup temp directory', tempDirectory, error);
     }
+  });
 
-    //try {
-    //  if (!factory || !container) {
-    //    return;
-    //  }
-    //  const driver = await openConnection(factory, container);
-    //  await driver.execute('DROP SCHEMA IF EXISTS ' + schemaName + ' CASCADE');
-    //  await driver.close();
-    //} catch (error) {
-    //  console.warn('Could not cleanup schema', schemaName, error);
-    //}
+  async function createFile(fileName: string, fileContent: string): Promise<string> {
+    const path = join(tempDirectory, fileName);
+    await writeFile(path, fileContent, { encoding: 'utf-8' });
+    return path;
+  }
+
+  describe('importFromCsvFile', () => {
+    it('fails import when target table does not exist', async () => {
+      const tableName = 'MISSING_TABLE';
+      const csvContent = '1,one\n2,two\n3,three';
+      const csvFilePath = await createFile('test.csv', csvContent);
+      await expect(driver?.importFromCsvFile(tableName, csvFilePath, {})).rejects.toThrow(`E-EDJS-25: SQL error: code: '42000', message: 'object MISSING_TABLE not found`);
+    });
+
+
+    interface ImportTestCase {
+      description: string;
+      csvContent: string;
+      csvOptions: CsvFormatOptions;
+      expectedRows: unknown[];
+    }
+    const defaultExpectedRows = [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two' }, { ID: 3, NAME: 'three' }];
+    const testCases: ImportTestCase[] = [{
+      description: 'default options', csvOptions: {},
+      csvContent: '1,one\n2,two\n3,three',
+      expectedRows: defaultExpectedRows
+    },
+    {
+      description: 'custom column delimiter', csvOptions: { columnDelimiter: "'" },
+      csvContent: "1,'one'\n2,'two'\n3,'three'",
+      expectedRows: defaultExpectedRows
+    },
+    {
+      description: 'custom column separator', csvOptions: { columnSeparator: ";" },
+      csvContent: "1;one\n2;two\n3;three",
+      expectedRows: defaultExpectedRows
+    },
+    {
+      description: 'custom row separator', csvOptions: { rowSeparator: RowSeparator.CRLF },
+      csvContent: "1,one\r\n2,two\r\n3,three",
+      expectedRows: defaultExpectedRows
+    }]
+
+    testCases.forEach(({ description, csvContent, csvOptions, expectedRows }) => {
+      it(`imports CSV file into table with ${description}`, async () => {
+        await driver?.execute(`CREATE SCHEMA ${schemaName}`);
+        const tableName = `${schemaName}.TEST_TABLE`;
+        await driver?.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0), NAME VARCHAR(2000000))`);
+        const csvFilePath = await createFile('test.csv', csvContent);
+        await driver?.importFromCsvFile(tableName, csvFilePath, csvOptions);
+
+        const data = await driver?.query(`SELECT * FROM ${tableName}`);
+        expect(data?.getRows()).toStrictEqual(expectedRows);
+      });
+    });
+
+    it('imports CSV file into table', async () => {
+      await driver?.execute(`CREATE SCHEMA ${schemaName}`);
+      const tableName = `${schemaName}.TEST_TABLE`;
+      await driver?.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0), NAME VARCHAR(2000000))`);
+      const csvContent = 'ID,NAME\n1,one\n2,two\n3,three';
+      const csvFilePath = await createFile('test.csv', csvContent);
+      await driver?.importFromCsvFile(tableName, csvFilePath, {
+        columnDelimiter: '"',
+        columnSeparator: ',',
+        rowSeparator: RowSeparator.LF,
+        encoding: 'UTF-8',
+        skip: 1,
+        null: 'NULL',
+      });
+
+      const data = await driver?.query(`SELECT * FROM ${tableName}`);
+      expect(data?.getColumns()[0].name).toBe('ID');
+      expect(data?.getColumns()[1].name).toBe('NAME');
+      expect(data?.getRows()).toStrictEqual([
+        { ID: 1, NAME: 'one' },
+        { ID: 2, NAME: 'two' },
+        { ID: 3, NAME: 'three' },
+      ]);
+    });
+
   });
 
   const openConnection = async (factory: websocketFactory, container: StartedTestContainer) => {
