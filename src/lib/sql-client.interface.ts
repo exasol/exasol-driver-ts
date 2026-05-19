@@ -137,7 +137,9 @@ export interface IExasolDriver {
    * @param filePath Path to the local file
    * @param csvOptions Optional CSV format options (used for CSV files)
    * @returns Number of rows imported
+   * @deprecated Use `importFromCsvFile`
    */
+  // TODO: delete
   importFromFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number>;
 
   /**
@@ -160,7 +162,9 @@ export interface IExasolDriver {
    * @param filePath Path to the local Parquet file
    * @param options Optional Parquet import options (column selection, auto-create table, etc.)
    * @returns Number of rows imported
+   * @deprecated don't use
    */
+  // TODO: delete
   importFromParquetFile(tableName: string, filePath: string, options?: ParquetImportOptions): Promise<number>;
 }
 

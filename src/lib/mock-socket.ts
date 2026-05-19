@@ -16,7 +16,6 @@ export class MockExaWebSocket implements ExaWebsocket {
   public send(data: string | Uint8Array): void {
     const command = JSON.parse(data.toString());
     this.sentCommands.push(command);
-    console.log('MockExaWebSocket.send called with data:', command);
     const responseData = this.getResponseForCommand(command);
     setTimeout(() => {
       this.callOnMessage({

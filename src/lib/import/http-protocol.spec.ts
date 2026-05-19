@@ -118,7 +118,7 @@ describe('http-protocol', () => {
 
       dataStream.destroy(new Error('read error'));
 
-      await expect(responsePromise).rejects.toThrow('E-EDJS-13');
+      await expect(responsePromise).rejects.toThrow("E-EDJS-13: Failed to send chunked HTTP response through tunnel: 'read error'.");
     });
   });
 });

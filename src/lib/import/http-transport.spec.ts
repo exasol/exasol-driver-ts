@@ -22,8 +22,7 @@ describe('http-transport', () => {
 
       errorHandler[1](new Error('ECONNREFUSED'));
 
-      await expect(tunnelPromise).rejects.toThrow('E-EDJS-12');
-      await expect(tunnelPromise).rejects.toThrow('ECONNREFUSED');
+      await expect(tunnelPromise).rejects.toThrow("E-EDJS-12: Failed to establish tunnel connection to Exasol at '192.168.1.10':'8563': 'ECONNREFUSED'.");
       expect(mockSocket.destroy).toHaveBeenCalled();
     });
 
@@ -44,8 +43,7 @@ describe('http-transport', () => {
 
       dataHandler[1](Buffer.alloc(10));
 
-      await expect(tunnelPromise).rejects.toThrow('E-EDJS-15');
-      await expect(tunnelPromise).rejects.toThrow("Expected '24' bytes, got '10'");
+      await expect(tunnelPromise).rejects.toThrow("E-EDJS-15: Incomplete handshake response from Exasol. Expected '24' bytes, got '10'.");
       expect(mockSocket.destroy).toHaveBeenCalled();
     });
   });

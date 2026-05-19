@@ -3,7 +3,7 @@ import { parquetMetadata, parquetSchema } from 'hyparquet';
 import type { SchemaElement, FileMetaData, LogicalType } from 'hyparquet';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 import { ParquetColumnInfo, ParquetSchemaInfo } from './types';
-
+// TODO: Delete
 /**
  * Infers an Exasol-compatible table schema from a Parquet file's metadata.
  * Only reads the footer metadata — does not load row data.
@@ -164,7 +164,7 @@ export async function readParquetMetadata(
   try {
     const fileBuffer = await fs.promises.readFile(filePath);
     buffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
-  } catch(err) {
+  } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     throw new ExaErrorBuilder('E-EDJS-23')
       .message('Failed to read Parquet file {{path}}: {{error}}', filePath, errorMessage)
@@ -175,7 +175,7 @@ export async function readParquetMetadata(
   let metadata: FileMetaData;
   try {
     metadata = parquetMetadata(buffer);
-  } catch(err) {
+  } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     throw new ExaErrorBuilder('E-EDJS-24')
       .message('Invalid Parquet file {{path}}: {{error}}', filePath, errorMessage)

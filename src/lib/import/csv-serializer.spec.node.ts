@@ -1,5 +1,6 @@
 import { serializeRowsToCsv } from './csv-serializer';
 
+// TODO: delete
 describe('csv-serializer', () => {
   it('should serialize simple rows', () => {
     const rows = [

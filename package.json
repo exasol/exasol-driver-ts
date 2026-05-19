@@ -16,7 +16,8 @@
     "format": "prettier --write .",
     "itest": "jest --selectProjects itest-dom itest-node --coverage",
     "itest:dom": "jest --selectProjects itest-dom --coverage",
-    "itest:node": "jest --selectProjects itest-node --coverage"
+    "itest:node": "jest --selectProjects itest-node --coverage",
+    "test:all": "jest --selectProjects itest-dom itest-node unit-dom unit-node --coverage"
   },
   "dependencies": {
     "generic-pool": "^3.9.0",

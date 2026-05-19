@@ -2,6 +2,7 @@ import { inferParquetSchema } from './parquet-schema';
 import { parquetMetadata, parquetSchema } from 'hyparquet';
 import * as fs from 'fs';
 
+// TODO: DELETE
 jest.mock('hyparquet');
 jest.mock('fs', () => ({
   ...jest.requireActual('fs'),

@@ -14,6 +14,7 @@ import { inferParquetSchema, readParquetMetadata } from './parquet-schema';
 import { serializeRowsToCsv } from './csv-serializer';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 
+// TODO: Delete
 export async function importParquetFile(
   host: string,
   port: number,

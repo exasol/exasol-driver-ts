@@ -3,6 +3,7 @@ import { createTunnel } from './http-transport';
 import { readParquetMetadata } from './parquet-schema';
 import * as fs from 'fs';
 
+// TODO: delete
 jest.mock('./http-transport');
 jest.mock('./parquet-schema');
 jest.mock('fs', () => ({

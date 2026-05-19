@@ -416,6 +416,7 @@ export class ExasolDriver implements IExasolDriver {
   /**
    * @inheritDoc
    */
+  // TODO: Delete
   public async importFromFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number> {
     if (filePath.endsWith('.parquet')) {
       return this.importFromParquetFile(tableName, filePath, { csvOptions });
@@ -444,6 +445,7 @@ export class ExasolDriver implements IExasolDriver {
   /**
    * @inheritDoc
    */
+  // TODO: Delete
   public async importFromParquetFile(tableName: string, filePath: string, options?: ParquetImportOptions): Promise<number> {
     if (this.closed) {
       return Promise.reject(ErrClosed);
