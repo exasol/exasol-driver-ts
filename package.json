@@ -8,6 +8,7 @@
     "audit:full": "audit-ci --config ./audit-ci.jsonc",
     "build": "rollup --failAfterWarnings --config rollup.config.mjs",
     "watch": "rollup --failAfterWarnings --watch --config rollup.config.mjs",
+    "typecheck": "tsc --noEmit",
     "test": "jest --selectProjects unit-dom unit-node --coverage",
     "test:dom": "jest --selectProjects unit-dom --coverage",
     "test:node": "jest --selectProjects unit-node --coverage",
@@ -21,7 +22,6 @@
   },
   "dependencies": {
     "generic-pool": "^3.9.0",
-    "hyparquet": "^1.25.8",
     "node-forge": "^1.4.0",
     "pako": "^2.1.0"
   },

@@ -1,4 +1,4 @@
-import { buildCsvImportSql, buildCreateTableSql } from './import-sql-builder';
+import { buildCsvImportSql } from './import-sql-builder';
 import { RowSeparator, TrimMode } from './types';
 
 describe('import-sql-builder', () => {
@@ -91,42 +91,6 @@ describe('import-sql-builder', () => {
       });
 
       expect(sql).toContain("NULL = 'NU''LL'");
-    });
-  });
-
-  describe('buildCreateTableSql', () => {
-    it('should generate CREATE TABLE with quoted column names', () => {
-      const sql = buildCreateTableSql('MY_TABLE', [
-        { name: 'id', exasolType: 'DECIMAL(18,0)' },
-        { name: 'name', exasolType: 'VARCHAR(2000000)' },
-      ]);
-
-      expect(sql).toBe('CREATE TABLE MY_TABLE ("id" DECIMAL(18,0), "name" VARCHAR(2000000))');
-    });
-
-    it('should generate CREATE TABLE with sanitized column names', () => {
-      const sql = buildCreateTableSql(
-        'MY_TABLE',
-        [
-          { name: 'My Column', exasolType: 'DECIMAL(18,0)' },
-          { name: '1stValue', exasolType: 'DOUBLE' },
-        ],
-        'sanitized',
-      );
-
-      expect(sql).toBe('CREATE TABLE MY_TABLE (MY_COLUMN DECIMAL(18,0), _1STVALUE DOUBLE)');
-    });
-
-    it('should escape double quotes in quoted column names', () => {
-      const sql = buildCreateTableSql('T', [{ name: 'col"name', exasolType: 'BOOLEAN' }]);
-
-      expect(sql).toBe('CREATE TABLE T ("col""name" BOOLEAN)');
-    });
-
-    it('should handle empty column name in sanitized mode', () => {
-      const sql = buildCreateTableSql('T', [{ name: '', exasolType: 'VARCHAR(2000000)' }], 'sanitized');
-
-      expect(sql).toContain('"_"');
     });
   });
 });

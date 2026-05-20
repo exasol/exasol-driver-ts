@@ -1,18 +1,14 @@
-# Exasol Driver ts 0.4.0, released 2026-??-??
+# Exasol Driver ts 0.4.0, released 2026-05
 
-Code name:
+Code name: Import local CSV File
 
 ## Summary
 
 ## Features
 
-* ISSUE_NUMBER: description
+* #48: Added import from local CSV file
 
 ## Dependency Updates
-
-### Compile Dependency Updates
-
-* Added `hyparquet:^1.25.8`
 
 ### Development Dependency Updates
 

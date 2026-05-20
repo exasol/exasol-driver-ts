@@ -1,4 +1,4 @@
-import { CsvFormatOptions, InternalAddress, ParquetColumnInfo, ColumnNameMode, TrimMode } from './types';
+import { CsvFormatOptions, InternalAddress, TrimMode } from './types';
 
 export function buildCsvImportSql(
   tableName: string,
@@ -24,38 +24,6 @@ export function buildCsvImportSql(
   }
 
   return sql;
-}
-
-export function buildCreateTableSql(
-  tableName: string,
-  columns: ParquetColumnInfo[],
-  columnNameMode: ColumnNameMode = 'quoted',
-): string {
-  const columnDefs = columns.map((col) => {
-    const name = formatColumnName(col.name, columnNameMode);
-    return `${name} ${col.exasolType}`;
-  });
-
-  return `CREATE TABLE ${tableName} (${columnDefs.join(', ')})`;
-}
-
-function formatColumnName(name: string, mode: ColumnNameMode): string {
-  if (mode === 'sanitized') {
-    return sanitizeIdentifier(name);
-  }
-  const escaped = name.replace(/"/g, '""');
-  return `"${escaped}"`;
-}
-
-function sanitizeIdentifier(name: string): string {
-  if (name.length === 0) {
-    return '"_"';
-  }
-  let sanitized = name.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
-  if (/^[0-9]/.test(sanitized)) {
-    sanitized = '_' + sanitized;
-  }
-  return sanitized;
 }
 
 function buildFormatClauses(csvOptions?: CsvFormatOptions): string[] {

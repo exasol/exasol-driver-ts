@@ -64,7 +64,7 @@ export enum RowSeparator {
   /** None means no line break. This is only allowed in FBV files */
   NONE = 'NONE',
 }
-export type ColumnNameMode = 'quoted' | 'sanitized';
+
 /**
  * Defines whether spaces are removed at the border of CSV columns.
  */
@@ -92,21 +92,3 @@ export type Encoding =
   'BIG5' |
   'SHIFT-JIS' |
   'UTF-8';
-
-export interface ParquetImportOptions {
-  columns?: string[];
-  createTableIfNotExists?: boolean;
-  columnNameMode?: ColumnNameMode;
-  csvOptions?: CsvFormatOptions;
-}
-
-export interface ParquetColumnInfo {
-  name: string;
-  exasolType: string;
-}
-
-export interface ParquetSchemaInfo {
-  columns: ParquetColumnInfo[];
-  rowCount: number;
-  toDDL(tableName: string, schemaName?: string): string;
-}
