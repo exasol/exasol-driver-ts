@@ -18,7 +18,8 @@ function buildMagicPacket(): Buffer {
   return buffer;
 }
 
-function parseResponse(data: Buffer): InternalAddress {
+// Export function to allow unit testing
+export function parseResponse(data: Buffer): InternalAddress {
   const port = data.readInt32LE(PORT_OFFSET);
   const hostBytes = data.slice(HOST_OFFSET, HOST_OFFSET + HOST_LENGTH);
   const host = hostBytes.toString('utf-8').replace(/\0+$/, '');

@@ -1,9 +1,43 @@
 import * as net from 'net';
-import { createTunnel } from './http-transport';
+import { createTunnel, parseResponse } from './http-transport';
 
 jest.mock('net');
 
 describe('http-transport', () => {
+  describe('parseResponse', () => {
+    it('should parse the internal host and port from the handshake response', () => {
+      const response = Buffer.alloc(24);
+      response.writeInt32LE(8564, 4);
+      response.write('internal-host', 8, 'utf-8');
+
+      expect(parseResponse(response)).toEqual({ host: 'internal-host', port: 8564 });
+    });
+
+    it('should trim trailing null bytes from the internal host', () => {
+      const response = Buffer.alloc(24);
+      response.writeInt32LE(443, 4);
+      response.write('db-node', 8, 'utf-8');
+
+      expect(parseResponse(response)).toEqual({ host: 'db-node', port: 443 });
+    });
+
+    it('should support UTF-8 characters in host name', () => {
+      const response = Buffer.alloc(24);
+      response.writeInt32LE(443, 4);
+      response.write('dbäöüß', 8, 'utf-8');
+
+      expect(parseResponse(response)).toEqual({ host: 'dbäöüß', port: 443 });
+    });
+
+    it('should trim too long host names', () => {
+      const response = Buffer.alloc(24);
+      response.writeInt32LE(443, 4);
+      response.write('very-long-host-name-that-exceeds-limit', 8, 'utf-8');
+
+      expect(parseResponse(response)).toEqual({ host: 'very-long-host-n', port: 443 });
+    });
+  });
+
   describe('createTunnel', () => {
     it('should reject with descriptive error and close socket on connection error', async () => {
       const mockSocket = {
