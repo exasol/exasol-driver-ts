@@ -13,12 +13,16 @@ import {
   ErrInvalidCredentials,
   ErrLoggerNil,
   ErrMalformedData,
+  GeneralSqlError,
   newInvalidReturnValueResultSet,
   newInvalidReturnValueRowCount,
+  newSqlError,
 } from './errors/errors';
 import { Connection, ExaWebsocket } from './connection';
 import { CommandsNoResult, Attributes, Commands, OIDCSQLCommand, SQLSingleCommand, SQLBatchCommand } from './commands';
 import { QueryResult } from './query-result';
+import { CsvFormatOptions } from './import/types';
+import { importCsvFile } from './import/csv-file-import';
 
 export interface Config {
   host: string;
@@ -47,6 +51,7 @@ interface InternalConfig {
 
 export const driverVersion = 'v1.0.0';
 
+// TODO: rename to WebsocketFactory
 export type websocketFactory = (url: string) => ExaWebsocket;
 
 export class ExasolDriver implements IExasolDriver {
@@ -93,11 +98,11 @@ export class ExasolDriver implements IExasolDriver {
     }
 
     if (!hasCredentials) {
-      return Promise.reject(ErrInvalidCredentials);
+      throw ErrInvalidCredentials;
     }
 
     if (!this.logger) {
-      return Promise.reject(ErrLoggerNil);
+      throw ErrLoggerNil;
     }
 
     let url = `${getURIScheme(this.config.encryption)}://${this.config.host}:${this.config.port}`;
@@ -142,7 +147,6 @@ export class ExasolDriver implements IExasolDriver {
             //at this point the user should be logged in, asked for the Public Key and sent credentials and info in login...Auth() methods
             connection.setCompression(this.config.compression);
             resolve();
-            return;
           })
           .catch((err) => {
             reject(err);
@@ -171,8 +175,7 @@ export class ExasolDriver implements IExasolDriver {
     this.logger.debug('[SQLClient] Close all connections');
 
     const connections = this.pool.getAll();
-    for (let index = 0; index < connections.length; index++) {
-      const connection = connections[index];
+    for (const connection of connections) {
       await connection.close();
     }
     this.pool.clear();
@@ -183,7 +186,7 @@ export class ExasolDriver implements IExasolDriver {
    */
   public async sendCommandWithNoResult(cmd: CommandsNoResult): Promise<void> {
     if (this.closed) {
-      return Promise.reject(ErrClosed);
+      throw ErrClosed;
     }
     const connection = await this.acquire();
     if (connection) {
@@ -191,7 +194,6 @@ export class ExasolDriver implements IExasolDriver {
         .sendCommandWithNoResult(cmd)
         .then(() => {
           this.pool.release(connection);
-          return;
         })
         .catch((err) => {
           this.pool.release(connection);
@@ -199,7 +201,7 @@ export class ExasolDriver implements IExasolDriver {
         });
     }
 
-    return Promise.reject(ErrClosed);
+    throw ErrClosed;
   }
 
   /**
@@ -312,6 +314,14 @@ export class ExasolDriver implements IExasolDriver {
           return data;
         }
 
+        if (data.status === 'error') {
+          if (data.exception) {
+            throw newSqlError(data.exception);
+          } else {
+            throw GeneralSqlError;
+          }
+        }
+
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
         }
@@ -399,9 +409,26 @@ export class ExasolDriver implements IExasolDriver {
       });
   }
 
+  /**
+   * @inheritDoc
+   */
+  public async importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number> {
+    if (this.closed) {
+      throw ErrClosed;
+    }
+    return importCsvFile(
+      this.config.host,
+      this.config.port,
+      tableName,
+      filePath,
+      (sql: string) => this.execute(sql),
+      csvOptions,
+    );
+  }
+
   private async acquire() {
     if (this.closed) {
-      return Promise.reject(ErrClosed);
+      throw ErrClosed;
     }
 
     let connection = this.pool.acquire();
@@ -411,7 +438,7 @@ export class ExasolDriver implements IExasolDriver {
       connection = this.pool.acquire();
     }
     if (!connection) {
-      return Promise.reject(ErrInvalidConn);
+      throw ErrInvalidConn;
     }
     return connection;
   }
@@ -424,7 +451,7 @@ export class ExasolDriver implements IExasolDriver {
 
       if (response.status == 'error') {
         const errorString: string = this.buildConnectionError(response);
-        return Promise.reject(new Error(errorString));
+        throw new Error(errorString);
       }
 
       const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);

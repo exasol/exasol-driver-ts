@@ -2,7 +2,7 @@ import { SQLResponse } from './types';
 import { Cancelable } from './sql-client.interface';
 import { PoolItem } from './pool/pool';
 import { ILogger } from './logger/logger';
-import { ErrClosed, ErrInvalidConn, ErrJobAlreadyRunning, ErrMalformedData } from './errors/errors';
+import { ErrClosed, ErrInvalidConn, ErrJobAlreadyRunning, MissingExceptionError } from './errors/errors';
 import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
 import { deflate, inflate } from 'pako';
 export interface ExaMessageEvent {
@@ -20,16 +20,18 @@ export interface ExaWebsocket {
   onclose: ((this: any, ev: unknown) => unknown) | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onerror: ((this: any, ev: unknown) => unknown) | null;
-  send(data: string | Uint8Array, cb?: (err?: Error) => void): void;
+  send(data: string | Uint8Array): void;
   close(): void;
-  readonly readyState: number;
+  readonly readyState: ReadyState;
 }
 
-const OPEN = 1;
-/** The connection is in the process of closing. */
-const CLOSING = 2;
-/** The connection is closed. */
-const CLOSED = 3;
+export enum ReadyState {
+  OPEN = 1,
+  /** The connection is in the process of closing. */
+  CLOSING = 2,
+  /** The connection is closed. */
+  CLOSED = 3
+}
 
 export class Connection implements PoolItem {
   private isInUse = false;
@@ -65,7 +67,7 @@ export class Connection implements PoolItem {
   }
 
   async close() {
-    if (this.connection && this.connection.readyState === OPEN) {
+    if (this.connection?.readyState === ReadyState.OPEN) {
       try {
         await this.sendCommand(new DisconnectCommand());
       } catch (error) {
@@ -83,7 +85,7 @@ export class Connection implements PoolItem {
   }
 
   async sendCommandWithNoResult(cmd: CommandsNoResult) {
-    if (!this.connection || this.connection.readyState === CLOSED || this.connection.readyState === CLOSING) {
+    if (!this.connection || this.connection.readyState === ReadyState.CLOSED || this.connection.readyState === ReadyState.CLOSING) {
       this.isBroken = true;
       return Promise.reject(ErrClosed);
     }
@@ -112,7 +114,7 @@ export class Connection implements PoolItem {
   }
 
   public sendCommand<T>(cmd: Commands, getCancel?: (cancel?: Cancelable) => void): Promise<SQLResponse<T>> {
-    if (!this.connection || this.connection.readyState === CLOSED || this.connection.readyState === CLOSING) {
+    if (!this.connection || this.connection.readyState === ReadyState.CLOSED || this.connection.readyState === ReadyState.CLOSING) {
       this.isBroken = true;
       return Promise.reject(ErrClosed);
     }
@@ -155,7 +157,7 @@ export class Connection implements PoolItem {
               if (data.exception) {
                 resolve(data);
               } else {
-                reject(ErrMalformedData);
+                reject(MissingExceptionError);
               }
 
               return;

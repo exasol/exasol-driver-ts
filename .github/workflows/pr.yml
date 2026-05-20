@@ -9,9 +9,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: ['lint:ci', 'test:dom', 'test:node', 'itest:node', 'itest:dom', 'build']
+        target: ['lint:ci', 'test:all', 'build']
     env:
-      DEFAULT_TARGET: 'test:node'
+      DEFAULT_TARGET: 'test:all'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -54,7 +54,7 @@ jobs:
       - name: Run audit
         if: ${{ matrix.node == env.DEFAULT_NODE_VERSION }}
         run: npm run audit
-      - run: npm run itest:dom
+      - run: npm run test:all
 
   trace-requirements:
     runs-on: ubuntu-latest

@@ -1,3 +1,4 @@
+import { SQLException } from '../types';
 import { ExaErrorBuilder } from './error-reporting';
 
 export const ErrInvalidConn = new ExaErrorBuilder('E-EDJS-1').message('Invalid connection.').error();
@@ -18,6 +19,13 @@ export const newPoolSizeErr = (max: number) => {
 export const newInvalidHostRangeLimits = (host: string) => {
   return new ExaErrorBuilder('E-EDJS-9').message('Invalid host range limits: {{host name}}.', host).error();
 };
+
+export const newSqlError = (exception: SQLException) => {
+  return new ExaErrorBuilder('E-EDJS-25').message('SQL error: code: {{code}}, message: {{message}}', exception.sqlCode, exception.text).error();
+}
+
+export const GeneralSqlError = new ExaErrorBuilder('E-EDJS-26').message("Query failed with status 'error'.").error();
+export const MissingExceptionError = new ExaErrorBuilder('E-EDJS-27').message("Received error response with missing exception details.").error();
 
 export const newInvalidReturnValueResultSet = new ExaErrorBuilder('E-EDJS-10')
   .message('Invalid result type.')
