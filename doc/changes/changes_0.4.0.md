@@ -10,6 +10,10 @@ Code name:
 
 ## Dependency Updates
 
+### Compile Dependency Updates
+
+* Removed `node-forge:^1.4.0`
+
 ### Development Dependency Updates
 
 * Updated `globals:^17.5.0` to `^17.6.0`
@@ -22,3 +26,4 @@ Code name:
 * Updated `jest:^30.3.0` to `^30.4.2`
 * Updated `@types/node:^25.6.0` to `^25.8.0`
 * Updated `typescript-eslint:^8.59.1` to `^8.59.3`
+* Removed `@types/node-forge:^1.3.14`
