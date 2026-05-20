@@ -25,6 +25,7 @@ export const newSqlError = (exception: SQLException) => {
 }
 
 export const GeneralSqlError = new ExaErrorBuilder('E-EDJS-26').message("Query failed with status 'error'.").error();
+export const MissingExceptionError = new ExaErrorBuilder('E-EDJS-27').message("Received error response with missing exception details.").error();
 
 export const newInvalidReturnValueResultSet = new ExaErrorBuilder('E-EDJS-10')
   .message('Invalid result type.')

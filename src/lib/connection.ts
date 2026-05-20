@@ -2,7 +2,7 @@ import { SQLResponse } from './types';
 import { Cancelable } from './sql-client.interface';
 import { PoolItem } from './pool/pool';
 import { ILogger } from './logger/logger';
-import { ErrClosed, ErrInvalidConn, ErrJobAlreadyRunning, ErrMalformedData } from './errors/errors';
+import { ErrClosed, ErrInvalidConn, ErrJobAlreadyRunning, MissingExceptionError } from './errors/errors';
 import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
 import { deflate, inflate } from 'pako';
 export interface ExaMessageEvent {
@@ -157,7 +157,7 @@ export class Connection implements PoolItem {
               if (data.exception) {
                 resolve(data);
               } else {
-                reject(ErrMalformedData);
+                reject(MissingExceptionError);
               }
 
               return;
