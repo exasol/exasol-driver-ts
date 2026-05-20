@@ -1,5 +1,5 @@
-import * as tls from 'tls';
-import { PassThrough } from 'stream';
+import * as tls from 'node:tls';
+import { PassThrough } from 'node:stream';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
 
 describe('tls-transport', () => {
@@ -23,7 +23,7 @@ describe('tls-transport', () => {
   describe('wrapWithTls', () => {
     it('should return a TLSSocket instance', () => {
       const { key, cert } = generateAdHocCertificate();
-      const mockSocket = new PassThrough() as unknown as import('net').Socket;
+      const mockSocket = new PassThrough() as unknown as import('node:net').Socket;
 
       const tlsSocket = wrapWithTls(mockSocket, key, cert);
 

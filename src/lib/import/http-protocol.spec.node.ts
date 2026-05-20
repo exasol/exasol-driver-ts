@@ -1,4 +1,4 @@
-import { PassThrough } from 'stream';
+import { PassThrough } from 'node:stream';
 import { readHttpRequest, sendChunkedResponse } from './http-protocol';
 
 describe('http-protocol', () => {

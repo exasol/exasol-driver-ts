@@ -1,6 +1,6 @@
-import * as net from 'net';
-import * as tls from 'tls';
-import * as stream from 'stream';
+import * as net from 'node:net';
+import * as tls from 'node:tls';
+import * as stream from 'node:stream';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 
 const HEADER_TERMINATOR = '\r\n\r\n';
@@ -15,7 +15,7 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<str
 
     function onData(chunk: Buffer) {
       buffer += chunk.toString();
-      if (buffer.indexOf(HEADER_TERMINATOR) !== -1) {
+      if (buffer.includes(HEADER_TERMINATOR)) {
         cleanup();
         resolve(buffer);
       }
