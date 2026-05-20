@@ -11,9 +11,9 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: ['lint:ci', 'test:dom', 'test:node', 'itest:dom', 'itest:node', 'build']
+        target: ['lint:ci', 'test:all', 'build']
     env:
-      DEFAULT_TARGET: 'test:node'
+      DEFAULT_TARGET: 'test:all'
     steps:
       - uses: actions/checkout@v6
         with:
