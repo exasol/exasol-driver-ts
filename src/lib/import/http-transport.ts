@@ -25,8 +25,9 @@ export interface InternalAddress {
 // Export function to allow unit testing
 export function parseResponse(data: Buffer): InternalAddress {
   const port = data.readInt32LE(PORT_OFFSET);
-  const hostBytes = data.slice(HOST_OFFSET, HOST_OFFSET + HOST_LENGTH);
-  const host = hostBytes.toString('utf-8').replace(/\0+$/, '');
+  const hostBytes = data.subarray(HOST_OFFSET, HOST_OFFSET + HOST_LENGTH);
+  const hostLength = hostBytes.indexOf(0);
+  const host = hostBytes.toString('utf-8', 0, hostLength === -1 ? HOST_LENGTH : hostLength);
   return { host, port };
 }
 
