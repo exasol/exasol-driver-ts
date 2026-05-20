@@ -1,4 +1,4 @@
-import * as forge from 'node-forge';
+import { constants as cryptoConstants, createPublicKey, publicEncrypt } from 'node:crypto';
 
 import { Attributes, Commands, CommandsNoResult, OIDCSQLCommand, SQLBatchCommand, SQLSingleCommand } from './commands';
 import { Connection, ExaWebsocket } from './connection';
@@ -474,15 +474,28 @@ export class ExasolDriver implements IExasolDriver {
         throw new Error(errorString);
       }
 
-      const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);
-      const e = new forge.jsbn.BigInteger(response.responseData.publicKeyExponent, 16);
-
-      const pubKey = forge.pki.rsa.setPublicKey(n, e);
-      const password = pubKey.encrypt(this.config.password ?? '');
+      // Build RSA public key from hex modulus/exponent returned by the server, then
+      // encrypt the password with RSAES-PKCS1-v1.5 and base64-encode the ciphertext.
+      // Uses Node's built-in crypto (no external crypto library) to keep the bundle small.
+      const padHex = (hex: string) => (hex.length % 2 === 0 ? hex : '0' + hex);
+      const modulus = Buffer.from(padHex(response.responseData.publicKeyModulus), 'hex');
+      const exponent = Buffer.from(padHex(response.responseData.publicKeyExponent), 'hex');
+      const pubKey = createPublicKey({
+        key: {
+          kty: 'RSA',
+          n: modulus.toString('base64url'),
+          e: exponent.toString('base64url'),
+        },
+        format: 'jwk',
+      });
+      const ciphertext = publicEncrypt(
+        { key: pubKey, padding: cryptoConstants.RSA_PKCS1_PADDING },
+        Buffer.from(this.config.password ?? '', 'binary'),
+      );
 
       return this.sendCommand({
         username: this.config.user ?? '',
-        password: forge.util.encode64(password),
+        password: ciphertext.toString('base64'),
         useCompression: this.config.compression,
         clientName: this.config.clientName,
         driverName: `exasol-driver-js ${driverVersion}`,
