@@ -1,6 +1,11 @@
 {
   "js/ts.format.enabled": true,
   "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.generate.finalModifiers": "explicit",
+    "source.fixAll": "explicit"
+  },
   "[typescript]": {
     "editor.tabSize": 2
   },

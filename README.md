@@ -27,6 +27,8 @@ Check out the [user guide](doc/user_guide/user_guide.md) for more details.
 ## Information for Users
 
 - [User Guide](doc/user_guide/user_guide.md)
+- [System Requirements](doc/spec/system_requirements.md)
+- [Design](doc/spec/design_index.md)
 - [Change Log](doc/changes/changelog.md)
 - [MIT License](LICENSE)
 
