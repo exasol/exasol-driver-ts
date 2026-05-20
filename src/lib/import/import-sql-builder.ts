@@ -1,4 +1,5 @@
-import { CsvFormatOptions, InternalAddress, TrimMode } from './types';
+import { InternalAddress } from './http-transport';
+import { CsvFormatOptions, TrimMode } from './types';
 
 export function buildCsvImportSql(
   tableName: string,

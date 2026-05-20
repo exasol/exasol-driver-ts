@@ -1,6 +1,5 @@
 import * as net from 'net';
 import { ExaErrorBuilder } from '../errors/error-reporting';
-import { InternalAddress } from './types';
 
 const MAGIC_PACKET_SIZE = 12;
 const RESPONSE_SIZE = 24;
@@ -16,6 +15,11 @@ function buildMagicPacket(): Buffer {
   buffer.writeInt32LE(PROTOCOL_VERSION, 4);
   buffer.writeInt32LE(PROTOCOL_VERSION, 8);
   return buffer;
+}
+
+export interface InternalAddress {
+  host: string;
+  port: number;
 }
 
 // Export function to allow unit testing

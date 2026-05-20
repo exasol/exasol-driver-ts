@@ -48,11 +48,6 @@ export interface CsvFormatOptions {
   null?: string;
 }
 
-export interface InternalAddress {
-  host: string;
-  port: number;
-}
-
 /** Defines the line break character. */
 export enum RowSeparator {
   /** Default: corresponds to the ASCII character 0x0a (Unix/Linux) */
