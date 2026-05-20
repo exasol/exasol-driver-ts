@@ -44,53 +44,26 @@ describe('import-sql-builder', () => {
         null: 'NULL',
       });
 
-      expect(sql).toContain("COLUMN SEPARATOR = ','");
-      expect(sql).toContain("COLUMN DELIMITER = '\"'");
-      expect(sql).toContain("ROW SEPARATOR = 'CRLF'");
-      expect(sql).toContain("ENCODING = 'UTF-8'");
-      expect(sql).toContain('SKIP = 1');
-      expect(sql).toContain("LTRIM");
-      expect(sql).toContain("NULL = 'NULL'");
+      expect(sql).toBe("IMPORT INTO TEST_TABLE FROM CSV AT 'http://192.168.1.10:4362' FILE '001.csv' "
+        + "COLUMN SEPARATOR = ',' "
+        + "COLUMN DELIMITER = '\"' "
+        + "ROW SEPARATOR = 'CRLF' "
+        + "ENCODING = 'UTF-8' "
+        + "SKIP = 1 "
+        + "LTRIM "
+        + "NULL = 'NULL'");
     });
 
-    it('should escape apostrophes in CSV format option literals', () => {
-      const sql = buildCsvImportSql('TEST_TABLE', { host: '192.168.1.10', port: 4362 }, false, undefined, {
-        columnDelimiter: "'",
-      });
+    it.each([
+      [{ columnDelimiter: "'" }, "COLUMN DELIMITER = ''''"],
+      [{ columnSeparator: "'" }, "COLUMN SEPARATOR = ''''"],
+      [{ rowSeparator: "O'CLOCK" as RowSeparator }, "ROW SEPARATOR = 'O''CLOCK'"],
+      [{ encoding: "UTF-'8" as 'UTF-8' }, "ENCODING = 'UTF-''8'"],
+      [{ null: "NU'LL" }, "NULL = 'NU''LL'"],
+    ])('should escape apostrophes in CSV option literals: %p', (csvOptions, expectedClause) => {
+      const sql = buildCsvImportSql('TEST_TABLE', { host: '192.168.1.10', port: 4362 }, false, undefined, csvOptions);
 
-      expect(sql).toContain("COLUMN DELIMITER = ''''");
-    });
-
-    it('should escape apostrophes in column separator literal', () => {
-      const sql = buildCsvImportSql('TEST_TABLE', { host: '192.168.1.10', port: 4362 }, false, undefined, {
-        columnSeparator: "'",
-      });
-
-      expect(sql).toContain("COLUMN SEPARATOR = ''''");
-    });
-
-    it('should escape apostrophes in row separator literal', () => {
-      const sql = buildCsvImportSql('TEST_TABLE', { host: '192.168.1.10', port: 4362 }, false, undefined, {
-        rowSeparator: "O'CLOCK" as RowSeparator,
-      });
-
-      expect(sql).toContain("ROW SEPARATOR = 'O''CLOCK'");
-    });
-
-    it('should escape apostrophes in encoding literal', () => {
-      const sql = buildCsvImportSql('TEST_TABLE', { host: '192.168.1.10', port: 4362 }, false, undefined, {
-        encoding: "UTF-'8" as 'UTF-8',
-      });
-
-      expect(sql).toContain("ENCODING = 'UTF-''8'");
-    });
-
-    it('should escape apostrophes in null literal', () => {
-      const sql = buildCsvImportSql('TEST_TABLE', { host: '192.168.1.10', port: 4362 }, false, undefined, {
-        null: "NU'LL",
-      });
-
-      expect(sql).toContain("NULL = 'NU''LL'");
+      expect(sql).toContain(expectedClause);
     });
   });
 });

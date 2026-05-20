@@ -155,17 +155,15 @@ describe("Node Import", () => {
         expectedRows: [{ ID: 1, NAME: ' one ' }, { ID: 2, NAME: '\ttwo\t' }, { ID: 3, NAME: 'three' }]
       }]
 
-      testCases.forEach(({ description, csvContent, csvOptions, expectedRows }) => {
-        it(`imports CSV file into table with ${description}`, async () => {
-          await driver?.execute(`CREATE SCHEMA ${schemaName}`);
-          const tableName = `${schemaName}.TEST_TABLE`;
-          await driver?.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0), NAME VARCHAR(2000000))`);
-          const csvFilePath = await createFile('test.csv', csvContent);
-          await driver?.importFromCsvFile(tableName, csvFilePath, csvOptions);
+      it.each(testCases)('imports CSV file into table with $description', async ({ csvContent, csvOptions, expectedRows }) => {
+        await driver?.execute(`CREATE SCHEMA ${schemaName}`);
+        const tableName = `${schemaName}.TEST_TABLE`;
+        await driver?.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0), NAME VARCHAR(2000000))`);
+        const csvFilePath = await createFile('test.csv', csvContent);
+        await driver?.importFromCsvFile(tableName, csvFilePath, csvOptions);
 
-          const data = await driver?.query(`SELECT * FROM ${tableName}`);
-          expect(data?.getRows()).toStrictEqual(expectedRows);
-        });
+        const data = await driver?.query(`SELECT * FROM ${tableName}`);
+        expect(data?.getRows()).toStrictEqual(expectedRows);
       });
 
     });
