@@ -10,7 +10,7 @@ describe('csv-file-import', () => {
     it('should reject with file-not-found error for non-existent file', async () => {
       const mockExecuteSql = jest.fn();
 
-      await expect(importCsvFile('localhost', 8563, 'test_table', '/nonexistent/path/test.csv', false, mockExecuteSql)).rejects.toThrow(
+      await expect(importCsvFile('localhost', 8563, 'test_table', '/nonexistent/path/test.csv', mockExecuteSql)).rejects.toThrow(
         "E-EDJS-14: Import file not found: '/nonexistent/path/test.csv'. Verify the file path exists and is readable.",
       );
 
@@ -22,7 +22,7 @@ describe('csv-file-import', () => {
       const mockExecuteSql = jest.fn();
 
       try {
-        await importCsvFile('localhost', 8563, 'test_table', '/another/missing/file.csv', false, mockExecuteSql);
+        await importCsvFile('localhost', 8563, 'test_table', '/another/missing/file.csv', mockExecuteSql);
       } catch {
         // expected
       }
@@ -34,7 +34,7 @@ describe('csv-file-import', () => {
       const mockExecuteSql = jest.fn();
 
       mockedCreateTunnel.mockRejectedValue(new Error('mocked error'));
-      await expect(importCsvFile('localhost', 8563, 'test_table', 'README.md', false, mockExecuteSql)).rejects.toThrow("mocked error");
+      await expect(importCsvFile('localhost', 8563, 'test_table', 'README.md', mockExecuteSql)).rejects.toThrow("mocked error");
 
       expect(mockExecuteSql).not.toHaveBeenCalled();
     });

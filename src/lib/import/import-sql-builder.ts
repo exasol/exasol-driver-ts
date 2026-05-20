@@ -3,20 +3,12 @@ import { CsvFormatOptions, InternalAddress, TrimMode } from './types';
 export function buildCsvImportSql(
   tableName: string,
   internalAddress: InternalAddress,
-  encrypted: boolean,
-  fingerprint?: string,
+  fingerprint: string,
   csvOptions?: CsvFormatOptions,
 ): string {
-  const protocol = encrypted ? 'https' : 'http';
-  const url = `${protocol}://${internalAddress.host}:${internalAddress.port}`;
+  const url = `https://${internalAddress.host}:${internalAddress.port}`;
 
-  let sql = `IMPORT INTO ${tableName} FROM CSV AT '${url}'`;
-
-  if (encrypted && fingerprint) {
-    sql += ` PUBLIC KEY '${fingerprint}'`;
-  }
-
-  sql += ` FILE '001.csv'`;
+  let sql = `IMPORT INTO ${tableName} FROM CSV AT '${url}' PUBLIC KEY '${fingerprint}' FILE '001.csv'`;
 
   const formatClauses = buildFormatClauses(csvOptions);
   if (formatClauses.length > 0) {

@@ -1,7 +1,5 @@
 import * as fs from 'fs';
-import * as net from 'net';
 import * as path from 'path';
-import * as tls from 'tls';
 import { CsvFormatOptions } from './types';
 import { createTunnel } from './http-transport';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
@@ -14,38 +12,32 @@ export async function importCsvFile(
   port: number,
   tableName: string,
   filePath: string,
-  encryption: boolean,
   executeSql: (sql: string) => Promise<number>,
   csvOptions?: CsvFormatOptions,
 ): Promise<number> {
   const absoluteFilePath = path.resolve(filePath);
   await verifyFileExists(absoluteFilePath);
 
-  const { socket, internalAddress } = await createTunnel(host, port);
+  const { socket: unencryptedSocket, internalAddress } = await createTunnel(host, port);
 
-  let activeSocket: net.Socket | tls.TLSSocket = socket;
-  let fingerprint: string | undefined;
+  const cert = generateAdHocCertificate();
+  const secureSocket = wrapWithTls(unencryptedSocket, cert.key, cert.cert);
+  const fingerprint = cert.fingerprint;
 
-  if (encryption) {
-    const cert = generateAdHocCertificate();
-    activeSocket = wrapWithTls(socket, cert.key, cert.cert);
-    fingerprint = cert.fingerprint;
-  }
-
-  const importSql = buildCsvImportSql(tableName, internalAddress, encryption, fingerprint, csvOptions);
+  const importSql = buildCsvImportSql(tableName, internalAddress, fingerprint, csvOptions);
 
   try {
     const sqlPromise = executeSql(importSql);
     const tunnelPromise = (async () => {
-      await readHttpRequest(activeSocket);
+      await readHttpRequest(secureSocket);
       const fileStream = fs.createReadStream(absoluteFilePath);
-      await sendChunkedResponse(activeSocket, fileStream);
+      await sendChunkedResponse(secureSocket, fileStream);
     })();
 
     const [rowCount] = await Promise.all([sqlPromise, tunnelPromise]);
     return rowCount;
   } finally {
-    activeSocket.destroy();
+    secureSocket.destroy();
   }
 }
 

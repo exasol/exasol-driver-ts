@@ -424,7 +424,6 @@ export class ExasolDriver implements IExasolDriver {
       this.config.port,
       tableName,
       filePath,
-      this.config.encryption,
       (sql: string) => this.execute(sql),
       csvOptions,
     );
