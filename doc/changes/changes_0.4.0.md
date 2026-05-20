@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.4.0, released 2026-05
+# Exasol Driver ts 0.4.0, released 2026-05-??
 
 Code name: Import local CSV File
 
