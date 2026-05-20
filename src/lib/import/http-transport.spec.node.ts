@@ -1,7 +1,7 @@
-import * as net from 'net';
+import * as net from 'node:net';
 import { createTunnel, parseResponse } from './http-transport';
 
-jest.mock('net');
+jest.mock('node:net');
 
 describe('http-transport', () => {
   describe('parseResponse', () => {

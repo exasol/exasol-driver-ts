@@ -1,6 +1,6 @@
 import * as forge from 'node-forge';
-import * as tls from 'tls';
-import * as net from 'net';
+import * as tls from 'node:tls';
+import * as net from 'node:net';
 
 export interface AdHocCertificate {
   key: forge.pki.rsa.PrivateKey;

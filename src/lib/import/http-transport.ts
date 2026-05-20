@@ -1,4 +1,4 @@
-import * as net from 'net';
+import * as net from 'node:net';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 
 const MAGIC_PACKET_SIZE = 12;
