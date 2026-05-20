@@ -1,4 +1,5 @@
 /**
+ * Options for CSV file import.
  * See https://docs.exasol.com/db/latest/sql/import.htm#Usagenotes
  */
 export interface CsvFormatOptions {
@@ -22,10 +23,11 @@ export interface CsvFormatOptions {
 
   /**
    * Defines the line break character.
+   * Default value: {@link RowSeparator.LF}
    */
   rowSeparator?: RowSeparator;
 
-  /** Encoding of the CSV or FBV files. Default is UTF-8. */
+  /** Encoding of the CSV or FBV files. Default is `UTF-8`. */
   encoding?: Encoding;
 
   /**
@@ -37,7 +39,7 @@ export interface CsvFormatOptions {
 
   /**
    * Defines whether spaces are removed at the border of CSV columns.
-   * By default, no spaces are removed. 
+   * Default: {@link TrimMode.NONE} (no spaces are removed)
    */
   trim?: TrimMode;
 
@@ -60,9 +62,7 @@ export enum RowSeparator {
   NONE = 'NONE',
 }
 
-/**
- * Defines whether spaces are removed at the border of CSV columns.
- */
+/** Defines whether spaces are removed at the border of CSV columns. */
 export enum TrimMode {
   /** Default: no spaces are removed */
   NONE = 'none',
@@ -74,7 +74,7 @@ export enum TrimMode {
   BOTH = 'TRIM',
 }
 
-/** See https://docs.exasol.com/db/latest/loading_data/file_formats.htm#Supported_Encodings */
+/** Character encoding of the CSV file. See https://docs.exasol.com/db/latest/loading_data/file_formats.htm#Supported_Encodings */
 export type Encoding =
   'ASCII' |
   'ISO-8859-1' | 'ISO-8859-2' | 'ISO-8859-3' | 'ISO-8859-4' | 'ISO-8859-5' | 'ISO-8859-6' |
