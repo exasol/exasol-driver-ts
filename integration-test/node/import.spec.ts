@@ -66,83 +66,6 @@ describe("Node Import", () => {
       await expect(driver?.importFromCsvFile(tableName, csvFilePath, {})).rejects.toThrow(`E-EDJS-25: SQL error: code: '42000', message: 'object MISSING_TABLE not found`);
     });
 
-
-    interface ImportTestCase {
-      description: string;
-      csvContent: string;
-      csvOptions: CsvFormatOptions;
-      expectedRows: unknown[];
-    }
-    const defaultExpectedRows = [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two' }, { ID: 3, NAME: 'three' }];
-    const testCases: ImportTestCase[] = [{
-      description: 'default options', csvOptions: {},
-      csvContent: '1,one\n2,two\n3,three',
-      expectedRows: defaultExpectedRows
-    },
-    {
-      description: 'custom column delimiter', csvOptions: { columnDelimiter: "'" },
-      csvContent: "1,'one'\n2,'two'\n3,'three'",
-      expectedRows: defaultExpectedRows
-    },
-    {
-      description: 'custom column separator', csvOptions: { columnSeparator: ";" },
-      csvContent: "1;one\n2;two\n3;three",
-      expectedRows: defaultExpectedRows
-    },
-    {
-      description: 'custom row separator', csvOptions: { rowSeparator: RowSeparator.CRLF },
-      csvContent: "1,one\r\n2,two\r\n3,three",
-      expectedRows: defaultExpectedRows
-    },
-    {
-      description: 'skip header row', csvOptions: { skip: 1 },
-      csvContent: "ignored header row\n1,one\n2,two\n3,three",
-      expectedRows: defaultExpectedRows
-    },
-    {
-      description: 'custom encoding', csvOptions: { encoding: 'ASCII' },
-      csvContent: "1,one\n2,two\n3,three",
-      expectedRows: defaultExpectedRows
-    },
-    {
-      description: 'custom null value', csvOptions: { null: 'CUSTOM_NULL_VALUE' },
-      csvContent: "1,one\n2,two\n3,CUSTOM_NULL_VALUE",
-      expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two' }, { ID: 3, NAME: null }]
-    },
-    {
-      description: 'trim left / leading whitespace', csvOptions: { trim: TrimMode.LEADING },
-      csvContent: "1, one\n2,\ttwo\n3,three ",
-      expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: '\ttwo' }, { ID: 3, NAME: 'three ' }]
-    },
-    {
-      description: 'trim right / trailing whitespace', csvOptions: { trim: TrimMode.TRAILING },
-      csvContent: "1,one \n2,two\t\n3, three",
-      expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two\t' }, { ID: 3, NAME: ' three' }]
-    },
-    {
-      description: 'trim both', csvOptions: { trim: TrimMode.BOTH },
-      csvContent: "1, one \n2,\ttwo\t\n3,three",
-      expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: '\ttwo\t' }, { ID: 3, NAME: 'three' }]
-    },
-    {
-      description: 'do not trim', csvOptions: { trim: TrimMode.NONE },
-      csvContent: "1, one \n2,\ttwo\t\n3,three",
-      expectedRows: [{ ID: 1, NAME: ' one ' }, { ID: 2, NAME: '\ttwo\t' }, { ID: 3, NAME: 'three' }]
-    }]
-
-    testCases.forEach(({ description, csvContent, csvOptions, expectedRows }) => {
-      it(`imports CSV file into table with ${description}`, async () => {
-        await driver?.execute(`CREATE SCHEMA ${schemaName}`);
-        const tableName = `${schemaName}.TEST_TABLE`;
-        await driver?.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0), NAME VARCHAR(2000000))`);
-        const csvFilePath = await createFile('test.csv', csvContent);
-        await driver?.importFromCsvFile(tableName, csvFilePath, csvOptions);
-
-        const data = await driver?.query(`SELECT * FROM ${tableName}`);
-        expect(data?.getRows()).toStrictEqual(expectedRows);
-      });
-    });
-
     it('imports CSV file into table', async () => {
       await driver?.execute(`CREATE SCHEMA ${schemaName}`);
       const tableName = `${schemaName}.TEST_TABLE`;
@@ -168,6 +91,84 @@ describe("Node Import", () => {
       ]);
     });
 
+    describe('supports various options', () => {
+      interface ImportTestCase {
+        description: string;
+        csvContent: string;
+        csvOptions: CsvFormatOptions;
+        expectedRows: unknown[];
+      }
+      const defaultExpectedRows = [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two' }, { ID: 3, NAME: 'three' }];
+      const testCases: ImportTestCase[] = [{
+        description: 'default options', csvOptions: {},
+        csvContent: '1,one\n2,two\n3,three',
+        expectedRows: defaultExpectedRows
+      },
+      {
+        description: 'custom column delimiter', csvOptions: { columnDelimiter: "'" },
+        csvContent: "1,'one'\n2,'two'\n3,'three'",
+        expectedRows: defaultExpectedRows
+      },
+      {
+        description: 'custom column separator', csvOptions: { columnSeparator: ";" },
+        csvContent: "1;one\n2;two\n3;three",
+        expectedRows: defaultExpectedRows
+      },
+      {
+        description: 'custom row separator', csvOptions: { rowSeparator: RowSeparator.CRLF },
+        csvContent: "1,one\r\n2,two\r\n3,three",
+        expectedRows: defaultExpectedRows
+      },
+      {
+        description: 'skip header row', csvOptions: { skip: 1 },
+        csvContent: "ignored header row\n1,one\n2,two\n3,three",
+        expectedRows: defaultExpectedRows
+      },
+      {
+        description: 'custom encoding', csvOptions: { encoding: 'ASCII' },
+        csvContent: "1,one\n2,two\n3,three",
+        expectedRows: defaultExpectedRows
+      },
+      {
+        description: 'custom null value', csvOptions: { null: 'CUSTOM_NULL_VALUE' },
+        csvContent: "1,one\n2,two\n3,CUSTOM_NULL_VALUE",
+        expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two' }, { ID: 3, NAME: null }]
+      },
+      {
+        description: 'trim left / leading whitespace', csvOptions: { trim: TrimMode.LEADING },
+        csvContent: "1, one\n2,\ttwo\n3,three ",
+        expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: '\ttwo' }, { ID: 3, NAME: 'three ' }]
+      },
+      {
+        description: 'trim right / trailing whitespace', csvOptions: { trim: TrimMode.TRAILING },
+        csvContent: "1,one \n2,two\t\n3, three",
+        expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: 'two\t' }, { ID: 3, NAME: ' three' }]
+      },
+      {
+        description: 'trim both', csvOptions: { trim: TrimMode.BOTH },
+        csvContent: "1, one \n2,\ttwo\t\n3,three",
+        expectedRows: [{ ID: 1, NAME: 'one' }, { ID: 2, NAME: '\ttwo\t' }, { ID: 3, NAME: 'three' }]
+      },
+      {
+        description: 'do not trim', csvOptions: { trim: TrimMode.NONE },
+        csvContent: "1, one \n2,\ttwo\t\n3,three",
+        expectedRows: [{ ID: 1, NAME: ' one ' }, { ID: 2, NAME: '\ttwo\t' }, { ID: 3, NAME: 'three' }]
+      }]
+
+      testCases.forEach(({ description, csvContent, csvOptions, expectedRows }) => {
+        it(`imports CSV file into table with ${description}`, async () => {
+          await driver?.execute(`CREATE SCHEMA ${schemaName}`);
+          const tableName = `${schemaName}.TEST_TABLE`;
+          await driver?.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0), NAME VARCHAR(2000000))`);
+          const csvFilePath = await createFile('test.csv', csvContent);
+          await driver?.importFromCsvFile(tableName, csvFilePath, csvOptions);
+
+          const data = await driver?.query(`SELECT * FROM ${tableName}`);
+          expect(data?.getRows()).toStrictEqual(expectedRows);
+        });
+      });
+
+    });
   });
 
   const openConnection = async (factory: websocketFactory, container: StartedTestContainer) => {
