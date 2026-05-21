@@ -258,13 +258,7 @@ export class ExasolDriver implements IExasolDriver {
           return data;
         }
 
-        if (data.status === 'error') {
-          if (data.exception) {
-            throw newSqlError(data.exception);
-          } else {
-            throw GeneralSqlError;
-          }
-        }
+        this.verifyNoError(data);
 
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
@@ -327,13 +321,7 @@ export class ExasolDriver implements IExasolDriver {
           return data;
         }
 
-        if (data.status === 'error') {
-          if (data.exception) {
-            throw newSqlError(data.exception);
-          } else {
-            throw GeneralSqlError;
-          }
-        }
+        this.verifyNoError(data);
 
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
@@ -351,6 +339,16 @@ export class ExasolDriver implements IExasolDriver {
         }
         throw err;
       });
+  }
+
+  private verifyNoError(data: SQLResponse<SQLQueriesResponse>) {
+    if (data.status === 'error') {
+      if (data.exception) {
+        throw newSqlError(data.exception);
+      } else {
+        throw GeneralSqlError;
+      }
+    }
   }
 
   /**
