@@ -4,9 +4,15 @@ Code name: Import local CSV File
 
 ## Summary
 
+This release also fixes the implementation of the `driver.cancel()` method. Before, it failed with error `Cannot read properties of undefined (reading 'numResults')`. Now the query correctly fails with the correct error message `E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort. ...`.
+
 ## Features
 
 * #48: Added import from local CSV file
+
+## Bugfixes
+
+* #62: Fixed cancelling `query()` and `execute()` calls
 
 ## Dependency Updates
 
