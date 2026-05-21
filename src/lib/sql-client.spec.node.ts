@@ -200,6 +200,16 @@ describe('sqlClient', () => {
         command: 'abortQuery',
       });
     });
+
+    it('should reject when driver is closed', async () => {
+      await driver.close();
+
+      await expect(driver.cancel()).rejects.toThrow('E-EDJS-2: Connection was closed.');
+    });
+
+    it('should reject when no connection exists', async () => {
+      await expect(driver.cancel()).rejects.toThrow('E-EDJS-1: Invalid connection.');
+    });
   });
 
   describe('importFromCsvFile', () => {

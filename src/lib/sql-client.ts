@@ -159,9 +159,16 @@ export class ExasolDriver implements IExasolDriver {
    * @inheritDoc
    */
   async cancel() {
-    await this.sendCommandWithNoResult({
+    if (this.closed) {
+      throw ErrClosed;
+    }
+    const connections = this.pool.getAll();
+    if (connections.length === 0) {
+      throw ErrInvalidConn;
+    }
+    await Promise.all(connections.map((connection) => connection.sendCommandWithNoResult({
       command: 'abortQuery',
-    });
+    })));
   }
 
   /**
