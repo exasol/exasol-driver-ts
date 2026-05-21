@@ -6,6 +6,7 @@
     "audit": "npm run audit:prod && npm run audit:full",
     "audit:prod": "npm audit --omit=dev",
     "audit:full": "audit-ci --config ./audit-ci.jsonc",
+    "trace": "./.github/workflows/oftw.sh trace --wanted-tags active",
     "build": "rollup --failAfterWarnings --config rollup.config.mjs",
     "watch": "rollup --failAfterWarnings --watch --config rollup.config.mjs",
     "typecheck": "tsc --noEmit",

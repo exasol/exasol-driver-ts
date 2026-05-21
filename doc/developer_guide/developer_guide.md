@@ -21,6 +21,17 @@ npm run audit
 * Production dependencies may not have any audit findings.
 * Findings in dev dependencies can be excluded via [audit-ci.jsonc](../../audit-ci.jsonc) 
 
+### OpenFastTrace
+
+Run requirement tracing with:
+
+```sh
+npm run trace
+```
+
+Specification items marked with `Tags: draft` are excluded from tracing. Remove the `draft` tag when a specification item is ready to become part of the active trace set.
+Active specification items must be marked with `Tags: active`.
+
 ### Unit tests
 
 ```sh
