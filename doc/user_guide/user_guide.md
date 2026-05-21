@@ -131,6 +131,88 @@ const queryResult = await driver.query('...');
 console.log(queryResult.getRows()[0]['X']);
 ```
 
+### CSV Import
+
+CSV import with `importFromCsvFile()` is only available in Node.js. It does not work in the browser because the implementation reads a local file from the Node.js runtime and streams it to Exasol.
+
+Importing a local CSV file:
+
+```ts
+import { ExasolDriver, ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { WebSocket } from 'ws';
+
+const driver = new ExasolDriver((url) => {
+  return new WebSocket(url) as ExaWebsocket;
+}, {
+  host: 'localhost',
+  port: 8563,
+  user: 'sys',
+  password: 'exasol',
+  encryption: false,
+});
+
+await driver.connect();
+
+const importedRows = await driver.importFromCsvFile(
+  'MY_SCHEMA.MY_TABLE',
+  '/absolute/path/to/data.csv',
+);
+
+console.log(importedRows);
+
+await driver.close();
+```
+
+Importing a CSV file with format options:
+
+```ts
+import {
+  ExasolDriver,
+  ExaWebsocket,
+  RowSeparator,
+  TrimMode,
+} from '@exasol/exasol-driver-ts';
+import { WebSocket } from 'ws';
+
+const driver = new ExasolDriver((url) => {
+  return new WebSocket(url) as ExaWebsocket;
+}, {
+  host: 'localhost',
+  port: 8563,
+  user: 'sys',
+  password: 'exasol',
+  encryption: false,
+});
+
+await driver.connect();
+
+await driver.importFromCsvFile('MY_SCHEMA.MY_TABLE', '/absolute/path/to/data.csv', {
+  columnSeparator: ';',
+  skip: 1,
+  rowSeparator: RowSeparator.CRLF,
+  trim: TrimMode.BOTH,
+  null: 'NULL',
+});
+
+await driver.close();
+```
+
+The optional `csvOptions` argument can be used to configure the CSV format, for example the column separator, row separator, header rows to skip, trimming mode, encoding, or additional NULL representation.
+
+#### Available CSV Options
+
+| Option | Type | Default | Description |
+| :----- | :--- | :------ | :---------- |
+| `columnSeparator` | `string` | `','` | Field separator for the CSV file. |
+| `columnDelimiter` | `string` | `'"'` | Field delimiter for CSV fields. |
+| `rowSeparator` | `RowSeparator` | `RowSeparator.LF` | Line break used in the CSV file. Supported values are `LF`, `CR`, and `CRLF`. |
+| `encoding` | `Encoding` | `'UTF-8'` | Character encoding of the CSV file. |
+| `skip` | `number` | `0` | Number of rows to skip before importing data, for example to ignore a header row. |
+| `trim` | `TrimMode` | `TrimMode.NONE` | Trimming mode for spaces around CSV field values. Supported values are `NONE`, `LEADING`, `TRAILING`, and `BOTH`. |
+| `null` | `string` | not set | Additional literal value that should be interpreted as `NULL` for non-delimited fields. |
+
+See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#Usagenotes) for details about these options.
+
 ### Supported Driver Properties
 
 | Property           |       Value        |       Default       | Description                                                                                                                             |
