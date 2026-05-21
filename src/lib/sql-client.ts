@@ -1,12 +1,7 @@
 import * as forge from 'node-forge';
 
-import { getURIScheme } from './utils';
-import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
-import { Statement } from './statement';
-import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
-import { ConnectionPool } from './pool/pool';
-import { ILogger, Logger, LogLevel } from './logger/logger';
-import { fetchData } from './fetch';
+import { Attributes, Commands, CommandsNoResult, OIDCSQLCommand, SQLBatchCommand, SQLSingleCommand } from './commands';
+import { Connection, ExaWebsocket } from './connection';
 import {
   ErrClosed,
   ErrInvalidConn,
@@ -18,11 +13,16 @@ import {
   newInvalidReturnValueRowCount,
   newSqlError,
 } from './errors/errors';
-import { Connection, ExaWebsocket } from './connection';
-import { CommandsNoResult, Attributes, Commands, OIDCSQLCommand, SQLSingleCommand, SQLBatchCommand } from './commands';
-import { QueryResult } from './query-result';
-import { CsvFormatOptions } from './import/types';
+import { fetchData } from './fetch';
 import { importCsvFile } from './import/csv-file-import';
+import { CsvFormatOptions } from './import/types';
+import { ILogger, Logger, LogLevel } from './logger/logger';
+import { ConnectionPool } from './pool/pool';
+import { QueryResult } from './query-result';
+import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
+import { Statement } from './statement';
+import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
+import { getURIScheme } from './utils';
 
 export interface Config {
   host: string;
@@ -251,6 +251,14 @@ export class ExasolDriver implements IExasolDriver {
       .then((data) => {
         if (responseType == 'raw') {
           return data;
+        }
+
+        if (data.status === 'error') {
+          if (data.exception) {
+            throw newSqlError(data.exception);
+          } else {
+            throw GeneralSqlError;
+          }
         }
 
         if (data.responseData.numResults === 0) {
