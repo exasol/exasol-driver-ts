@@ -42,8 +42,6 @@ export const basicCompressionTests = (name: string, createWSFactory: CreateWebso
       const data1 = await dataPromise1;
       expect(data1.getColumns()[0].name).toBe('X');
       expect(data1.getRows()[0]['X']).toBe(15);
-      console.log('name:' + data1.getColumns()[0].name);
-      console.log('value:' + data1.getRows()[0]['X']);
 
       await clientWithCompression.close();
 

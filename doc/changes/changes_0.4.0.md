@@ -1,12 +1,14 @@
-# Exasol Driver ts 0.4.0, released 2026-??-??
+# Exasol Driver ts 0.4.0, released 2026-05-??
 
 Code name:
 
 ## Summary
 
-## Features
+This release fixes the implementation of the `driver.cancel()` method. Before, it failed with error `Cannot read properties of undefined (reading 'numResults')`. Now the query correctly fails with the correct error message `E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort. ...`.
 
-* ISSUE_NUMBER: description
+## Bugfixes
+
+* #62: Fixed cancelling `query()` and `execute()` calls
 
 ## Dependency Updates
 
