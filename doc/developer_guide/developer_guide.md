@@ -31,8 +31,8 @@ Run requirement tracing with:
 npm run trace
 ```
 
-Specification items marked with `Tags: draft` are excluded from tracing. Remove the `draft` tag when a specification item is ready to become part of the active trace set.
-Active specification items must be marked with `Tags: active`.
+Draft specification items are marked with `Status: draft`.
+OpenFastTrace does not support filtering by status yet; see [itsallcode/openfasttrace#519](https://github.com/itsallcode/openfasttrace/issues/519). Until that exists, `npm run trace` only traces items marked with `Tags: active`.
 
 ### Unit tests
 

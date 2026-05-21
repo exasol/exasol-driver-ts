@@ -46,3 +46,5 @@ Run OpenFastTrace verification with:
 ```sh
 npm run trace
 ```
+
+Draft specification items are marked with `Status: draft`. OpenFastTrace status filtering is not implemented yet; see https://github.com/itsallcode/openfasttrace/issues/519. Until then, `npm run trace` only traces items marked with `Tags: active`.
