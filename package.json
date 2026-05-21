@@ -67,7 +67,7 @@
     "url": "https://github.com/exasol/exasol-driver-ts"
   },
   "keywords": [],
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/exasol/exasol-driver-ts/issues"
   },
