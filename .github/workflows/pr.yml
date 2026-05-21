@@ -73,6 +73,7 @@ jobs:
           path: ~/.m2/repository/
           key: oft-${{ hashFiles('.github/workflows/oftw.sh') }}
           restore-keys: oft
+      - run: npm run trace
 
   build:
     runs-on: ubuntu-slim
