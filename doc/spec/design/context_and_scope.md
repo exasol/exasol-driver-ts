@@ -13,8 +13,8 @@ Outside the system are the application using the library, the Exasol database, t
 ## Users and Neighboring Systems
 
 * Application developer using the public TypeScript or JavaScript API.
-* Browser application providing native `WebSocket`.
-* Node.js application providing a compatible WebSocket implementation such as `ws`.
+* Browser application running in a browser runtime that provides native `WebSocket`.
+* Node.js application running in a Node.js runtime that provides a compatible WebSocket implementation such as `ws` and access to local files for CSV import.
 * Exasol database server accepting WebSocket SQL protocol connections.
 * Local filesystem for Node.js CSV import.
 * npm package registry for distribution.

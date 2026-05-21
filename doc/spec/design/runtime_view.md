@@ -20,6 +20,7 @@ Status: draft
 Covers:
 - `scn~connect-with-basic-authentication~1`
 - `scn~encrypted-connection-by-default~1`
+- `scn~unencrypted-connection-when-disabled~1`
 - `scn~session-attributes-sent-during-login~1`
 - `constr~exasol-websocket-sql-protocol~1`
 
@@ -140,13 +141,25 @@ Covers:
 Status: draft
 
 Covers:
-- `scn~pool-executes-concurrent-queries~1`
+- `scn~pool-reuses-drivers-for-queries~1`
+
+### Pool Capacity Management
+`dsn~runtime-pool-capacity-management~1`
+
+**Given** concurrent work submitted to an `ExasolPool`
+**When** the pool needs additional driver instances
+**Then** the underlying `generic-pool` creates and reuses drivers while honoring the configured minimum and maximum size limits
+
+Status: draft
+
+Covers:
+- `scn~pool-enforces-configured-size-limits~1`
 
 ### Pool Shutdown
 `dsn~runtime-pool-shutdown~1`
 
 **Given** an `ExasolPool`
-**When** `drain()` and `clear()` are called
+**When** `drain()` and then `clear()` are called
 **Then** the underlying `generic-pool` drains pending work and destroys pooled drivers by closing them
 
 Status: draft
@@ -180,6 +193,19 @@ Status: draft
 
 Covers:
 - `scn~csv-import-rejects-missing-file~1`
+- `constr~node-only-csv-import~1`
+
+### CSV Import Missing Target Table
+`dsn~runtime-csv-import-missing-target-table~1`
+
+**Given** a readable local CSV file and a target table name that does not exist
+**When** `importFromCsvFile()` executes the generated `IMPORT INTO ... FROM CSV` SQL
+**Then** Exasol returns a SQL error and the driver rejects the import promise with that error
+
+Status: draft
+
+Covers:
+- `scn~csv-import-rejects-missing-target-table~1`
 - `constr~node-only-csv-import~1`
 
 ### CSV Import Format Options

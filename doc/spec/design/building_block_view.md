@@ -79,7 +79,8 @@ Covers:
 Status: draft
 
 Covers:
-- `scn~pool-executes-concurrent-queries~1`
+- `scn~pool-reuses-drivers-for-queries~1`
+- `scn~pool-enforces-configured-size-limits~1`
 - `scn~pool-shutdown~1`
 
 ### CSV Import Components
@@ -92,6 +93,7 @@ Status: draft
 Covers:
 - `scn~csv-import-succeeds~1`
 - `scn~csv-import-rejects-missing-file~1`
+- `scn~csv-import-rejects-missing-target-table~1`
 - `scn~csv-import-applies-format-options~1`
 
 ### Runtime Packaging

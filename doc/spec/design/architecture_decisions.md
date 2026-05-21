@@ -54,7 +54,8 @@ Pooling is a general-purpose concern. Reusing an existing library keeps the Exas
 Status: draft
 
 Covers:
-- `scn~pool-executes-concurrent-queries~1`
+- `scn~pool-reuses-drivers-for-queries~1`
+- `scn~pool-enforces-configured-size-limits~1`
 - `scn~pool-shutdown~1`
 
 Tags: pooling, dependency

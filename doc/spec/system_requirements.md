@@ -10,7 +10,7 @@ The library is published as an npm package and is intended for both browser and 
 
 * Provide a typed Exasol SQL driver for TypeScript and JavaScript applications.
 * Support both browser and Node.js runtimes through an injectable WebSocket factory.
-* Expose simple APIs for connecting, querying, executing commands, and closing connections.
+* APIs for connecting, querying, executing commands, and closing connections.
 * Support secure database communication by default.
 * Provide connection pooling for concurrent workloads.
 * Support Node.js CSV file imports into Exasol tables.
@@ -69,14 +69,6 @@ Node.js-only functionality that imports a readable local CSV file into an Exasol
 
 A developer who installs the npm package and uses the public TypeScript or JavaScript API in an application.
 
-### Browser Application
-
-A web application that uses the package with the browser's native `WebSocket`.
-
-### Node.js Application
-
-A server-side or local Node.js application that uses the package with a Node-compatible WebSocket implementation and can use Node-only CSV import.
-
 ### Database Operator
 
 A person or automation responsible for providing database host, port, credentials, schema, TLS, and connectivity settings.
@@ -130,10 +122,12 @@ Needs: req
 
 ## User Requirements
 
-### Connect to Exasol
+### Basic Operaionts
+
+#### Connect to Exasol
 `req~connect-to-exasol~1`
 
-The application developer must be able to create a driver with database connection settings, authenticate with credentials or tokens, and establish a database session.
+The application developer creates a driver with database connection settings, authenticates with credentials or tokens, and establishes a database session.
 
 Status: draft
 
@@ -142,10 +136,10 @@ Covers:
 
 Needs: scn
 
-### Execute SQL Queries
+#### Execute SQL Queries
 `req~execute-sql-queries~1`
 
-The application developer must be able to execute a SQL query and retrieve result metadata and rows.
+The application developer executes a SQL query and retrieves result metadata and rows.
 
 Status: draft
 
@@ -154,10 +148,10 @@ Covers:
 
 Needs: scn
 
-### Execute SQL Commands
+#### Execute SQL Commands
 `req~execute-sql-commands~1`
 
-The application developer must be able to execute SQL commands and receive the affected row count.
+The application developer executes SQL commands and receives the affected row count.
 
 Status: draft
 
@@ -166,10 +160,10 @@ Covers:
 
 Needs: scn
 
-### Receive Raw SQL Responses
+#### Receive Raw SQL Responses
 `req~receive-raw-sql-responses~1`
 
-The application developer must be able to request raw Exasol protocol responses for queries and commands when the normalized return type is not sufficient.
+The application developer requests raw Exasol protocol responses for queries and commands when the normalized return type is not sufficient, for example to inspect protocol fields such as `status`, `attributes`, or `responseData`.
 
 Status: draft
 
@@ -178,10 +172,10 @@ Covers:
 
 Needs: scn
 
-### Use Prepared Statements
+#### Use Prepared Statements
 `req~use-prepared-statements~1`
 
-The application developer must be able to create prepared statements, execute them with positional values, and close them.
+The application developer creates prepared statements, executes them with positional values, and closes them.
 
 Status: draft
 
@@ -190,10 +184,10 @@ Covers:
 
 Needs: scn
 
-### Cancel Running Work
+#### Cancel Running Work
 `req~cancel-running-work~1`
 
-The application developer must be able to cancel active database work through the driver.
+The application developer cancels active database work through the driver.
 
 Status: draft
 
@@ -202,10 +196,28 @@ Covers:
 
 Needs: scn
 
-### Run in Browser and Node.js
-`req~run-in-browser-and-nodejs~1`
+### Supported Runtimes
 
-The application developer must be able to use the same package in browser and Node.js runtimes by supplying an appropriate WebSocket factory.
+#### Run in Browser
+`req~run-in-browser~1`
+
+The application developer uses the package in browser runtimes by supplying a WebSocket factory that returns the runtime-provided `WebSocket` implementation.
+
+Status: draft
+
+Covers:
+- `feat~runtime-portability~1`
+
+Needs: scn
+
+#### Run in Node.js
+`req~run-in-nodejs~1`
+
+The application developer uses the package in Node.js runtimes by supplying a WebSocket factory that returns a compatible Node.js WebSocket implementation.
+
+Rationale:
+
+This keeps server-side consumers independent from the browser runtime while preserving the same package contract.
 
 Status: draft
 
@@ -217,7 +229,7 @@ Needs: scn
 ### Manage a Connection Pool
 `req~manage-connection-pool~1`
 
-The application developer must be able to create a connection pool with configurable minimum and maximum sizes, execute queries through it, drain it, and clear it.
+The application developer creates a connection pool with configurable minimum and maximum sizes, executes queries through it, drains it, and clears it.
 
 Status: draft
 
@@ -226,10 +238,12 @@ Covers:
 
 Needs: scn
 
-### Import Local CSV Files
+### CSV Import
+
+#### Import Local CSV Files
 `req~import-local-csv-files~1`
 
-The Node.js application developer must be able to import a readable local CSV file into a target Exasol table and receive the imported row count.
+The Node.js application developer imports a readable local CSV file into a target Exasol table and receives the imported row count.
 
 Status: draft
 
@@ -241,7 +255,7 @@ Needs: scn
 #### Configure CSV Format
 `req~configure-csv-format~1`
 
-The Node.js application developer must be able to configure CSV import format options including column separator, column delimiter, row separator, encoding, skipped rows, trimming, and NULL representation.
+The Node.js application developer configures CSV import format options including column separator, column delimiter, row separator, encoding, skipped rows, trimming, and NULL representation.
 
 Status: draft
 
@@ -250,10 +264,22 @@ Covers:
 
 Needs: scn
 
-### Configure Secure Sessions
-`req~configure-secure-sessions~1`
+### Encrypt Connections by Default
+`req~encrypt-connections-by-default~1`
 
-The application developer must be able to use encrypted WebSocket connections by default and explicitly disable encryption when needed for local or test setups.
+The application developer uses encrypted WebSocket connections by default.
+
+Status: draft
+
+Covers:
+- `feat~secure-configurable-sessions~1`
+
+Needs: scn
+
+### Allow Disabling Encryption
+`req~allow-disabling-encryption~1`
+
+The application developer explicitly disables encryption when needed for local or test setups.
 
 Status: draft
 
@@ -265,7 +291,7 @@ Needs: scn
 ### Configure Session Attributes
 `req~configure-session-attributes~1`
 
-The application developer must be able to configure session attributes including autocommit, schema, compression, fetch size, result row limit, client name, and client version.
+The application developer configures session attributes including autocommit, schema, compression, fetch size, result row limit, client name, and client version.
 
 Status: draft
 
@@ -344,6 +370,10 @@ Status: draft
 Covers:
 - `req~receive-raw-sql-responses~1`
 
+Comment:
+
+A protocol response is the low-level object returned by the Exasol WebSocket API, for example a `SQLResponse<SQLQueriesResponse>` with fields such as `status`, `attributes`, `responseData`, and optional `exception`.
+
 Needs: dsn
 
 ### Prepared Statement Execution
@@ -384,7 +414,7 @@ Needs: dsn
 Status: draft
 
 Covers:
-- `req~run-in-browser-and-nodejs~1`
+- `req~run-in-browser~1`
 
 Needs: dsn
 
@@ -393,21 +423,35 @@ Needs: dsn
 
 **Given** a Node.js application with a WebSocket implementation such as `ws`
 **When** the application creates a driver with a factory returning a compatible WebSocket
-**Then** the driver can connect without depending on a browser runtime
+**Then** the driver can connect with the supplied Node.js WebSocket implementation
 
 Status: draft
 
 Covers:
-- `req~run-in-browser-and-nodejs~1`
+- `req~run-in-nodejs~1`
 
 Needs: dsn
 
-### Pool Executes Concurrent Queries
-`scn~pool-executes-concurrent-queries~1`
+### Pool Reuses Drivers for Queries
+`scn~pool-reuses-drivers-for-queries~1`
 
 **Given** a configured `ExasolPool`
 **When** the application submits multiple queries
-**Then** the pool acquires driver instances, runs the queries, releases drivers after each operation, and enforces the configured pool size limits
+**Then** the pool acquires driver instances, runs the queries, and releases drivers after each operation
+
+Status: draft
+
+Covers:
+- `req~manage-connection-pool~1`
+
+Needs: dsn
+
+### Pool Enforces Configured Size Limits
+`scn~pool-enforces-configured-size-limits~1`
+
+**Given** a configured `ExasolPool` with minimum and maximum pool sizes
+**When** the application submits more concurrent work than one driver can serve
+**Then** the pool creates and reuses driver instances without exceeding the configured pool size limits
 
 Status: draft
 
@@ -420,7 +464,7 @@ Needs: dsn
 `scn~pool-shutdown~1`
 
 **Given** a configured `ExasolPool`
-**When** the application calls `drain()` and `clear()`
+**When** the application calls `drain()` and then `clear()`
 **Then** the pool stops accepting new work and closes pooled driver instances
 
 Status: draft
@@ -430,7 +474,9 @@ Covers:
 
 Needs: dsn
 
-### CSV Import Succeeds
+### CSV Import
+
+#### CSV Import Succeeds
 `scn~csv-import-succeeds~1`
 
 **Given** a Node.js application, an authenticated driver, a readable local CSV file, and an existing target table
@@ -444,7 +490,21 @@ Covers:
 
 Needs: dsn
 
-### CSV Import Rejects Missing File
+#### CSV Import Rejects Missing Target Table
+`scn~csv-import-rejects-missing-target-table~1`
+
+**Given** a Node.js application, an authenticated driver, a readable local CSV file, and a target table name that does not exist
+**When** the application calls `importFromCsvFile()`
+**Then** the driver rejects with the SQL error returned by Exasol for the missing table
+
+Status: draft
+
+Covers:
+- `req~import-local-csv-files~1`
+
+Needs: dsn
+
+#### CSV Import Rejects Missing File
 `scn~csv-import-rejects-missing-file~1`
 
 **Given** a Node.js application and an authenticated driver
@@ -458,10 +518,10 @@ Covers:
 
 Needs: dsn
 
-### CSV Import Applies Format Options
+#### CSV Import Applies Format Options
 `scn~csv-import-applies-format-options~1`
 
-**Given** a Node.js application and CSV format options
+**Given** a Node.js application and CSV format options for `columnSeparator`, `columnDelimiter`, `rowSeparator`, `encoding`, `skip`, `trim`, or `null`
 **When** the application calls `importFromCsvFile()` with those options
 **Then** the driver adds the corresponding Exasol `IMPORT FROM CSV` format clauses
 
@@ -472,7 +532,9 @@ Covers:
 
 Needs: dsn
 
-### Encrypted Connection by Default
+### Connection Encryption
+
+#### Encrypted Connection by Default
 `scn~encrypted-connection-by-default~1`
 
 **Given** a driver configuration that does not override encryption
@@ -482,11 +544,27 @@ Needs: dsn
 Status: draft
 
 Covers:
-- `req~configure-secure-sessions~1`
+- `req~encrypt-connections-by-default~1`
 
 Needs: dsn
 
-### Session Attributes Sent During Login
+#### Unencrypted Connection When Disabled
+`scn~unencrypted-connection-when-disabled~1`
+
+**Given** a driver configuration that explicitly sets `encryption` to `false`
+**When** the application connects
+**Then** the driver builds an unencrypted WebSocket URL
+
+Status: draft
+
+Covers:
+- `req~allow-disabling-encryption~1`
+
+Needs: dsn
+
+### Connection Configuration
+
+#### Session Attributes Sent During Login
 `scn~session-attributes-sent-during-login~1`
 
 **Given** a driver configuration with session attributes
@@ -500,12 +578,16 @@ Covers:
 
 Needs: dsn
 
-### Result Row Limit Applied During Fetch
+#### Result Row Limit Applied During Fetch
 `scn~result-row-limit-applied-during-fetch~1`
 
 **Given** a configured `resultSetMaxRows` value and a query result with more rows available
 **When** the driver fetches additional result data
-**Then** it stops adding rows after the configured maximum
+**Then** the driver stops appending rows after the configured maximum, even if Exasol can provide more rows
+
+Comment:
+
+The driver applies this limit while assembling the fetched result pages. It does not change the SQL statement or send a separate server-side row-limit command.
 
 Status: draft
 
