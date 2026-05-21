@@ -243,47 +243,16 @@ export class ExasolDriver implements IExasolDriver {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw' | undefined,
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
-    const connection = await this.acquire();
-    return connection
-      .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
-      .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
-      })
-      .then((data) => {
-        if (connection) {
-          this.pool.release(connection);
-        }
-        return data;
-      })
-      .then((data) => {
-        if (responseType == 'raw') {
-          return data;
-        }
+    const data = await this.runSqlStatement(sqlStatement, attributes, getCancel);
+    if (responseType == 'raw') {
+      return data;
+    }
 
-        if (data.status === 'error') {
-          if (data.exception) {
-            throw newSqlError(data.exception);
-          } else {
-            throw GeneralSqlError;
-          }
-        }
+    if (data.responseData.results[0].resultType === 'rowCount') {
+      throw newInvalidReturnValueRowCount;
+    }
 
-        if (data.responseData.numResults === 0) {
-          throw ErrMalformedData;
-        }
-
-        if (data.responseData.results[0].resultType === 'rowCount') {
-          throw newInvalidReturnValueRowCount;
-        }
-
-        return new QueryResult(data.responseData.results[0].resultSet);
-      })
-      .catch((err) => {
-        if (connection) {
-          this.pool.release(connection);
-        }
-        throw err;
-      });
+    return new QueryResult(data.responseData.results[0].resultSet);
   }
 
   /**
@@ -312,47 +281,44 @@ export class ExasolDriver implements IExasolDriver {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw',
   ): Promise<SQLResponse<SQLQueriesResponse> | number> {
+    const data = await this.runSqlStatement(sqlStatement, attributes, getCancel);
+    if (responseType == 'raw') {
+      return data;
+    }
+
+    if (data.responseData.results[0].resultType === 'resultSet') {
+      throw newInvalidReturnValueResultSet;
+    }
+
+    return data.responseData.results[0].rowCount ?? 0;
+  }
+
+  private async runSqlStatement(
+    sqlStatement: string,
+    attributes?: Partial<Attributes>,
+    getCancel?: CetCancelFunction,
+  ): Promise<SQLResponse<SQLQueriesResponse>> {
     const connection = await this.acquire();
-    return connection
-      .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
-      .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
-      })
-      .then((data) => {
-        if (connection) {
-          this.pool.release(connection);
-        }
-        return data;
-      })
-      .then((data) => {
-        if (responseType == 'raw') {
-          return data;
-        }
+    try {
+      const data = await connection.sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel);
+      const fetchedData = await fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
 
-        if (data.status === 'error') {
-          if (data.exception) {
-            throw newSqlError(data.exception);
-          } else {
-            throw GeneralSqlError;
-          }
+      if (fetchedData.status === 'error') {
+        if (fetchedData.exception) {
+          throw newSqlError(fetchedData.exception);
+        } else {
+          throw GeneralSqlError;
         }
+      }
 
-        if (data.responseData.numResults === 0) {
-          throw ErrMalformedData;
-        }
+      if (fetchedData.responseData.numResults === 0) {
+        throw ErrMalformedData;
+      }
 
-        if (data.responseData.results[0].resultType === 'resultSet') {
-          throw newInvalidReturnValueResultSet;
-        }
-
-        return data.responseData.results[0].rowCount ?? 0;
-      })
-      .catch((err) => {
-        if (connection) {
-          this.pool.release(connection);
-        }
-        throw err;
-      });
+      return fetchedData;
+    } finally {
+      this.pool.release(connection);
+    }
   }
 
   /**
