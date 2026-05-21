@@ -2,44 +2,84 @@
 
 ## Introduction
 
-Describe the product from the user's point of view. Base this section primarily on the user guide, README usage sections, tutorials, examples, public API documentation, screenshots, release notes, or CLI help.
+`@exasol/exasol-driver-ts` is a TypeScript and JavaScript driver for connecting applications to an Exasol database. Applications use the driver to open WebSocket connections, authenticate, execute SQL statements, fetch query results, manage a connection pool, and import local CSV files from Node.js.
+
+The library is published as an npm package and is intended for both browser and Node.js runtimes. Browser applications use the runtime-provided `WebSocket` implementation. Node.js applications provide a compatible WebSocket implementation, for example the `ws` package.
 
 ## Goals
 
-List the product goals inferred from user-facing documentation.
-
-* `<goal>`
+* Provide a typed Exasol SQL driver for TypeScript and JavaScript applications.
+* Support both browser and Node.js runtimes through an injectable WebSocket factory.
+* Expose simple APIs for connecting, querying, executing commands, and closing connections.
+* Support secure database communication by default.
+* Provide connection pooling for concurrent workloads.
+* Support Node.js CSV file imports into Exasol tables.
 
 ## Evidence Base
 
-This draft was reverse-engineered from:
+This specification was reverse-engineered from:
 
-* `<user-guide-or-primary-user-documentation>`
-* `<readme-or-examples>`
-* `<tests-or-fixtures>`
-* `<source-code-areas>`
+* [User Guide](../user_guide/user_guide.md)
+* [README](../../README.md)
+* [Developer Guide](../developer_guide/developer_guide.md)
+* Public API declarations in `src/index.ts`, `src/lib/sql-client.interface.ts`, `src/lib/sql-client.ts`, and `src/lib/sql-pool.ts`
+* CSV import implementation in `src/lib/import/`
+* Unit tests in `src/lib/**/*.spec.ts`, `src/lib/**/*.spec.node.ts`, and `src/lib/**/*.spec.dom.ts`
+* Integration tests in `integration-test/`
 
 ## Notation
 
 This document uses OpenFastTrace specification items to express product features, user requirements, and acceptance scenarios. Each specification item has a unique identifier in the form `<artifact-type>~<name>~<revision>`.
 
-In this document, feature items use the artifact type `feat`, user requirements use `req`, and acceptance scenarios use `scn`. Design items in `doc/design.md` and `doc/design/` cover the scenarios with artifact type `dsn`. Architecture constraints in `doc/design/constraints.md` use artifact type `constr` and are also covered by `dsn` items.
-
-Informative text explains background, scope, and intent. Specification items define the normative content of the document. Relationships between items are expressed with OpenFastTrace keywords such as `Needs` and `Covers`.
+In this document, feature items use the artifact type `feat`, user requirements use `req`, and acceptance scenarios use `scn`. Design items under `doc/spec/design/` cover the scenarios with artifact type `dsn`. Architecture constraints in `doc/spec/design/constraints.md` use artifact type `constr` and are also covered by `dsn` items.
 
 ## Terms and Abbreviations
 
-### `<Term>`
+### Driver
 
-`<Definition>`
+The `ExasolDriver` API that manages one logical Exasol database connection and exposes SQL execution operations.
+
+### Pool
+
+The `ExasolPool` API that manages multiple `ExasolDriver` instances through configurable minimum and maximum pool sizes.
+
+### Query
+
+A SQL statement that returns a result set. The driver exposes query results through `QueryResult`.
+
+### Command
+
+A SQL statement that changes database state or returns a row count. The driver exposes command execution through `execute()`.
+
+### Raw Response
+
+The Exasol protocol response returned without converting it to `QueryResult` or row count.
+
+### WebSocket Factory
+
+A user-provided function that receives the database WebSocket URL and returns an object compatible with the driver's `ExaWebsocket` interface.
+
+### CSV Import
+
+Node.js-only functionality that imports a readable local CSV file into an Exasol table using Exasol's `IMPORT FROM CSV` mechanism.
 
 ## User Roles
 
-Describe the people or systems that use, operate, administer, integrate, or maintain the product. Use the general term `user` only when a requirement does not depend on a specific role.
+### Application Developer
 
-### `<Role>`
+A developer who installs the npm package and uses the public TypeScript or JavaScript API in an application.
 
-`<Role description and expected interaction with the product.>`
+### Browser Application
+
+A web application that uses the package with the browser's native `WebSocket`.
+
+### Node.js Application
+
+A server-side or local Node.js application that uses the package with a Node-compatible WebSocket implementation and can use Node-only CSV import.
+
+### Database Operator
+
+A person or automation responsible for providing database host, port, credentials, schema, TLS, and connectivity settings.
 
 ## Features
 
