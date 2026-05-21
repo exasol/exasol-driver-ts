@@ -2,7 +2,7 @@
 
 ### Requirements
 
-- NodeJS
+- Node.js
 - Docker
 
 ### Linting
