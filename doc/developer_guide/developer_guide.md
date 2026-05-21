@@ -1,5 +1,7 @@
 ## Developer guide
 
+This driver is based on the [Exasol WebSocket API](https://github.com/exasol/websocket-api).
+
 ### Requirements
 
 - Node.js

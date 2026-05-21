@@ -1,5 +1,7 @@
 # AGENTS.md instructions for `/home/christoph.pirkl/git/exasol-driver-ts`
 
+This driver is based on the [Exasol WebSocket API](https://github.com/exasol/websocket-api).
+
 ## Context7
 
 Use Context7 MCP to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service. This includes well-known tools such as React, Next.js, Prisma, Express, Tailwind, Django, and Spring Boot.
