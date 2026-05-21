@@ -2,37 +2,118 @@
 
 This chapter records important architectural decisions and their rationale.
 
-Record a decision when it is hard to change later, likely to be debated again, relevant for cost or risk, or necessary to explain a non-obvious implementation choice.
+## Runtime Abstraction
 
-## `<Decision Area>`
+### Inject WebSocket Implementation
 
-### `<Decision Question>`
-
-`<Description of the architectural choice, what makes it architecture-relevant and what the consequences are>`
+The library accepts a WebSocket factory instead of importing one concrete implementation. This keeps the core driver usable in browser and Node.js runtimes.
 
 Considered alternatives:
 
-1. `<alternative>`
-2. `<alternative>`
+1. Import browser `WebSocket` directly.
+2. Depend on the Node.js `ws` package directly.
+3. Accept an application-provided WebSocket factory.
 
-#### `<Decision Title>`
-`dsn~<decision-id>~1`
+#### Use WebSocket Factory
+`dsn~decision-use-websocket-factory~1`
 
-The system `<decision statement>`.
+The system uses an injected WebSocket factory as the runtime abstraction for database connections.
 
 Rationale:
 
-`<Why this alternative fits the requirements and constraints.>`
+This supports the documented browser and Node.js usage model and avoids forcing one runtime's WebSocket implementation onto all consumers.
 
 Status: draft
 
 Covers:
-- `constr~<constraint-id>~1`
+- `constr~injectable-websocket-implementation~1`
+- `constr~browser-and-nodejs-runtime-support~1`
 
-Needs: impl
+Tags: runtime, portability
 
-Tags: `<tag>`
+## Pooling
+
+### Reuse generic-pool
+
+The pool API delegates pooling mechanics to `generic-pool` and keeps Exasol-specific logic in `ExasolDriver`.
+
+Considered alternatives:
+
+1. Hand-write pool scheduling and lifecycle management.
+2. Reuse `generic-pool`.
+
+#### Use generic-pool
+`dsn~decision-use-generic-pool~1`
+
+The system uses `generic-pool` for connection pool lifecycle and capacity management.
+
+Rationale:
+
+Pooling is a general-purpose concern. Reusing an existing library keeps the Exasol-specific code focused on driver behavior.
+
+Status: draft
+
+Covers:
+- `scn~pool-executes-concurrent-queries~1`
+- `scn~pool-shutdown~1`
+
+Tags: pooling, dependency
+
+## CSV Import
+
+### Use Exasol Import Tunnel
+
+The CSV import implementation streams a local file to Exasol through an import tunnel instead of reading the whole file into memory.
+
+Considered alternatives:
+
+1. Build one SQL statement containing file contents.
+2. Read the entire file into memory before sending.
+3. Stream the file through Exasol's import tunnel.
+
+#### Stream CSV Through Import Tunnel
+`dsn~decision-stream-csv-through-import-tunnel~1`
+
+The system imports local CSV files by opening an Exasol import tunnel and streaming the file as chunked HTTP response data.
+
+Rationale:
+
+Streaming supports larger files and matches Exasol's `IMPORT FROM CSV AT ... FILE ...` mechanism.
+
+Status: draft
+
+Covers:
+- `scn~csv-import-succeeds~1`
+- `constr~node-only-csv-import~1`
+
+Tags: csv-import, nodejs
+
+## Packaging
+
+### Build CommonJS and ES Module Outputs
+
+The package provides both CommonJS and ES module entry points.
+
+Considered alternatives:
+
+1. Publish only CommonJS.
+2. Publish only ES modules.
+3. Publish both formats.
+
+#### Publish CJS and ESM
+`dsn~decision-publish-cjs-and-esm~1`
+
+The system builds CommonJS and ES module outputs from the same TypeScript entry point.
+
+Rationale:
+
+This improves compatibility with different consuming application build systems.
+
+Status: draft
+
+Covers:
+- `constr~typescript-library-package~1`
+
+Tags: packaging
 
 ## Open Issues
-
-* `<decision contradiction, undocumented tradeoff, or missing decision>`
