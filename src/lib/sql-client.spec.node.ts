@@ -43,6 +43,43 @@ describe('sqlClient', () => {
         sqlText: 'select 1',
       });
     });
+
+    it('should return result set for default response type', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.query('select 1', undefined, undefined, 'default');
+
+      expect(result.getColumns()).toStrictEqual([{ name: 'A', dataType: { type: 'INTEGER' } }]);
+      expect(result.getRows()).toStrictEqual([{ A: 1 }]);
+    });
+
+    it('should return raw response for raw response type', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.query('select 1', undefined, undefined, 'raw');
+
+      expect(result).toStrictEqual({
+        status: 'ok',
+        exception: undefined,
+        responseData: {
+          numResults: 1,
+          results: [{
+            resultType: 'resultSet',
+            resultSet: {
+              numColumns: 1,
+              numRows: 1,
+              numRowsInMessage: 1,
+              columns: [{ name: 'A', dataType: { type: 'INTEGER' } }],
+              data: [[1]],
+            },
+          }],
+        },
+      });
+    });
   });
 
   describe('execute', () => {
@@ -58,6 +95,33 @@ describe('sqlClient', () => {
       expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
         command: 'execute',
         sqlText: 'create table test (id int)',
+      });
+    });
+
+    it('should return row count for default response type', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.execute('create table test (id int)', undefined, undefined, 'default');
+
+      expect(result).toBe(1);
+    });
+
+    it('should return raw response for raw response type', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.execute('create table test (id int)', undefined, undefined, 'raw');
+
+      expect(result).toStrictEqual({
+        status: 'ok',
+        exception: undefined,
+        responseData: {
+          numResults: 1,
+          results: [{ resultType: 'rowCount', rowCount: 1 }],
+        },
       });
     });
 
