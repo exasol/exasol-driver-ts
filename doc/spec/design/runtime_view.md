@@ -43,7 +43,7 @@ Covers:
 
 **Given** an authenticated driver and SQL text
 **When** `query()` is called
-**Then** the driver sends an `execute` command, fetches remaining result pages, closes remote result sets, validates that the result is a result set, and returns `QueryResult`
+**Then** the driver sends an `execute` command, fetches additional result-set pages until the result is complete or `resultSetMaxRows` is reached, closes remote result sets, validates that the result is a result set, and returns `QueryResult`
 
 Status: draft
 
@@ -56,7 +56,7 @@ Covers:
 
 **Given** an authenticated driver and SQL text
 **When** `execute()` is called
-**Then** the driver sends an `execute` command, fetches required response data, validates that the result is a row count, and returns that row count
+**Then** the driver sends an `execute` command, follows the protocol fetch flow for result-set responses, validates that the final result is a row count, and returns that row count
 
 Status: draft
 
@@ -68,7 +68,7 @@ Covers:
 
 **Given** an authenticated driver
 **When** `query()` or `execute()` is called with `responseType` set to `raw`
-**Then** the driver returns the fetched `SQLResponse<SQLQueriesResponse>` without normalized conversion
+**Then** the driver returns the fetched `SQLResponse<SQLQueriesResponse>` without converting it to a `QueryResult` or row count
 
 Status: draft
 
@@ -80,7 +80,7 @@ Covers:
 
 **Given** an authenticated driver and prepared SQL text
 **When** `prepare()` and `Statement.execute()` are called
-**Then** the driver creates a prepared statement, validates that supplied values align with parameter columns, sends column-oriented data to Exasol, and releases the connection when the statement is closed
+**Then** the driver creates a prepared statement, validates that supplied positional values align with parameter columns, sends the positional values as column-oriented data to Exasol, and releases the connection when the statement is closed
 
 Status: draft
 
@@ -131,18 +131,6 @@ Covers:
 
 ## Pooling
 
-### Pooled Query Execution
-`dsn~runtime-pooled-query-execution~1`
-
-**Given** an `ExasolPool`
-**When** a query is submitted
-**Then** the pool acquires a driver, delegates the query, releases the driver in a `finally` block, and logs/rethrows errors
-
-Status: draft
-
-Covers:
-- `scn~pool-reuses-drivers-for-queries~1`
-
 ### Pool Capacity Management
 `dsn~runtime-pool-capacity-management~1`
 
@@ -154,6 +142,18 @@ Status: draft
 
 Covers:
 - `scn~pool-enforces-configured-size-limits~1`
+
+### Pooled Query Execution
+`dsn~runtime-pooled-query-execution~1`
+
+**Given** an `ExasolPool`
+**When** a query is submitted
+**Then** the pool acquires a driver, delegates the query, releases the driver in a `finally` block, and logs/rethrows errors
+
+Status: draft
+
+Covers:
+- `scn~pool-reuses-drivers-for-queries~1`
 
 ### Pool Shutdown
 `dsn~runtime-pool-shutdown~1`
@@ -169,25 +169,12 @@ Covers:
 
 ## CSV Import
 
-### CSV Import File Stream
-`dsn~runtime-csv-import-file-stream~1`
+### CSV Import File Readability Check
+`dsn~runtime-csv-import-file-readability-check~1`
 
-**Given** a Node.js driver, readable local CSV file, and target table
+**Given** a Node.js driver and a local CSV file path
 **When** `importFromCsvFile()` is called
-**Then** the driver verifies file readability, creates an Exasol tunnel, wraps it with TLS, executes `IMPORT INTO ... FROM CSV`, waits for Exasol's HTTP request, streams the file using chunked HTTP response data, destroys the secure socket, and returns the import row count
-
-Status: draft
-
-Covers:
-- `scn~csv-import-succeeds~1`
-- `constr~node-only-csv-import~1`
-
-### CSV Import Missing File
-`dsn~runtime-csv-import-missing-file~1`
-
-**Given** a missing or unreadable local CSV file
-**When** `importFromCsvFile()` is called
-**Then** the driver rejects with error code `E-EDJS-14` before creating an Exasol tunnel
+**Then** the driver checks file readability before creating an Exasol tunnel and rejects with error code `E-EDJS-14` if the file is missing or unreadable
 
 Status: draft
 
@@ -206,6 +193,19 @@ Status: draft
 
 Covers:
 - `scn~csv-import-rejects-missing-target-table~1`
+- `constr~node-only-csv-import~1`
+
+### CSV Import File Stream
+`dsn~runtime-csv-import-file-stream~1`
+
+**Given** a Node.js driver, readable local CSV file, and target table
+**When** `importFromCsvFile()` is called
+**Then** the driver creates an Exasol tunnel, wraps it with TLS, executes `IMPORT INTO ... FROM CSV`, waits for Exasol's HTTP request, streams the file using chunked HTTP response data, destroys the secure socket, and returns the import row count
+
+Status: draft
+
+Covers:
+- `scn~csv-import-succeeds~1`
 - `constr~node-only-csv-import~1`
 
 ### CSV Import Format Options
