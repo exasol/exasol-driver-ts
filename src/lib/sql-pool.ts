@@ -1,15 +1,15 @@
 import { createPool, Factory, Options, Pool } from 'generic-pool';
-import { Config, ExasolDriver, websocketFactory } from './sql-client';
-import { ILogger, LogLevel, Logger } from './logger/logger';
-import { QueryResult } from './query-result';
 import { Attributes } from './commands';
+import { ILogger, Logger, LogLevel } from './logger/logger';
+import { QueryResult } from './query-result';
+import { Config, ExasolDriver, WebsocketFactory } from './sql-client';
 import { CetCancelFunction } from './sql-client.interface';
 import { SQLQueriesResponse, SQLResponse } from './types';
 export interface ClientPoolConfig {
   minimumPoolSize: number;
   maximumPoolSize: number;
 }
-function getPool(websocketFactory: websocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger: ILogger) {
+function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger: ILogger) {
   async function createClient() {
     const exasolClient: ExasolDriver = new ExasolDriver(websocketFactory, config, logger);
     await exasolClient.connect();
@@ -48,13 +48,13 @@ export class ExasolPool {
   /**
    * Creates an instance of ExasolPool.
    *
-   * @param {websocketFactory} websocketFactory
+   * @param {WebsocketFactory} websocketFactory
    * @param {(Partial<Config> & Partial<ClientPoolConfig>)} config
    * @param {ILogger} [logger=new Logger(LogLevel.Debug)]
    * @memberof ExasolPool
    */
   constructor(
-    websocketFactory: websocketFactory,
+    websocketFactory: WebsocketFactory,
     config: Partial<Config> & Partial<ClientPoolConfig>,
     logger: ILogger = new Logger(LogLevel.Off),
   ) {

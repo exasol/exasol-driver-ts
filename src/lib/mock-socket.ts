@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ExaWebsocket, ReadyState } from "./connection";
-import { websocketFactory } from "./sql-client";
+import { WebsocketFactory } from "./sql-client";
 import { SQLQueriesResponse } from "./types";
 
 
@@ -116,7 +116,7 @@ export class MockWebsocketFactory {
     this.url = undefined;
   }
 
-  public get factory(): websocketFactory {
+  public get factory(): WebsocketFactory {
     return (url: string) => {
       if (this.url === undefined) {
         this.url = url;

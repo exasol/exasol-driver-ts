@@ -1,6 +1,6 @@
 import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
-import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
+import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { loadCA } from '../loadCert';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
@@ -11,7 +11,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
     const randomId = new RandomUuid();
     let tmpDriver: ExasolDriver | undefined;
     let container: StartedTestContainer;
-    let factory: websocketFactory;
+    let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
@@ -27,6 +27,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
 
     it('Connect to DB', async () => {
       const driver = await openConnection(factory, container);
+      expect(driver).toBeDefined();
       await driver.close();
     });
 
@@ -131,7 +132,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
       }
     });
 
-    const openConnection = async (factory: websocketFactory, container: StartedTestContainer) => {
+    const openConnection = async (factory: WebsocketFactory, container: StartedTestContainer) => {
       const driver = new ExasolDriver(factory, {
         host: container.getHost(),
         port: container.getMappedPort(8563),

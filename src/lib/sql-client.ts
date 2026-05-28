@@ -49,8 +49,7 @@ interface InternalConfig {
 
 export const driverVersion = 'v1.0.0';
 
-// TODO: rename to WebsocketFactory
-export type websocketFactory = (url: string) => ExaWebsocket;
+export type WebsocketFactory = (url: string) => ExaWebsocket;
 
 export class ExasolDriver implements IExasolDriver {
   private readonly defaultConfig: Config & InternalConfig = {
@@ -64,13 +63,13 @@ export class ExasolDriver implements IExasolDriver {
     compression: false,
     apiVersion: 3,
   };
-  private readonly config: Config & InternalConfig & { websocketFactory: websocketFactory };
+  private readonly config: Config & InternalConfig & { websocketFactory: WebsocketFactory };
   private readonly logger: ILogger;
   private closed = false;
 
   private readonly pool: ConnectionPool<Connection>;
 
-  constructor(websocketFactory: websocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
+  constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
     // Used internally to avoid parallel execution
     this.pool = new ConnectionPool<Connection>(1, logger);
     this.config = {
