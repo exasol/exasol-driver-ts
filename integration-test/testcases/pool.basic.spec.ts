@@ -28,6 +28,7 @@ export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFac
 
     it('Connect to DB', async () => {
       const poolToQuery = createPool(factory, container, 1, 10, useEncryption);
+      expect(poolToQuery).toBeDefined();
       await poolToQuery.drain();
       await poolToQuery.clear();
     });
