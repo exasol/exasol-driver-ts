@@ -1,6 +1,7 @@
 import { InternalAddress } from './http-transport';
 import { CsvFormatOptions, TrimMode } from './types';
 
+// [impl->dsn~runtime-csv-import-format-options~1]
 export function buildCsvImportSql(
   tableName: string,
   internalAddress: InternalAddress,

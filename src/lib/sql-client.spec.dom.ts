@@ -1,6 +1,7 @@
 import { ExaWebsocket } from './connection';
 import { ExasolDriver } from './sql-client';
 
+// [utest->dsn~runtime-reject-missing-credentials~1]
 describe('sqlClient', () => {
   it('should fail with no credentials', async () => {
     expect.assertions(2);

@@ -29,10 +29,9 @@ Run requirement tracing with:
 
 ```sh
 npm run trace
+# Generate tracing report at dist/trace-report.html
+npm run trace:report
 ```
-
-Draft specification items are marked with `Status: draft`.
-OpenFastTrace does not support filtering by status yet; see [itsallcode/openfasttrace#519](https://github.com/itsallcode/openfasttrace/issues/519). Until that exists, `npm run trace` only traces items marked with `Tags: active`.
 
 ### Unit tests
 

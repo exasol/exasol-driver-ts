@@ -2,6 +2,7 @@ import * as tls from 'node:tls';
 import { PassThrough } from 'node:stream';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
 
+// [utest->dsn~runtime-csv-import-file-stream~1]
 describe('tls-transport', () => {
   describe('generateAdHocCertificate', () => {
     it('should generate a certificate with sha256 fingerprint', () => {

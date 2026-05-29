@@ -3,6 +3,7 @@ import { createTunnel, parseResponse } from './http-transport';
 
 jest.mock('node:net');
 
+// [utest->dsn~runtime-csv-import-file-stream~1]
 describe('http-transport', () => {
   describe('parseResponse', () => {
     it('should parse the internal host and port from the handshake response', () => {

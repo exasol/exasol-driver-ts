@@ -23,8 +23,6 @@ Rationale:
 
 This supports the documented browser and Node.js usage model and avoids forcing one runtime's WebSocket implementation onto all consumers.
 
-Status: draft
-
 Covers:
 - `constr~injectable-websocket-implementation~1`
 - `constr~browser-and-nodejs-runtime-support~1`
@@ -51,14 +49,14 @@ Rationale:
 
 Pooling is a general-purpose concern. Reusing an existing library keeps the Exasol-specific code focused on driver behavior.
 
-Status: draft
-
 Covers:
 - `scn~pool-reuses-drivers-for-queries~1`
 - `scn~pool-enforces-configured-size-limits~1`
 - `scn~pool-shutdown~1`
 
-Tags: pooling, dependency
+Needs: impl
+
+Tags: runtime, portability, pooling, dependency
 
 ## CSV Import
 
@@ -81,11 +79,11 @@ Rationale:
 
 Streaming supports larger files and matches Exasol's `IMPORT FROM CSV AT ... FILE ...` mechanism.
 
-Status: draft
-
 Covers:
 - `scn~csv-import-succeeds~1`
 - `constr~node-only-csv-import~1`
+
+Needs: impl
 
 Tags: csv-import, nodejs
 
@@ -110,11 +108,25 @@ Rationale:
 
 This improves compatibility with different consuming application build systems.
 
-Status: draft
-
 Covers:
 - `constr~typescript-library-package~1`
 
+Needs: impl
+
 Tags: packaging
+
+### Publish Through GitHub Release Workflow
+`dsn~decision-use-github-release-workflow-for-npm-publishing~1`
+
+The system publishes the npm package from the GitHub release workflow after quality gates, package build, and package packing succeed.
+
+Rationale:
+
+Publishing from a dedicated release workflow keeps distribution tied to GitHub releases and uses npm publishing credentials only in the release job.
+
+Covers:
+- `constr~github-and-npm-distribution~1`
+
+Tags: packaging, release
 
 ## Open Issues

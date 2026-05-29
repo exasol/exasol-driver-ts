@@ -33,6 +33,7 @@ export const fetchData = async (
   logger: ILogger,
   resultSetMaxRows?: number
 ): Promise<SQLResponse<SQLQueriesResponse>> => {
+  // [impl->dsn~runtime-query-execution~1]
   const batchResponse = rawData.responseData;
 
   for (let index = 0; index < (batchResponse?.numResults ?? 0); index++) {
@@ -73,6 +74,7 @@ const fetchMoreData = async (
   connection: Connection,
   logger: ILogger
 ): Promise<ResultSet> => {
+  // [impl->dsn~runtime-query-execution~1]
   logger.debug('[WebSQL]: fetchMoreData:', fetchedRows, expectedRows);
   if (fetchedRows < expectedRows && resultSet.resultSetHandle) {
     await sendFetchCommand(resultSet.resultSetHandle, fetchedRows, connection).then(async (fetchResponse) => {

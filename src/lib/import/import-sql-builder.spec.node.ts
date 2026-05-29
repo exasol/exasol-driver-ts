@@ -1,6 +1,7 @@
 import { buildCsvImportSql } from './import-sql-builder';
 import { CsvFormatOptions, RowSeparator, TrimMode } from './types';
 
+// [utest->dsn~runtime-csv-import-format-options~1]
 describe('import-sql-builder', () => {
   describe('buildCsvImportSql', () => {
     it('should generate IMPORT SQL', () => {

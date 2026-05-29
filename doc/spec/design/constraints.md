@@ -13,8 +13,6 @@ Rationale:
 
 `package.json` defines `main`, `module`, `types`, build scripts, and the npm package name `@exasol/exasol-driver-ts`.
 
-Status: draft
-
 Needs: dsn
 
 ### Browser and Node.js Runtime Support
@@ -25,8 +23,6 @@ The system must run in browser and Node.js runtimes for the core driver and pool
 Rationale:
 
 Application developers use the library in server-side Node.js services and browser-based applications. Supporting both runtimes lets them use one Exasol driver API across these application types.
-
-Status: draft
 
 Needs: dsn
 
@@ -39,8 +35,6 @@ Rationale:
 
 Browser and Node.js runtimes provide different WebSocket implementations, and the public constructors accept a `websocketFactory`.
 
-Status: draft
-
 Needs: dsn
 
 ### Node-only CSV Import
@@ -52,8 +46,6 @@ Rationale:
 
 The implementation imports `node:fs`, `node:path`, `node:net`, and `node:tls`.
 
-Status: draft
-
 Needs: dsn
 
 ### Exasol WebSocket SQL Protocol
@@ -64,8 +56,6 @@ The system communicates with Exasol by sending JSON SQL protocol commands over W
 Rationale:
 
 `Connection` serializes command objects to JSON and receives `SQLResponse` payloads.
-
-Status: draft
 
 Needs: dsn
 
@@ -80,8 +70,6 @@ Rationale:
 
 The README links GitHub Actions and npm badges. The developer guide documents a manual release process that triggers a GitHub release workflow publishing to npm.
 
-Status: draft
-
 Needs: dsn
 
 ### Automated Quality Gates
@@ -92,8 +80,6 @@ Changes are expected to pass linting, tests, coverage collection, dependency aud
 Rationale:
 
 The package scripts, developer guide, and Sonar configuration define these checks.
-
-Status: draft
 
 Needs: dsn
 

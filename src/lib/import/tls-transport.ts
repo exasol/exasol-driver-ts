@@ -2,6 +2,7 @@ import * as forge from 'node-forge';
 import * as tls from 'node:tls';
 import * as net from 'node:net';
 
+// [impl->dsn~runtime-csv-import-file-stream~1]
 export interface AdHocCertificate {
   key: forge.pki.rsa.PrivateKey;
   cert: forge.pki.Certificate;

@@ -5,6 +5,7 @@ jest.mock('./http-transport');
 
 const mockedCreateTunnel = createTunnel as jest.MockedFunction<typeof createTunnel>;
 
+// [utest->dsn~runtime-csv-import-file-readability-check~1]
 describe('csv-file-import', () => {
   describe('importCsvFile', () => {
     it('should reject with file-not-found error for non-existent file', async () => {
