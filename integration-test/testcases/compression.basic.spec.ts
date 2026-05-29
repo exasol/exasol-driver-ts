@@ -1,17 +1,17 @@
-import { StartedTestContainer} from 'testcontainers';
-import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
+import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
-import { startNewDockerContainer } from '../startNewDockerContainer';
-import { loadCA } from '../loadCert';
-import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 import { Logger, LogLevel } from '../../src/lib/logger/logger';
+import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
+import { loadCA } from '../loadCert';
+import { startNewDockerContainer } from '../startNewDockerContainer';
+import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 export const basicCompressionTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
     const randomId = new RandomUuid();
     let container: StartedTestContainer;
-    let factory: websocketFactory;
+    let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
@@ -84,7 +84,7 @@ export const basicCompressionTests = (name: string, createWSFactory: CreateWebso
       await setupClient.close();
     });
 
-    afterAll(async () => {});
+    afterAll(async () => { });
   });
 async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: string) {
   await setupClient.execute('CREATE SCHEMA ' + schemaName);
@@ -92,7 +92,7 @@ async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: stri
   await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 }
 function createPool(
-  factory: websocketFactory,
+  factory: WebsocketFactory,
   container: StartedTestContainer,
   minimumPoolSize: number,
   maximumPoolSize: number,
@@ -114,7 +114,7 @@ function createPool(
     new Logger(logLevel),
   );
 }
-function createClient(factory: websocketFactory, container: StartedTestContainer, logLevel: LogLevel, useEncryption: boolean) {
+function createClient(factory: WebsocketFactory, container: StartedTestContainer, logLevel: LogLevel, useEncryption: boolean) {
   return new ExasolDriver(
     factory,
     {

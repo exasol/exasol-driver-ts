@@ -1,6 +1,6 @@
 import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
-import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
+import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { loadCA } from '../loadCert';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
@@ -11,7 +11,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
     const randomId = new RandomUuid();
     let tmpDriver: ExasolDriver | undefined;
     let container: StartedTestContainer;
-    let factory: websocketFactory;
+    let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
@@ -26,14 +26,15 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
     });
 
     it('Connect to DB', async () => {
-      const driver = await openConnection(factory, container);
+      const driver = await openConnection();
+      expect(driver).toBeDefined();
       await driver.close();
     });
 
 
     describe('query()', () => {
       it('Exec and fetch', async () => {
-        const driver = await openConnection(factory, container);
+        const driver = await openConnection();
 
         await driver.execute('CREATE SCHEMA ' + schemaName);
         await driver.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
@@ -47,7 +48,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
       });
 
       it('Fetch', async () => {
-        const driver = await openConnection(factory, container);
+        const driver = await openConnection();
 
         await driver.execute('CREATE SCHEMA ' + schemaName);
         await driver.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
@@ -65,7 +66,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
       });
 
       it('Cancel long running query', async () => {
-        const driver = await openConnection(factory, container);
+        const driver = await openConnection();
 
         const startedAt = Date.now();
         const queryPromise = driver.query('select "$SLEEP"(5)');
@@ -81,7 +82,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
 
     describe('execute()', () => {
       it('Exec and fetch (raw)', async () => {
-        const driver = await openConnection(factory, container);
+        const driver = await openConnection();
 
         await driver.execute('CREATE SCHEMA ' + schemaName, undefined, undefined, 'raw');
         await driver.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
@@ -99,7 +100,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
 
 
       it('Cancel long running statement', async () => {
-        const driver = await openConnection(factory, container);
+        const driver = await openConnection();
 
         const startedAt = Date.now();
         const executePromise = driver.execute('select "$SLEEP"(5)');
@@ -118,20 +119,22 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
         try {
           await tmpDriver?.close();
         } catch (error) {
-          console.log('Could not close driver', error);
+          console.warn('Could not close driver', error);
         }
       }
 
       try {
-        const driver = await openConnection(factory, container);
+        const driver = await openConnection();
         await driver.execute('DROP SCHEMA IF EXISTS ' + schemaName + ' CASCADE');
         await driver.close();
       } catch (error) {
-        console.log('Could not cleanup schema', schemaName, error);
+        console.warn('Could not cleanup schema', schemaName, error);
       }
     });
 
-    const openConnection = async (factory: websocketFactory, container: StartedTestContainer) => {
+    const openConnection = async () => {
+      expect(factory).toBeDefined();
+      expect(container).toBeDefined();
       const driver = new ExasolDriver(factory, {
         host: container.getHost(),
         port: container.getMappedPort(8563),

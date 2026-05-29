@@ -1,3 +1,3 @@
-import { websocketFactory } from '../../src/lib/sql-client';
+import { WebsocketFactory } from '../../src/lib/sql-client';
 
-export type CreateWebsocketFactoryFunctionType = (cert?: string | undefined) => websocketFactory;
+export type CreateWebsocketFactoryFunctionType = (cert?: string | undefined) => WebsocketFactory;

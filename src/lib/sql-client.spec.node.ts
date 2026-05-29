@@ -188,6 +188,33 @@ describe('sqlClient', () => {
     });
   });
 
+  describe('importFromCsvFile', () => {
+    it('should fail due to closed connection', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      await driver.close();
+
+      await expect(driver.importFromCsvFile('targetTable', '/tmp/missing')).rejects.toThrow("E-EDJS-2: Connection was closed.");
+    });
+
+    it('should fail due to missing file', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      await expect(driver.importFromCsvFile('targetTable', '/tmp/missing')).rejects.toThrow("E-EDJS-14: Import file not found: '/tmp/missing'. Verify the file path exists and is readable.");
+    });
+
+    it('should fail due to tunnel connection failure', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow("E-EDJS-12: Failed to establish tunnel connection to Exasol at 'localhost':'8563': ''.");
+    });
+  });
+
   describe('cancel', () => {
     it('should send abort query command', async () => {
       const connectPromise = driver.connect();
@@ -209,24 +236,6 @@ describe('sqlClient', () => {
 
     it('should reject when no connection exists', async () => {
       await expect(driver.cancel()).rejects.toThrow('E-EDJS-1: Invalid connection.');
-    });
-  });
-
-  describe('importFromCsvFile', () => {
-    it('should fail due to missing file', async () => {
-      const connectPromise = driver.connect();
-      mockSocketFactory.mockSocket.simulateOpen();
-      await connectPromise;
-
-      await expect(driver.importFromCsvFile('targetTable', '/tmp/missing')).rejects.toThrow("E-EDJS-14: Import file not found: '/tmp/missing'. Verify the file path exists and is readable.");
-    });
-
-    it('should fail due to tunnel connection failure', async () => {
-      const connectPromise = driver.connect();
-      mockSocketFactory.mockSocket.simulateOpen();
-      await connectPromise;
-
-      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow("E-EDJS-12: Failed to establish tunnel connection to Exasol at 'localhost':'8563': ''.");
     });
   });
 });

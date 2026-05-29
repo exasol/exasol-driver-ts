@@ -21,15 +21,22 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '26'
           cache: 'npm'
+      - name: Free Disk Space
+        if: ${{ matrix.target == 'test:all' }}
+        run: |
+          df -h
+          echo "Cleaning up disk space by removing unnecessary files..."
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h
       - run: npm ci --ignore-scripts
       - run: npm run ${{ matrix.target }}
       - name: Run audit
         if: ${{ matrix.target == env.DEFAULT_TARGET }}
         run: npm run audit
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@59db25f34e16620e48ab4bb9e4a5dce155cb5432 # v8.0.0
+        uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         if: ${{ matrix.target == env.DEFAULT_TARGET }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

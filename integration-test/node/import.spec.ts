@@ -1,23 +1,23 @@
 
 import { mkdtemp, rm, writeFile } from 'fs/promises';
-import { join } from 'path';
 import { tmpdir } from 'os';
+import { join } from 'path';
 import { StartedTestContainer } from 'testcontainers';
-import { ExasolDriver, websocketFactory } from '../../src/lib/sql-client';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
-import { startNewDockerContainer } from '../startNewDockerContainer';
+import { CsvFormatOptions, RowSeparator, TrimMode } from '../../src/lib/import/types';
+import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
+import { IExasolDriver } from '../../src/lib/sql-client.interface';
 import { loadCA } from '../loadCert';
 import { DOCKER_CONTAINER_VERSION_LATEST } from '../runner.config';
+import { startNewDockerContainer } from '../startNewDockerContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
-import { CsvFormatOptions, RowSeparator, TrimMode } from '../../src/lib/import/types';
-import { IExasolDriver } from '../../src/lib/sql-client.interface';
 
 describe("Node Import", () => {
 
   const randomId = new RandomUuid();
   let driver: IExasolDriver;
   let container: StartedTestContainer;
-  let factory: websocketFactory;
+  let factory: WebsocketFactory;
   jest.setTimeout(7000000);
   let schemaName = '';
   let tempDirectory = '';
@@ -169,7 +169,7 @@ describe("Node Import", () => {
     });
   });
 
-  const openConnection = async (factory: websocketFactory, container: StartedTestContainer) => {
+  const openConnection = async (factory: WebsocketFactory, container: StartedTestContainer) => {
     const driver = new ExasolDriver(factory, {
       host: container.getHost(),
       port: container.getMappedPort(8563),
