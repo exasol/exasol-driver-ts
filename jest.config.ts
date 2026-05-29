@@ -52,13 +52,18 @@ const config: Config = {
       testEnvironment: 'jsdom',
       testMatch: ['<rootDir>/integration-test/browser/**/*.spec.ts'],
       transform: {
-        '^.+\\.[tj]s$': 'babel-jest',
+        '^.+\\.[tj]s$': [
+          'ts-jest',
+          {
+            tsconfig: '<rootDir>/tsconfig.spec.dom.json',
+            isolatedModules: false,
+            diagnostics: true,
+          },
+        ],
       },
-      transformIgnorePatterns: [], // Allow node_modules through transform
+      transformIgnorePatterns: ['node_modules/(?!.*.mjs$)'],
       moduleFileExtensions: ['ts', 'js', 'json'],
       setupFiles: ['<rootDir>/jest.setup.itest-dom.ts'],
-      // Avoid merging babel-jest coverage maps with ts-jest coverage for the same source files.
-      coveragePathIgnorePatterns: ['<rootDir>/src/'],
     },
   ],
   displayName: 'exasol-driver',
