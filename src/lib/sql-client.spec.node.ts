@@ -189,6 +189,15 @@ describe('sqlClient', () => {
   });
 
   describe('importFromCsvFile', () => {
+    it('should fail due to closed connection', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      await driver.close();
+
+      await expect(driver.importFromCsvFile('targetTable', '/tmp/missing')).rejects.toThrow("E-EDJS-2: Connection was closed.");
+    });
+
     it('should fail due to missing file', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();

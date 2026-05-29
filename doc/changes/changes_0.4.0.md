@@ -4,7 +4,9 @@ Code name: Import local CSV File
 
 ## Summary
 
-This release fixes the implementation of the `driver.cancel()` method. Before, it failed with error `Cannot read properties of undefined (reading 'numResults')`. Now the query correctly fails with the correct error message `E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort. ...`.
+This release adds support for importing local CSV files into an Exasol table. See the [user guide](../user_guide/user_guide.md) for details.
+
+The release also fixes the implementation of the `driver.cancel()` method. Before, it failed with error `Cannot read properties of undefined (reading 'numResults')`. Now the query correctly fails with the correct error message `E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort. ...`.
 
 ## Features
 

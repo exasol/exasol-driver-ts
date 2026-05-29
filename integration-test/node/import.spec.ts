@@ -59,7 +59,7 @@ describe("Node Import", () => {
   }
 
   describe('importFromCsvFile', () => {
-    it('fails import when target table does not exist', async () => {
+    it('fails when target table does not exist', async () => {
       const tableName = 'MISSING_TABLE';
       const csvContent = '1,one\n2,two\n3,three';
       const csvFilePath = await createFile('test.csv', csvContent);
