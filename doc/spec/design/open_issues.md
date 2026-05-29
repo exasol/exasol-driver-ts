@@ -4,20 +4,22 @@ This chapter collects unresolved contradictions, missing intent, and weakly supp
 
 ## Requirements and Design Mismatches
 
-* `<scenario, requirement, or feature that is not covered by the observed design>`
+* None known for the documented public API.
 
 ## Implemented Behavior Without Requirement
 
-* `<code, test, API, command, or UI behavior with no matching requirement>`
+* Low-level metadata commands such as `getSchemas`, `getTables`, `getUsers`, `getRoles`, `getFunctions`, `getScripts`, and `getColumns` exist as command classes but are not documented in the user guide.
 
 ## Requirement Without Observed Implementation
 
-* `<requirement or scenario with no matching implementation evidence>`
+* Browser and Node.js support are documented and tested, but exact supported runtime versions are not documented.
 
 ## Contradictions Between Sources
 
-* `<source A says one thing, source B says another>`
+* CSV import is a package feature, but it is Node.js-only while the package is also advertised for browser usage.
 
 ## Decisions Needed
 
-* `<question that requires user or maintainer resolution>`
+* Decide whether to document or hide low-level command classes as public API.
+* Decide whether to split browser-safe and Node-only exports.
+* Decide the minimum supported Node.js and browser versions.

@@ -1,6 +1,14 @@
 ## User Guide
 
-### NodeJS
+### Introduction
+
+`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes.
+
+In a browser, the library uses the native `WebSocket` implementation that is available in the runtime. In Node.js, you need to provide a WebSocket implementation such as the `ws` package when creating the driver or connection pool.
+
+The following sections show the runtime-specific setup for both environments.
+
+### Node.js
 
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry:
 
@@ -10,7 +18,7 @@ npm install --save @exasol/exasol-driver-ts ws @types/ws
 
 Connecting to the database:
 
-```js
+```ts
 import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
 import { WebSocket } from 'ws';
 
@@ -24,11 +32,11 @@ const driver = new ExasolDriver((url) => {
         encryption: false,
     });
 
-//connect
+// Connect
 await driver.connect();
-//execute query
+// Execute query
 await driver.query("SELECT * FROM EXA_ALL_SCHEMAS");
-//close the connection
+// Close the connection
 await driver.close();
 ```
 
@@ -42,7 +50,7 @@ npm install --save @exasol/exasol-driver-ts
 
 Connecting to the database:
 
-```js
+```ts
 import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
 
 const driver = new ExasolDriver((url) => {
@@ -64,42 +72,42 @@ await driver.close();
 
 Executing a query using the query method:
 
-```js
+```ts
 //...
-//connect
+// Connect
 await driver.connect();
-//execute query
+// Execute query
 await driver.query('SELECT * FROM EXA_ALL_SCHEMAS');
-//close the connection
+// Close the connection
 await driver.close();
 ```
 
 Executing a command using the command method (creating a schema, table and inserting some values):
 
-```js
+```ts
 //...
-//connect
+// Connect
 await driver.connect();
 const schemaName = 'TEST';
-//execute commands
+// Execute commands
 await driver.execute('CREATE SCHEMA ' + schemaName);
 await driver.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
 await driver.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
-//close the connection
+// Close the connection
 await driver.close();
 ```
 
 Running a query and retrieving the results:
 
-```js
+```ts
 //...
-//connect
+// Connect
 await driver.connect();
 const schemaName = 'TEST';
-//run the query
+// Run the query
 const queryResult = await driver.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
 
-//print the result
+// Print the result
 console.log(queryResult.getColumns());
 /*
 [
@@ -111,17 +119,99 @@ console.log(queryResult.getRows());
 /*
  [ { X: 15 } ]
 */
-//close the connection
+// Close the connection
 await driver.close();
 ```
 
 Reading out a specific row and column from the result set:
 
-```js
+```ts
 const queryResult = await driver.query('...');
-//print out the 0th row, 'X' column value
+// Print out the 0th row, 'X' column value
 console.log(queryResult.getRows()[0]['X']);
 ```
+
+### CSV Import
+
+CSV import with `importFromCsvFile()` is only available in Node.js. It does not work in the browser because the implementation reads a local file from the Node.js runtime and streams it to Exasol.
+
+Importing a local CSV file:
+
+```ts
+import { ExasolDriver, ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { WebSocket } from 'ws';
+
+const driver = new ExasolDriver((url) => {
+  return new WebSocket(url) as ExaWebsocket;
+}, {
+  host: 'localhost',
+  port: 8563,
+  user: 'sys',
+  password: 'exasol',
+  encryption: false,
+});
+
+await driver.connect();
+
+const importedRows = await driver.importFromCsvFile(
+  'MY_SCHEMA.MY_TABLE',
+  '/absolute/path/to/data.csv',
+);
+
+console.log(importedRows);
+
+await driver.close();
+```
+
+Importing a CSV file with format options:
+
+```ts
+import {
+  ExasolDriver,
+  ExaWebsocket,
+  RowSeparator,
+  TrimMode,
+} from '@exasol/exasol-driver-ts';
+import { WebSocket } from 'ws';
+
+const driver = new ExasolDriver((url) => {
+  return new WebSocket(url) as ExaWebsocket;
+}, {
+  host: 'localhost',
+  port: 8563,
+  user: 'sys',
+  password: 'exasol',
+  encryption: false,
+});
+
+await driver.connect();
+
+await driver.importFromCsvFile('MY_SCHEMA.MY_TABLE', '/absolute/path/to/data.csv', {
+  columnSeparator: ';',
+  skip: 1,
+  rowSeparator: RowSeparator.CRLF,
+  trim: TrimMode.BOTH,
+  null: 'NULL',
+});
+
+await driver.close();
+```
+
+The optional `csvOptions` argument can be used to configure the CSV format, for example the column separator, row separator, header rows to skip, trimming mode, encoding, or additional NULL representation.
+
+#### Available CSV Options
+
+| Option | Type | Default | Description |
+| :----- | :--- | :------ | :---------- |
+| `columnSeparator` | `string` | `','` | Field separator for the CSV file. |
+| `columnDelimiter` | `string` | `'"'` | Field delimiter for CSV fields. |
+| `rowSeparator` | `RowSeparator` | `RowSeparator.LF` | Line break used in the CSV file. Supported values are `LF`, `CR`, and `CRLF`. |
+| `encoding` | `Encoding` | `'UTF-8'` | Character encoding of the CSV file. |
+| `skip` | `number` | `0` | Number of rows to skip before importing data, for example to ignore a header row. |
+| `trim` | `TrimMode` | `TrimMode.NONE` | Trimming mode for spaces around CSV field values. Supported values are `NONE`, `LEADING`, `TRAILING`, and `BOTH`. |
+| `null` | `string` | not set | Additional literal value that should be interpreted as `NULL` for non-delimited fields. |
+
+See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#Usagenotes) for details about these options.
 
 ### Supported Driver Properties
 
@@ -148,7 +238,7 @@ As of version 0.2.0 we now also provide a connection pool called `ExasolPool`.
 
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry:
 
-NodeJS:
+Node.js:
 
 ```sh
 npm install --save @exasol/exasol-driver-ts ws @types/ws
@@ -162,9 +252,9 @@ npm install --save @exasol/exasol-driver-ts
 
 #### Creating a connection pool:
 
-NodeJs:
+Node.js:
 
-```js
+```ts
 import { ExaWebsocket, ExasolPool } from "@exasol/exasol-driver-ts";
 import { WebSocket } from 'ws';
 
@@ -183,7 +273,7 @@ const pool = new ExasolPool((url) => {
 
 Browser:
 
-```js
+```ts
 import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
 
 const pool = new ExasolPool((url) => {
@@ -203,7 +293,7 @@ The configuration is very similar to the `ExasolDriver` (client). With the added
 
 #### Runninq a query
 
-```js
+```ts
 const queryResult = await pool.query('SELECT x FROM SCHEMANAME.TABLENAME');
 ```
 
@@ -211,7 +301,7 @@ const queryResult = await pool.query('SELECT x FROM SCHEMANAME.TABLENAME');
 
 Draining and clearing the pool (do this when you don't need the pool anymore or before exiting the application):
 
-```js
+```ts
 await pool.drain();
 await pool.clear();
 ```

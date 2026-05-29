@@ -1,8 +1,10 @@
 ## Developer guide
 
+This driver is based on the [Exasol WebSocket API](https://github.com/exasol/websocket-api).
+
 ### Requirements
 
-- NodeJS
+- Node.js
 - Docker
 
 ### Linting
@@ -20,6 +22,17 @@ npm run audit
 
 * Production dependencies may not have any audit findings.
 * Findings in dev dependencies can be excluded via [audit-ci.jsonc](../../audit-ci.jsonc) 
+
+### OpenFastTrace
+
+Run requirement tracing with:
+
+```sh
+npm run trace
+```
+
+Draft specification items are marked with `Status: draft`.
+OpenFastTrace does not support filtering by status yet; see [itsallcode/openfasttrace#519](https://github.com/itsallcode/openfasttrace/issues/519). Until that exists, `npm run trace` only traces items marked with `Tags: active`.
 
 ### Unit tests
 

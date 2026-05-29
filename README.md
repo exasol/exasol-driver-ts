@@ -22,7 +22,9 @@ Check out the [user guide](doc/user_guide/user_guide.md) for more details.
 ## Features
 
 1. Connect to an [Exasol](https://www.exasol.com/) database and execute SQL queries and commands
-1. Encrypted communication via TLS
+2. Encrypted communication via TLS
+3. Works in Node.js and the browser
+4. Supports importing local CSV files into a table
 
 ## Information for Users
 

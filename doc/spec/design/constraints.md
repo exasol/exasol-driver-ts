@@ -4,16 +4,66 @@ This chapter documents technical and organizational constraints that shape the a
 
 ## Technical Constraints
 
-* `<runtime, platform, framework, language, data, compatibility, or dependency constraint>`
+### TypeScript Library Package
+`constr~typescript-library-package~1`
 
-### `<Technical Constraint Title>`
-`constr~<technical-constraint-id>~1`
-
-`<Intentional technical constraint and the evidence source that makes it intentional.>`
+The system is implemented as a TypeScript npm package that publishes compiled artifacts from `dist/` and type declarations through `package.json`.
 
 Rationale:
 
-`<Why this constraint shapes the architecture.>`
+`package.json` defines `main`, `module`, `types`, build scripts, and the npm package name `@exasol/exasol-driver-ts`.
+
+Status: draft
+
+Needs: dsn
+
+### Browser and Node.js Runtime Support
+`constr~browser-and-nodejs-runtime-support~1`
+
+The system must run in browser and Node.js runtimes for the core driver and pool features.
+
+Rationale:
+
+Application developers use the library in server-side Node.js services and browser-based applications. Supporting both runtimes lets them use one Exasol driver API across these application types.
+
+Status: draft
+
+Needs: dsn
+
+### Injectable WebSocket Implementation
+`constr~injectable-websocket-implementation~1`
+
+The system must receive its WebSocket implementation from the application through a factory function.
+
+Rationale:
+
+Browser and Node.js runtimes provide different WebSocket implementations, and the public constructors accept a `websocketFactory`.
+
+Status: draft
+
+Needs: dsn
+
+### Node-only CSV Import
+`constr~node-only-csv-import~1`
+
+CSV file import is limited to Node.js because it depends on local filesystem access and Node networking/TLS modules.
+
+Rationale:
+
+The implementation imports `node:fs`, `node:path`, `node:net`, and `node:tls`.
+
+Status: draft
+
+Needs: dsn
+
+### Exasol WebSocket SQL Protocol
+`constr~exasol-websocket-sql-protocol~1`
+
+The system communicates with Exasol by sending JSON SQL protocol commands over WebSocket.
+
+Rationale:
+
+`Connection` serializes command objects to JSON and receives `SQLResponse` payloads.
 
 Status: draft
 
@@ -21,16 +71,27 @@ Needs: dsn
 
 ## Organizational Constraints
 
-* `<release, operations, compliance, team, repository, process, or support constraint>`
+### GitHub and npm Distribution
+`constr~github-and-npm-distribution~1`
 
-### `<Organizational Constraint Title>`
-`constr~<organizational-constraint-id>~1`
-
-`<Intentional organizational constraint and the evidence source that makes it intentional.>`
+The system is developed on GitHub and released as an npm package.
 
 Rationale:
 
-`<Why this constraint shapes architecture, release, operations, or support.>`
+The README links GitHub Actions and npm badges. The developer guide documents a manual release process that triggers a GitHub release workflow publishing to npm.
+
+Status: draft
+
+Needs: dsn
+
+### Automated Quality Gates
+`constr~automated-quality-gates~1`
+
+Changes are expected to pass linting, tests, coverage collection, dependency audit, and SonarCloud analysis.
+
+Rationale:
+
+The package scripts, developer guide, and Sonar configuration define these checks.
 
 Status: draft
 
@@ -38,8 +99,11 @@ Needs: dsn
 
 ## Assumptions
 
-* `<assumption inferred from code or documentation>`
+* Users provide a reachable Exasol database and valid credentials or tokens.
+* Browser applications can reach the Exasol WebSocket endpoint from the browser environment.
+* Node.js users install `ws` or another compatible WebSocket implementation when needed.
 
 ## Open Issues
 
-* `<constraint contradiction or unresolved assumption>`
+* The minimum supported Node.js version is not documented.
+* Supported browser versions are not documented.
