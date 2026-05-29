@@ -5,6 +5,7 @@
 import { SQLQueriesResponse, SQLResponse } from './types';
 import { CommandsNoResult, Attributes, Commands } from './commands';
 import { QueryResult } from './query-result';
+import { CsvFormatOptions } from './import/types';
 
 export type Cancelable = () => void;
 
@@ -126,6 +127,17 @@ export interface IExasolDriver {
    * @returns {Promise.<SQLResponse<T>>}
    */
   sendCommand<T>(cmd: Commands): Promise<SQLResponse<T>>;
+
+  /**
+   * Import data from a local CSV file into an Exasol table.
+   * Node.js only.
+   *
+   * @param tableName Target table name (optionally schema-qualified)
+   * @param filePath Path to the local CSV file
+   * @param csvOptions Optional CSV format options
+   * @returns Number of rows imported
+   */
+  importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number>;
 }
 
 export interface IStatement {

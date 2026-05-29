@@ -1,6 +1,6 @@
 import typescript from '@rollup/plugin-typescript';
 
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 const pkg = JSON.parse(readFileSync('package.json', { encoding: 'utf8' }));
 
 export default [
@@ -16,7 +16,11 @@ export default [
         format: 'esm',
       },
     ],
-    external: [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})],
+    external: [
+      ...Object.keys(pkg.dependencies || {}),
+      ...Object.keys(pkg.peerDependencies || {}),
+      'node:fs', 'node:net', 'node:tls', 'node:path',
+    ],
     plugins: [typescript()],
   },
 ];
