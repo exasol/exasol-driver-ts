@@ -2,7 +2,7 @@ import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 
 export async function startNewDockerContainer(DOCKER_CONTAINER_VERSION: string): Promise<StartedTestContainer> {
   const containerLog: string[] = [];
-  const startupTimeoutMillis = 1 * 60 * 1000; // 2 minutes
+  const startupTimeoutMillis = 2 * 60 * 1000; // 2 minutes
   const container = new GenericContainer(DOCKER_CONTAINER_VERSION)
     .withExposedPorts(8563, 2580)
     .withPrivilegedMode()
