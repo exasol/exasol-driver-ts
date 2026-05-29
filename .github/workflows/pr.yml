@@ -19,7 +19,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '26'
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm run ${{ matrix.target }}
@@ -37,9 +37,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20', '22', '24']
+        node: ['22', '24', '26']
     env:
-      DEFAULT_NODE_VERSION: '24'
+      DEFAULT_NODE_VERSION: '26'
     name: Node ${{ matrix.node }} integration test
     steps:
       - uses: actions/checkout@v6

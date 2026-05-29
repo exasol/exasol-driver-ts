@@ -8,6 +8,10 @@ This release adds support for importing local CSV files into an Exasol table. Se
 
 The release also fixes the implementation of the `driver.cancel()` method. Before, it failed with error `Cannot read properties of undefined (reading 'numResults')`. Now the query correctly fails with the correct error message `E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort. ...`.
 
+### Compatibility
+
+Starting with this release, we test the driver with Node.js LTS versions 22, 24 and 26. We no longer test with version 20 which is not maintained any longer.
+
 ## Features
 
 * #48: Added import from local CSV file
