@@ -23,8 +23,6 @@ Rationale:
 
 This supports the documented browser and Node.js usage model and avoids forcing one runtime's WebSocket implementation onto all consumers.
 
-Status: draft
-
 Covers:
 - `constr~injectable-websocket-implementation~1`
 - `constr~browser-and-nodejs-runtime-support~1`
@@ -50,8 +48,6 @@ The system uses `generic-pool` for connection pool lifecycle and capacity manage
 Rationale:
 
 Pooling is a general-purpose concern. Reusing an existing library keeps the Exasol-specific code focused on driver behavior.
-
-Status: draft
 
 Covers:
 - `scn~pool-reuses-drivers-for-queries~1`
@@ -83,8 +79,6 @@ Rationale:
 
 Streaming supports larger files and matches Exasol's `IMPORT FROM CSV AT ... FILE ...` mechanism.
 
-Status: draft
-
 Covers:
 - `scn~csv-import-succeeds~1`
 - `constr~node-only-csv-import~1`
@@ -114,8 +108,6 @@ Rationale:
 
 This improves compatibility with different consuming application build systems.
 
-Status: draft
-
 Covers:
 - `constr~typescript-library-package~1`
 
@@ -131,8 +123,6 @@ The system publishes the npm package from the GitHub release workflow after qual
 Rationale:
 
 Publishing from a dedicated release workflow keeps distribution tied to GitHub releases and uses npm publishing credentials only in the release job.
-
-Status: draft
 
 Covers:
 - `constr~github-and-npm-distribution~1`

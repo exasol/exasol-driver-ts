@@ -36,8 +36,6 @@ CsvImport --> Exasol
 
 `ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV imports.
 
-Status: draft
-
 Covers:
 - `scn~connect-with-basic-authentication~1`
 - `scn~reject-missing-credentials~1`
@@ -53,8 +51,6 @@ Covers:
 
 `Connection` owns a single `ExaWebsocket`, serializes protocol commands, optionally compresses command payloads, parses responses, handles cancellation, and prevents parallel work on the same active connection.
 
-Status: draft
-
 Covers:
 - `scn~browser-connection-uses-native-websocket~1`
 - `scn~node-connection-uses-injected-websocket~1`
@@ -65,8 +61,6 @@ Covers:
 
 The result handling layer fetches additional result pages when needed, closes remote result sets, applies `resultSetMaxRows`, and exposes row-oriented data through `QueryResult`.
 
-Status: draft
-
 Covers:
 - `scn~query-returns-rows~1`
 - `scn~result-row-limit-applied-during-fetch~1`
@@ -75,8 +69,6 @@ Covers:
 `dsn~pool-api~1`
 
 `ExasolPool` wraps `generic-pool` and manages reusable `ExasolDriver` instances according to configured minimum and maximum pool size.
-
-Status: draft
 
 Covers:
 - `scn~pool-reuses-drivers-for-queries~1`
@@ -88,8 +80,6 @@ Covers:
 
 The CSV import modules verify local file readability, create an Exasol import tunnel, wrap the tunnel with TLS, build Exasol `IMPORT FROM CSV` SQL, stream the file as chunked HTTP response data, and return the SQL row count.
 
-Status: draft
-
 Covers:
 - `scn~csv-import-succeeds~1`
 - `scn~csv-import-rejects-missing-file~1`
@@ -100,8 +90,6 @@ Covers:
 `dsn~runtime-packaging~1`
 
 Rollup builds the package from `src/index.ts` into CommonJS and ES module artifacts while keeping runtime dependencies external.
-
-Status: draft
 
 Covers:
 - `constr~typescript-library-package~1`

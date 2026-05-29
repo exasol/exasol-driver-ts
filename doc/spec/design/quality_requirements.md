@@ -61,8 +61,6 @@ SonarCloud consumes `coverage/lcov.info`, analyzes `src/`, excludes generated Ja
 
 The system defines quality gates through npm scripts, Jest project configuration, ESLint configuration, npm audit configuration, and SonarCloud project settings.
 
-Status: draft
-
 Covers:
 - `constr~automated-quality-gates~1`
 
