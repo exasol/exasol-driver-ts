@@ -57,8 +57,9 @@ const config: Config = {
       transformIgnorePatterns: [], // Allow node_modules through transform
       moduleFileExtensions: ['ts', 'js', 'json'],
       setupFiles: ['<rootDir>/jest.setup.itest-dom.ts'],
-    }
-    ,
+      // Avoid merging babel-jest coverage maps with ts-jest coverage for the same source files.
+      coveragePathIgnorePatterns: ['<rootDir>/src/'],
+    },
   ],
   displayName: 'exasol-driver',
   transform: {
