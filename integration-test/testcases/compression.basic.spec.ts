@@ -7,6 +7,7 @@ import { loadCA } from '../loadCert';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
+// [itest->dsn~runtime-connect-basic-authentication~1]
 export const basicCompressionTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
     const randomId = new RandomUuid();

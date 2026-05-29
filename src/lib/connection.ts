@@ -5,6 +5,9 @@ import { ILogger } from './logger/logger';
 import { ErrClosed, ErrInvalidConn, ErrJobAlreadyRunning, MissingExceptionError } from './errors/errors';
 import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
 import { deflate, inflate } from 'pako';
+
+// [impl->dsn~runtime-browser-websocket~1]
+// [impl->dsn~runtime-node-websocket~1]
 export interface ExaMessageEvent {
   data: unknown;
   type: string;
@@ -114,6 +117,7 @@ export class Connection implements PoolItem {
   }
 
   public sendCommand<T>(cmd: Commands, getCancel?: (cancel?: Cancelable) => void): Promise<SQLResponse<T>> {
+    // [impl->dsn~runtime-query-cancellation~1]
     if (!this.connection || this.connection.readyState === ReadyState.CLOSED || this.connection.readyState === ReadyState.CLOSING) {
       this.isBroken = true;
       return Promise.reject(ErrClosed);

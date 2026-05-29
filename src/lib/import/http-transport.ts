@@ -1,6 +1,7 @@
 import * as net from 'node:net';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 
+// [impl->dsn~runtime-csv-import-file-stream~1]
 const MAGIC_PACKET_SIZE = 12;
 const RESPONSE_SIZE = 24;
 const MAGIC_VALUE = 0x02212102;

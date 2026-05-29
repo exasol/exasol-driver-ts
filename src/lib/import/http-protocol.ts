@@ -3,6 +3,7 @@ import * as tls from 'node:tls';
 import * as stream from 'node:stream';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 
+// [impl->dsn~runtime-csv-import-file-stream~1]
 const HEADER_TERMINATOR = '\r\n\r\n';
 
 /**

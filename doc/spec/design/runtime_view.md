@@ -24,6 +24,8 @@ Covers:
 - `scn~session-attributes-sent-during-login~1`
 - `constr~exasol-websocket-sql-protocol~1`
 
+Needs: impl, itest
+
 ### Reject Missing Credentials
 `dsn~runtime-reject-missing-credentials~1`
 
@@ -35,6 +37,8 @@ Status: draft
 
 Covers:
 - `scn~reject-missing-credentials~1`
+
+Needs: impl, utest
 
 ## SQL Execution
 
@@ -51,6 +55,8 @@ Covers:
 - `scn~query-returns-rows~1`
 - `scn~result-row-limit-applied-during-fetch~1`
 
+Needs: impl, utest, itest
+
 ### Command Execution
 `dsn~runtime-command-execution~1`
 
@@ -62,6 +68,8 @@ Status: draft
 
 Covers:
 - `scn~execute-returns-row-count~1`
+
+Needs: impl, utest, itest
 
 ### Raw Response Execution
 `dsn~runtime-raw-response-execution~1`
@@ -75,6 +83,8 @@ Status: draft
 Covers:
 - `scn~raw-response-requested~1`
 
+Needs: impl, utest, itest
+
 ### Prepared Statement Execution
 `dsn~runtime-prepared-statement-execution~1`
 
@@ -87,6 +97,8 @@ Status: draft
 Covers:
 - `scn~prepared-statement-execution~1`
 
+Needs: impl
+
 ### Query Cancellation
 `dsn~runtime-query-cancellation~1`
 
@@ -98,6 +110,8 @@ Status: draft
 
 Covers:
 - `scn~cancel-active-work~1`
+
+Needs: impl, utest, itest
 
 ## Runtime Portability
 
@@ -115,6 +129,8 @@ Covers:
 - `constr~browser-and-nodejs-runtime-support~1`
 - `constr~injectable-websocket-implementation~1`
 
+Needs: impl, itest
+
 ### Node.js WebSocket Runtime
 `dsn~runtime-node-websocket~1`
 
@@ -128,6 +144,8 @@ Covers:
 - `scn~node-connection-uses-injected-websocket~1`
 - `constr~browser-and-nodejs-runtime-support~1`
 - `constr~injectable-websocket-implementation~1`
+
+Needs: impl, itest
 
 ## Pooling
 
@@ -143,6 +161,8 @@ Status: draft
 Covers:
 - `scn~pool-enforces-configured-size-limits~1`
 
+Needs: impl, itest
+
 ### Pooled Query Execution
 `dsn~runtime-pooled-query-execution~1`
 
@@ -155,6 +175,8 @@ Status: draft
 Covers:
 - `scn~pool-reuses-drivers-for-queries~1`
 
+Needs: impl, itest
+
 ### Pool Shutdown
 `dsn~runtime-pool-shutdown~1`
 
@@ -166,6 +188,8 @@ Status: draft
 
 Covers:
 - `scn~pool-shutdown~1`
+
+Needs: impl, itest
 
 ## CSV Import
 
@@ -182,6 +206,8 @@ Covers:
 - `scn~csv-import-rejects-missing-file~1`
 - `constr~node-only-csv-import~1`
 
+Needs: impl, utest
+
 ### CSV Import Missing Target Table
 `dsn~runtime-csv-import-missing-target-table~1`
 
@@ -194,6 +220,8 @@ Status: draft
 Covers:
 - `scn~csv-import-rejects-missing-target-table~1`
 - `constr~node-only-csv-import~1`
+
+Needs: impl, itest
 
 ### CSV Import File Stream
 `dsn~runtime-csv-import-file-stream~1`
@@ -208,6 +236,8 @@ Covers:
 - `scn~csv-import-succeeds~1`
 - `constr~node-only-csv-import~1`
 
+Needs: impl, utest, itest
+
 ### CSV Import Format Options
 `dsn~runtime-csv-import-format-options~1`
 
@@ -219,3 +249,5 @@ Status: draft
 
 Covers:
 - `scn~csv-import-applies-format-options~1`
+
+Needs: impl, utest, itest

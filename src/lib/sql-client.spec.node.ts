@@ -14,6 +14,7 @@ describe('sqlClient', () => {
   });
 
   describe('connect', () => {
+    // [utest->dsn~runtime-reject-missing-credentials~1]
     it('should fail with no credentials', async () => {
       expect.assertions(2);
       const driver = new ExasolDriver((url) => {
@@ -27,6 +28,7 @@ describe('sqlClient', () => {
   });
 
   describe('query', () => {
+    // [utest->dsn~runtime-query-execution~1]
     it('should result set', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
@@ -56,6 +58,7 @@ describe('sqlClient', () => {
     });
 
     it('should return raw response for raw response type', async () => {
+      // [utest->dsn~runtime-raw-response-execution~1]
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
@@ -114,6 +117,7 @@ describe('sqlClient', () => {
   });
 
   describe('execute', () => {
+    // [utest->dsn~runtime-command-execution~1]
     it('should return row count', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
@@ -140,6 +144,7 @@ describe('sqlClient', () => {
     });
 
     it('should return raw response for raw response type', async () => {
+      // [utest->dsn~runtime-raw-response-execution~1]
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
@@ -189,6 +194,7 @@ describe('sqlClient', () => {
   });
 
   describe('importFromCsvFile', () => {
+    // [utest->dsn~runtime-csv-import-file-readability-check~1]
     it('should fail due to closed connection', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
@@ -216,6 +222,7 @@ describe('sqlClient', () => {
   });
 
   describe('cancel', () => {
+    // [utest->dsn~runtime-query-cancellation~1]
     it('should send abort query command', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();

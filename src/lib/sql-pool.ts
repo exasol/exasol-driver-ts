@@ -5,11 +5,14 @@ import { QueryResult } from './query-result';
 import { Config, ExasolDriver, WebsocketFactory } from './sql-client';
 import { CetCancelFunction } from './sql-client.interface';
 import { SQLQueriesResponse, SQLResponse } from './types';
+
+// [impl->dsn~decision-use-generic-pool~1]
 export interface ClientPoolConfig {
   minimumPoolSize: number;
   maximumPoolSize: number;
 }
 function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger: ILogger) {
+  // [impl->dsn~runtime-pool-capacity-management~1]
   async function createClient() {
     const exasolClient: ExasolDriver = new ExasolDriver(websocketFactory, config, logger);
     await exasolClient.connect();
@@ -124,6 +127,7 @@ export class ExasolPool {
     responseType?: 'default' | 'raw',
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
     {
+      // [impl->dsn~runtime-pooled-query-execution~1]
       let exasolClient;
       try {
         exasolClient = await this.internalPool.acquire();
@@ -144,6 +148,7 @@ export class ExasolPool {
    * @memberof ExasolPool
    */
   public async drain() {
+    // [impl->dsn~runtime-pool-shutdown~1]
     await this.internalPool.drain();
   }
   /**
@@ -152,6 +157,7 @@ export class ExasolPool {
    * @memberof ExasolPool
    */
   public async clear() {
+    // [impl->dsn~runtime-pool-shutdown~1]
     await this.internalPool.clear();
   }
 }

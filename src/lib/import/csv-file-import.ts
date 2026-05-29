@@ -7,6 +7,7 @@ import { buildCsvImportSql } from './import-sql-builder';
 import { readHttpRequest, sendChunkedResponse } from './http-protocol';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 
+// [impl->dsn~decision-stream-csv-through-import-tunnel~1]
 export async function importCsvFile(
   host: string,
   port: number,
@@ -15,6 +16,9 @@ export async function importCsvFile(
   executeSql: (sql: string) => Promise<number>,
   csvOptions?: CsvFormatOptions,
 ): Promise<number> {
+  // [impl->dsn~runtime-csv-import-file-readability-check~1]
+  // [impl->dsn~runtime-csv-import-missing-target-table~1]
+  // [impl->dsn~runtime-csv-import-file-stream~1]
   const absoluteFilePath = path.resolve(filePath);
   await verifyFileExists(absoluteFilePath);
 

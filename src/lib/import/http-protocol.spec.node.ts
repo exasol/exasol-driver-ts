@@ -1,6 +1,7 @@
 import { PassThrough } from 'node:stream';
 import { readHttpRequest, sendChunkedResponse } from './http-protocol';
 
+// [utest->dsn~runtime-csv-import-file-stream~1]
 describe('http-protocol', () => {
   describe('readHttpRequest', () => {
     it('should return full HTTP request when headers arrive in a single chunk', async () => {

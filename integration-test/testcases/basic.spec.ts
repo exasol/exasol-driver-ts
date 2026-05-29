@@ -5,6 +5,9 @@ import { loadCA } from '../loadCert';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
+// [itest->dsn~runtime-connect-basic-authentication~1]
+// [itest->dsn~runtime-browser-websocket~1]
+// [itest->dsn~runtime-node-websocket~1]
 export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
 
@@ -33,6 +36,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
 
 
     describe('query()', () => {
+      // [itest->dsn~runtime-query-execution~1]
       it('Exec and fetch', async () => {
         const driver = await openConnection();
 
@@ -66,6 +70,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
       });
 
       it('Cancel long running query', async () => {
+        // [itest->dsn~runtime-query-cancellation~1]
         const driver = await openConnection();
 
         const startedAt = Date.now();
@@ -81,7 +86,9 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
     });
 
     describe('execute()', () => {
+      // [itest->dsn~runtime-command-execution~1]
       it('Exec and fetch (raw)', async () => {
+        // [itest->dsn~runtime-raw-response-execution~1]
         const driver = await openConnection();
 
         await driver.execute('CREATE SCHEMA ' + schemaName, undefined, undefined, 'raw');
@@ -100,6 +107,7 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
 
 
       it('Cancel long running statement', async () => {
+        // [itest->dsn~runtime-query-cancellation~1]
         const driver = await openConnection();
 
         const startedAt = Date.now();

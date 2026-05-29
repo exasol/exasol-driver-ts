@@ -12,6 +12,9 @@ import { DOCKER_CONTAINER_VERSION_LATEST } from '../runner.config';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
+// [itest->dsn~runtime-csv-import-missing-target-table~1]
+// [itest->dsn~runtime-csv-import-file-stream~1]
+// [itest->dsn~runtime-csv-import-format-options~1]
 describe("Node Import", () => {
 
   const randomId = new RandomUuid();

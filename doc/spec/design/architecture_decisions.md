@@ -58,6 +58,8 @@ Covers:
 - `scn~pool-enforces-configured-size-limits~1`
 - `scn~pool-shutdown~1`
 
+Needs: impl
+
 Tags: pooling, dependency
 
 ## CSV Import
@@ -87,6 +89,8 @@ Covers:
 - `scn~csv-import-succeeds~1`
 - `constr~node-only-csv-import~1`
 
+Needs: impl
+
 Tags: csv-import, nodejs
 
 ## Packaging
@@ -115,6 +119,24 @@ Status: draft
 Covers:
 - `constr~typescript-library-package~1`
 
+Needs: impl
+
 Tags: packaging
+
+### Publish Through GitHub Release Workflow
+`dsn~decision-use-github-release-workflow-for-npm-publishing~1`
+
+The system publishes the npm package from the GitHub release workflow after quality gates, package build, and package packing succeed.
+
+Rationale:
+
+Publishing from a dedicated release workflow keeps distribution tied to GitHub releases and uses npm publishing credentials only in the release job.
+
+Status: draft
+
+Covers:
+- `constr~github-and-npm-distribution~1`
+
+Tags: packaging, release
 
 ## Open Issues

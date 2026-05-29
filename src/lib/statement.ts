@@ -5,6 +5,7 @@ import { ErrInvalidValuesCount } from './errors/errors';
 import { Connection } from './connection';
 import { ClosePreparedStatementCommand, ExecutePreparedStatementCommand } from './commands';
 
+// [impl->dsn~runtime-prepared-statement-execution~1]
 export class Statement implements IStatement {
   constructor(
     private readonly connection: Connection,

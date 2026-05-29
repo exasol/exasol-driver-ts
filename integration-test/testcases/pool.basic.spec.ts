@@ -7,7 +7,9 @@ import { loadCA } from '../loadCert';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
-
+// [itest->dsn~runtime-pool-capacity-management~1]
+// [itest->dsn~runtime-pooled-query-execution~1]
+// [itest->dsn~runtime-pool-shutdown~1]
 export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
     const randomId = new RandomUuid();

@@ -86,6 +86,8 @@ export class ExasolDriver implements IExasolDriver {
    * @inheritDoc
    */
   public async connect(): Promise<void> {
+    // [impl->dsn~runtime-connect-basic-authentication~1]
+    // [impl->dsn~runtime-reject-missing-credentials~1]
     let hasCredentials = false;
     let isBasicAuth = false;
     if (this.config.user && this.config.password) {
@@ -158,6 +160,7 @@ export class ExasolDriver implements IExasolDriver {
    * @inheritDoc
    */
   async cancel() {
+    // [impl->dsn~runtime-query-cancellation~1]
     if (this.closed) {
       throw ErrClosed;
     }
@@ -242,6 +245,8 @@ export class ExasolDriver implements IExasolDriver {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw' | undefined,
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
+    // [impl->dsn~runtime-query-execution~1]
+    // [impl->dsn~runtime-raw-response-execution~1]
     const connection = await this.acquire();
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
@@ -305,6 +310,8 @@ export class ExasolDriver implements IExasolDriver {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw',
   ): Promise<SQLResponse<SQLQueriesResponse> | number> {
+    // [impl->dsn~runtime-command-execution~1]
+    // [impl->dsn~runtime-raw-response-execution~1]
     const connection = await this.acquire();
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
@@ -385,6 +392,7 @@ export class ExasolDriver implements IExasolDriver {
    * @inheritDoc
    */
   public async prepare(sqlStatement: string, getCancel?: CetCancelFunction): Promise<IStatement> {
+    // [impl->dsn~runtime-prepared-statement-execution~1]
     const connection = await this.acquire();
     return connection
       .sendCommand<CreatePreparedStatementResponse>(
