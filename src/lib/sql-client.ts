@@ -1,12 +1,7 @@
 import * as forge from 'node-forge';
 
-import { getURIScheme } from './utils';
-import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
-import { Statement } from './statement';
-import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
-import { ConnectionPool } from './pool/pool';
-import { ILogger, Logger, LogLevel } from './logger/logger';
-import { fetchData } from './fetch';
+import { Attributes, Commands, CommandsNoResult, OIDCSQLCommand, SQLBatchCommand, SQLSingleCommand } from './commands';
+import { Connection, ExaWebsocket } from './connection';
 import {
   ErrClosed,
   ErrInvalidConn,
@@ -18,11 +13,16 @@ import {
   newInvalidReturnValueRowCount,
   newSqlError,
 } from './errors/errors';
-import { Connection, ExaWebsocket } from './connection';
-import { CommandsNoResult, Attributes, Commands, OIDCSQLCommand, SQLSingleCommand, SQLBatchCommand } from './commands';
-import { QueryResult } from './query-result';
-import { CsvFormatOptions } from './import/types';
+import { fetchData } from './fetch';
 import { importCsvFile } from './import/csv-file-import';
+import { CsvFormatOptions } from './import/types';
+import { ILogger, Logger, LogLevel } from './logger/logger';
+import { ConnectionPool } from './pool/pool';
+import { QueryResult } from './query-result';
+import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
+import { Statement } from './statement';
+import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
+import { getURIScheme } from './utils';
 
 export interface Config {
   host: string;
@@ -51,8 +51,7 @@ interface InternalConfig {
 
 export const driverVersion = 'v1.0.0';
 
-// TODO: rename to WebsocketFactory
-export type websocketFactory = (url: string) => ExaWebsocket;
+export type WebsocketFactory = (url: string) => ExaWebsocket;
 
 export class ExasolDriver implements IExasolDriver {
   private readonly defaultConfig: Config & InternalConfig = {
@@ -66,13 +65,13 @@ export class ExasolDriver implements IExasolDriver {
     compression: false,
     apiVersion: 3,
   };
-  private readonly config: Config & InternalConfig & { websocketFactory: websocketFactory };
+  private readonly config: Config & InternalConfig & { websocketFactory: WebsocketFactory };
   private readonly logger: ILogger;
   private closed = false;
 
   private readonly pool: ConnectionPool<Connection>;
 
-  constructor(websocketFactory: websocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
+  constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
     // Used internally to avoid parallel execution
     this.pool = new ConnectionPool<Connection>(1, logger);
     this.config = {
@@ -159,9 +158,16 @@ export class ExasolDriver implements IExasolDriver {
    * @inheritDoc
    */
   async cancel() {
-    await this.sendCommandWithNoResult({
+    if (this.closed) {
+      throw ErrClosed;
+    }
+    const connections = this.pool.getAll();
+    if (connections.length === 0) {
+      throw ErrInvalidConn;
+    }
+    await Promise.all(connections.map((connection) => connection.sendCommandWithNoResult({
       command: 'abortQuery',
-    });
+    })));
   }
 
   /**
@@ -253,6 +259,8 @@ export class ExasolDriver implements IExasolDriver {
           return data;
         }
 
+        this.verifyNoError(data);
+
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
         }
@@ -314,13 +322,7 @@ export class ExasolDriver implements IExasolDriver {
           return data;
         }
 
-        if (data.status === 'error') {
-          if (data.exception) {
-            throw newSqlError(data.exception);
-          } else {
-            throw GeneralSqlError;
-          }
-        }
+        this.verifyNoError(data);
 
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
@@ -338,6 +340,16 @@ export class ExasolDriver implements IExasolDriver {
         }
         throw err;
       });
+  }
+
+  private verifyNoError(data: SQLResponse<SQLQueriesResponse>) {
+    if (data.status === 'error') {
+      if (data.exception) {
+        throw newSqlError(data.exception);
+      } else {
+        throw GeneralSqlError;
+      }
+    }
   }
 
   /**

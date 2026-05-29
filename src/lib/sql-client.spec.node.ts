@@ -1,7 +1,7 @@
-import { ExasolDriver } from './sql-client';
 import { WebSocket } from 'ws';
 import { ExaWebsocket } from './connection';
 import { createMockWebsocketFactory, MockWebsocketFactory } from './mock-socket';
+import { ExasolDriver } from './sql-client';
 import { IExasolDriver } from './sql-client.interface';
 
 describe('sqlClient', () => {
@@ -43,6 +43,74 @@ describe('sqlClient', () => {
         sqlText: 'select 1',
       });
     });
+
+    it('should return result set for default response type', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.query('select 1', undefined, undefined, 'default');
+
+      expect(result.getColumns()).toStrictEqual([{ name: 'A', dataType: { type: 'INTEGER' } }]);
+      expect(result.getRows()).toStrictEqual([{ A: 1 }]);
+    });
+
+    it('should return raw response for raw response type', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.query('select 1', undefined, undefined, 'raw');
+
+      expect(result).toStrictEqual({
+        status: 'ok',
+        exception: undefined,
+        responseData: {
+          numResults: 1,
+          results: [{
+            resultType: 'resultSet',
+            resultSet: {
+              numColumns: 1,
+              numRows: 1,
+              numRowsInMessage: 1,
+              columns: [{ name: 'A', dataType: { type: 'INTEGER' } }],
+              data: [[1]],
+            },
+          }],
+        },
+      });
+    });
+
+    it.each([
+      [
+        'with sql exception details',
+        { status: 'error', exception: { sqlCode: '42000', text: 'syntax error' } },
+        "E-EDJS-25: SQL error: code: '42000', message: 'syntax error'",
+      ],
+      ['with missing exception details', { status: 'error' },
+        'E-EDJS-27: Received error response with missing exception details.'],
+    ])('should throw the expected error %s', async (_description, response, expectedMessage) => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const originalSend = mockSocketFactory.mockSocket.send.bind(mockSocketFactory.mockSocket);
+      mockSocketFactory.mockSocket.send = (data: string | Uint8Array) => {
+        const command = JSON.parse(data.toString());
+        if (command.command === 'execute') {
+          mockSocketFactory.mockSocket.sentCommands.push(command);
+          setTimeout(() => {
+            mockSocketFactory.mockSocket.callOnMessage({
+              data: JSON.stringify(response),
+            });
+          }, 0);
+          return;
+        }
+        originalSend(data);
+      };
+
+      await expect(driver.query('invalid sql')).rejects.toThrow(expectedMessage);
+    });
   });
 
   describe('execute', () => {
@@ -58,6 +126,33 @@ describe('sqlClient', () => {
       expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
         command: 'execute',
         sqlText: 'create table test (id int)',
+      });
+    });
+
+    it('should return row count for default response type', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.execute('create table test (id int)', undefined, undefined, 'default');
+
+      expect(result).toBe(1);
+    });
+
+    it('should return raw response for raw response type', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.execute('create table test (id int)', undefined, undefined, 'raw');
+
+      expect(result).toStrictEqual({
+        status: 'ok',
+        exception: undefined,
+        responseData: {
+          numResults: 1,
+          results: [{ resultType: 'rowCount', rowCount: 1 }],
+        },
       });
     });
 
@@ -108,6 +203,30 @@ describe('sqlClient', () => {
       await connectPromise;
 
       await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow("E-EDJS-12: Failed to establish tunnel connection to Exasol at 'localhost':'8563': ''.");
+    });
+  });
+
+  describe('cancel', () => {
+    it('should send abort query command', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      await driver.cancel();
+
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'abortQuery',
+      });
+    });
+
+    it('should reject when driver is closed', async () => {
+      await driver.close();
+
+      await expect(driver.cancel()).rejects.toThrow('E-EDJS-2: Connection was closed.');
+    });
+
+    it('should reject when no connection exists', async () => {
+      await expect(driver.cancel()).rejects.toThrow('E-EDJS-1: Invalid connection.');
     });
   });
 });

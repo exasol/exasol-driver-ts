@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ExaWebsocket, ReadyState } from "./connection";
-import { websocketFactory } from "./sql-client";
+import { WebsocketFactory } from "./sql-client";
 import { SQLQueriesResponse } from "./types";
 
 
@@ -17,6 +17,9 @@ export class MockExaWebSocket implements ExaWebsocket {
     const command = JSON.parse(data.toString());
     this.sentCommands.push(command);
     const responseData = this.getResponseForCommand(command);
+    if (responseData === undefined) {
+      return;
+    }
     setTimeout(() => {
       this.callOnMessage({
         data: JSON.stringify({
@@ -36,6 +39,9 @@ export class MockExaWebSocket implements ExaWebsocket {
         return {};
       case 'execute':
         return this.getMockResultForSQL(command.sqlText);
+      case 'abortQuery':
+        // No response expected for abortQuery command
+        return undefined;
       default:
         throw new Error(`MockExaWebSocket: No mock response defined for command '${command.command}'.`);
     }
@@ -110,7 +116,7 @@ export class MockWebsocketFactory {
     this.url = undefined;
   }
 
-  public get factory(): websocketFactory {
+  public get factory(): WebsocketFactory {
     return (url: string) => {
       if (this.url === undefined) {
         this.url = url;
