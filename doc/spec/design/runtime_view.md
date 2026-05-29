@@ -36,6 +36,9 @@ Covers:
 
 Needs: impl, utest
 
+### Reject Missing Credentials
+`dsn~runtime-reject-missing-credentials~1`
+
 ## SQL Execution
 
 ### Query Execution
