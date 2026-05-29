@@ -29,6 +29,8 @@ Run requirement tracing with:
 
 ```sh
 npm run trace
+# Generate tracing report at dist/trace-report.html
+npm run trace:report
 ```
 
 ### Unit tests
