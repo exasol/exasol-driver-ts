@@ -27,12 +27,8 @@ jobs:
         if: ${{ matrix.target == 'test:all' }}
         run: |
           df -h
-          echo "Cleaning up disk space by removing unnecessary files and pruning Docker images/build cache..."
+          echo "Cleaning up disk space by removing unnecessary files..."
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-          df -h
-          echo "Pruning Docker images and build cache..."
-          sudo docker image prune --all --force
-          sudo docker builder prune -a
           df -h
       - run: npm ci --ignore-scripts
       - run: npm run ${{ matrix.target }}
