@@ -59,13 +59,13 @@ describe('import-sql-builder', () => {
 
       expect(sql).toBe(
         "IMPORT INTO TEST_TABLE FROM CSV AT 'https://192.168.1.10:4362' PUBLIC KEY 'fingerprint' FILE '001.csv' " +
-        "COLUMN SEPARATOR = ',' " +
-        "COLUMN DELIMITER = '\"' " +
-        "ROW SEPARATOR = 'CRLF' " +
-        "ENCODING = 'UTF-8' " +
-        'SKIP = 1 ' +
-        'LTRIM ' +
-        "NULL = 'NULL'",
+          "COLUMN SEPARATOR = ',' " +
+          "COLUMN DELIMITER = '\"' " +
+          "ROW SEPARATOR = 'CRLF' " +
+          "ENCODING = 'UTF-8' " +
+          'SKIP = 1 ' +
+          'LTRIM ' +
+          "NULL = 'NULL'",
       );
     });
 
