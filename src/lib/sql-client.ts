@@ -81,18 +81,6 @@ export class ExasolDriver implements IExasolDriver {
     };
     this.logger = logger;
   }
-  executeBatch(sqlStatements: string[], attributes?: Partial<Attributes>, getCancel?: CetCancelFunction): Promise<SQLResponse<SQLQueriesResponse>> {
-    throw new Error('Method not implemented.');
-  }
-  prepare(sqlStatement: string): Promise<IStatement> {
-    throw new Error('Method not implemented.');
-  }
-  sendCommand<T>(cmd: Commands): Promise<SQLResponse<T>> {
-    throw new Error('Method not implemented.');
-  }
-  importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number> {
-    throw new Error('Method not implemented.');
-  }
 
   /**
    * @inheritDoc
@@ -254,18 +242,41 @@ export class ExasolDriver implements IExasolDriver {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw' | undefined,
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
-    const data = await this.runSqlStatement(sqlStatement, attributes, getCancel);
-    if (responseType == 'raw') {
-      return data;
-    }
+    const connection = await this.acquire();
+    return connection
+      .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
+      .then((data) => {
+        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+      })
+      .then((data) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        return data;
+      })
+      .then((data) => {
+        if (responseType == 'raw') {
+          return data;
+        }
 
-    this.verifyNoError(data);
+        this.verifyNoError(data);
 
-    if (data.responseData.numResults === 0) {
-      throw ErrMalformedData;
-    }
+        if (data.responseData.numResults === 0) {
+          throw ErrMalformedData;
+        }
 
-    return new QueryResult(data.responseData.results[0].resultSet);
+        if (data.responseData.results[0].resultType === 'rowCount') {
+          throw newInvalidReturnValueRowCount;
+        }
+
+        return new QueryResult(data.responseData.results[0].resultSet);
+      })
+      .catch((err) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        throw err;
+      });
   }
 
   /**
@@ -294,228 +305,226 @@ export class ExasolDriver implements IExasolDriver {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw',
   ): Promise<SQLResponse<SQLQueriesResponse> | number> {
-    const data = await this.runSqlStatement(sqlStatement, attributes, getCancel);
-    if (responseType == 'raw') {
-      return data;
-    }
-
-    if (data.responseData.results[0].resultType === 'resultSet') {
-      throw newInvalidReturnValueResultSet;
-    }
-
-    return data.responseData.results[0].rowCount ?? 0;
-  }
-
-  private async runSqlStatement(
-    sqlStatement: string,
-    attributes?: Partial<Attributes>,
-    getCancel?: CetCancelFunction,
-  ): Promise<SQLResponse<SQLQueriesResponse>> {
     const connection = await this.acquire();
-    try {
-      const data = await connection.sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel);
-      const fetchedData = await fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+    return connection
+      .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
+      .then((data) => {
+        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+      })
+      .then((data) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        return data;
+      })
+      .then((data) => {
+        if (responseType == 'raw') {
+          return data;
+        }
 
-      this.verifyNoError(data);
+        this.verifyNoError(data);
 
-      if (data.responseData.numResults === 0) {
-        throw ErrMalformedData;
-      }
-    }
+        if (data.responseData.numResults === 0) {
+          throw ErrMalformedData;
+        }
 
-      if (fetchedData.responseData.numResults === 0) {
-      throw ErrMalformedData;
-    }
+        if (data.responseData.results[0].resultType === 'resultSet') {
+          throw newInvalidReturnValueResultSet;
+        }
 
-    return fetchedData;
-  } finally {
-    this.pool.release(connection);
-  }
+        return data.responseData.results[0].rowCount ?? 0;
+      })
+      .catch((err) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        throw err;
+      });
   }
 
   private verifyNoError(data: SQLResponse<SQLQueriesResponse>) {
-  if (data.status === 'error') {
-    if (data.exception) {
-      throw newSqlError(data.exception);
-    } else {
-      throw GeneralSqlError;
+    if (data.status === 'error') {
+      if (data.exception) {
+        throw newSqlError(data.exception);
+      } else {
+        throw GeneralSqlError;
+      }
     }
   }
-}
 
   /**
    * @inheritDoc
    */
   public async executeBatch(
-  sqlStatements: string[],
-  attributes ?: Partial<Attributes>,
-  getCancel ?: CetCancelFunction,
-): Promise < SQLResponse < SQLQueriesResponse >> {
-  const connection = await this.acquire();
+    sqlStatements: string[],
+    attributes?: Partial<Attributes>,
+    getCancel?: CetCancelFunction,
+  ): Promise<SQLResponse<SQLQueriesResponse>> {
+    const connection = await this.acquire();
 
-  return connection
-    .sendCommand<SQLQueriesResponse>(new SQLBatchCommand(sqlStatements, attributes), getCancel)
-    .then((data) => {
-      return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
-    })
-    .then((data) => {
-      if (connection) {
-        this.pool.release(connection);
-      }
-      return data;
-    })
-    .catch((err) => {
-      if (connection) {
-        this.pool.release(connection);
-      }
-      throw err;
-    });
-}
-
-  /**
-   * @inheritDoc
-   */
-  public async prepare(sqlStatement: string, getCancel ?: CetCancelFunction): Promise < IStatement > {
-  const connection = await this.acquire();
-  return connection
-    .sendCommand<CreatePreparedStatementResponse>(
-      {
-        command: 'createPreparedStatement',
-        sqlText: sqlStatement,
-      },
-      getCancel,
-    )
-    .then((response) => {
-      return new Statement(connection, this.pool, response.responseData.statementHandle, response.responseData.parameterData.columns);
-    });
-}
+    return connection
+      .sendCommand<SQLQueriesResponse>(new SQLBatchCommand(sqlStatements, attributes), getCancel)
+      .then((data) => {
+        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+      })
+      .then((data) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        return data;
+      })
+      .catch((err) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        throw err;
+      });
+  }
 
   /**
    * @inheritDoc
    */
-  public async sendCommand<T>(cmd: Commands, getCancel ?: CetCancelFunction): Promise < SQLResponse < T >> {
-  const connection = await this.acquire();
-
-  return connection
-    .sendCommand<T>(cmd, getCancel)
-    .then((data) => {
-      if (connection) {
-        this.pool.release(connection);
-      }
-      return data;
-    })
-    .catch((err) => {
-      if (connection) {
-        this.pool.release(connection);
-      }
-      throw err;
-    });
-}
+  public async prepare(sqlStatement: string, getCancel?: CetCancelFunction): Promise<IStatement> {
+    const connection = await this.acquire();
+    return connection
+      .sendCommand<CreatePreparedStatementResponse>(
+        {
+          command: 'createPreparedStatement',
+          sqlText: sqlStatement,
+        },
+        getCancel,
+      )
+      .then((response) => {
+        return new Statement(connection, this.pool, response.responseData.statementHandle, response.responseData.parameterData.columns);
+      });
+  }
 
   /**
    * @inheritDoc
    */
-  public async importFromCsvFile(tableName: string, filePath: string, csvOptions ?: CsvFormatOptions): Promise < number > {
-  if(this.closed) {
-  throw ErrClosed;
-}
-return importCsvFile(
-  this.config.host,
-  this.config.port,
-  tableName,
-  filePath,
-  (sql: string) => this.execute(sql),
-  csvOptions,
-);
+  public async sendCommand<T>(cmd: Commands, getCancel?: CetCancelFunction): Promise<SQLResponse<T>> {
+    const connection = await this.acquire();
+
+    return connection
+      .sendCommand<T>(cmd, getCancel)
+      .then((data) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        return data;
+      })
+      .catch((err) => {
+        if (connection) {
+          this.pool.release(connection);
+        }
+        throw err;
+      });
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public async importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number> {
+    if (this.closed) {
+      throw ErrClosed;
+    }
+    return importCsvFile(
+      this.config.host,
+      this.config.port,
+      tableName,
+      filePath,
+      (sql: string) => this.execute(sql),
+      csvOptions,
+    );
   }
 
   private async acquire() {
-  if (this.closed) {
-    throw ErrClosed;
-  }
+    if (this.closed) {
+      throw ErrClosed;
+    }
 
-  let connection = this.pool.acquire();
-  if (!connection) {
-    this.logger.debug("[SQLClient] Found no free connection and pool did not reach its limit, will create new connection");
-    await this.connect();
-    connection = this.pool.acquire();
+    let connection = this.pool.acquire();
+    if (!connection) {
+      this.logger.debug("[SQLClient] Found no free connection and pool did not reach its limit, will create new connection");
+      await this.connect();
+      connection = this.pool.acquire();
+    }
+    if (!connection) {
+      throw ErrInvalidConn;
+    }
+    return connection;
   }
-  if (!connection) {
-    throw ErrInvalidConn;
-  }
-  return connection;
-}
 
   private async loginBasicAuth() {
-  return this.sendCommand<PublicKeyResponse>({
-    command: 'login',
-    protocolVersion: this.config.apiVersion,
-  }).then((response) => {
+    return this.sendCommand<PublicKeyResponse>({
+      command: 'login',
+      protocolVersion: this.config.apiVersion,
+    }).then((response) => {
 
-    if (response.status == 'error') {
-      const errorString: string = this.buildConnectionError(response);
-      throw new Error(errorString);
-    }
+      if (response.status == 'error') {
+        const errorString: string = this.buildConnectionError(response);
+        throw new Error(errorString);
+      }
 
-    const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);
-    const e = new forge.jsbn.BigInteger(response.responseData.publicKeyExponent, 16);
+      const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);
+      const e = new forge.jsbn.BigInteger(response.responseData.publicKeyExponent, 16);
 
-    const pubKey = forge.pki.rsa.setPublicKey(n, e);
-    const password = pubKey.encrypt(this.config.password ?? '');
+      const pubKey = forge.pki.rsa.setPublicKey(n, e);
+      const password = pubKey.encrypt(this.config.password ?? '');
 
-    return this.sendCommand({
-      username: this.config.user ?? '',
-      password: forge.util.encode64(password),
-      useCompression: this.config.compression,
-      clientName: this.config.clientName,
-      driverName: `exasol-driver-js ${driverVersion}`,
-      clientOs: 'Browser',
-      clientVersion: this.config.clientVersion,
-      clientRuntime: 'Browser',
-      attributes: {
-        autocommit: this.config.autocommit,
-        currentSchema: this.config.schema,
-        compressionEnabled: this.config.compression,
-      },
+      return this.sendCommand({
+        username: this.config.user ?? '',
+        password: forge.util.encode64(password),
+        useCompression: this.config.compression,
+        clientName: this.config.clientName,
+        driverName: `exasol-driver-js ${driverVersion}`,
+        clientOs: 'Browser',
+        clientVersion: this.config.clientVersion,
+        clientRuntime: 'Browser',
+        attributes: {
+          autocommit: this.config.autocommit,
+          currentSchema: this.config.schema,
+          compressionEnabled: this.config.compression,
+        },
+      });
     });
-  });
-}
+  }
 
   private buildConnectionError(response: SQLResponse<PublicKeyResponse>) {
-  let errorString: string = "Error sending 'login' command: ";
-  if (response.exception?.text && response.exception.sqlCode) {
-    errorString += response.exception.text + 'sqlCode: ' + response.exception.sqlCode;
+    let errorString: string = "Error sending 'login' command: ";
+    if (response.exception?.text && response.exception.sqlCode) {
+      errorString += response.exception.text + 'sqlCode: ' + response.exception.sqlCode;
+    }
+    this.logger.error(errorString);
+    return errorString;
   }
-  this.logger.error(errorString);
-  return errorString;
-}
 
   private async loginTokenAuth() {
-  return this.sendCommand({
-    command: 'loginToken',
-    protocolVersion: this.config.apiVersion,
-  }).then(() => {
-    const command: OIDCSQLCommand = {
-      useCompression: this.config.compression,
-      clientName: this.config.clientName,
-      driverName: `exasol-driver-js ${driverVersion}`,
-      clientOs: 'Browser',
-      clientVersion: this.config.clientVersion,
-      clientRuntime: 'Browser',
-      attributes: {
-        autocommit: this.config.autocommit,
-        currentSchema: this.config.schema,
-        compressionEnabled: this.config.compression,
-      },
-    };
+    return this.sendCommand({
+      command: 'loginToken',
+      protocolVersion: this.config.apiVersion,
+    }).then(() => {
+      const command: OIDCSQLCommand = {
+        useCompression: this.config.compression,
+        clientName: this.config.clientName,
+        driverName: `exasol-driver-js ${driverVersion}`,
+        clientOs: 'Browser',
+        clientVersion: this.config.clientVersion,
+        clientRuntime: 'Browser',
+        attributes: {
+          autocommit: this.config.autocommit,
+          currentSchema: this.config.schema,
+          compressionEnabled: this.config.compression,
+        },
+      };
 
-    if (this.config.refreshToken) {
-      command.refreshToken = this.config.refreshToken;
-    } else {
-      command.accessToken = this.config.accessToken;
-    }
+      if (this.config.refreshToken) {
+        command.refreshToken = this.config.refreshToken;
+      } else {
+        command.accessToken = this.config.accessToken;
+      }
 
-    return this.sendCommand(command);
-  });
-}
+      return this.sendCommand(command);
+    });
+  }
 }
