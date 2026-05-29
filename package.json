@@ -9,6 +9,7 @@
     "trace": "./.github/workflows/oftw.sh trace --output-format plain --report-verbosity failure_details --color-scheme color --log-level WARNING",
     "trace:report": "./.github/workflows/oftw.sh trace --output-format html --report-verbosity all --log-level WARNING --output-file dist/trace-report.html",
     "build": "rollup --failAfterWarnings --config rollup.config.mjs",
+    "prepare": "rollup --config rollup.config.mjs",
     "watch": "rollup --failAfterWarnings --watch --config rollup.config.mjs",
     "typecheck": "tsc --noEmit",
     "test": "jest --selectProjects unit-dom unit-node --coverage",
