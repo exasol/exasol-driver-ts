@@ -39,9 +39,12 @@ export class Statement implements IStatement {
       return Promise.reject(ErrInvalidValuesCount);
     }
 
-    const data = Array(columns.length).fill([]);
+    // One independent array per column.
+    const data: Array<(string | number | boolean | null)[]> = Array.from({ length: columns.length }, () => []);
     for (let index = 0; index < args.length; index++) {
-      const arg = args[index];
+      // Narrow to the primitive types the wire protocol supports.
+      const arg = args[index] as string | number | boolean | null;
+      // Arguments are laid out row-major, so this wraps back to column 0 at the start of each row.
       const colIndex = index % columns.length;
       data[colIndex].push(arg);
     }
