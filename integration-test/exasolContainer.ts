@@ -12,6 +12,10 @@ export class ExasolContainer {
     this.certProvider = new CertificateProvider(container);
   }
 
+  public static supportsCsvImport(): boolean {
+    return !DOCKER_CONTAINER_VERSION.match(/(?:^|:)8(?:\.|$)/);
+  }
+
   getMappedPort(port: number): number | undefined {
     return this.container.getMappedPort(port);
   }

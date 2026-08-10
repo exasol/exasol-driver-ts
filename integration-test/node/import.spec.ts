@@ -9,10 +9,12 @@ import { IExasolDriver } from '../../src/lib/sql-client.interface';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
+const describeImportWhenSupported = ExasolContainer.supportsCsvImport() ? describe : describe.skip;
+
 // [itest->dsn~runtime-csv-import-missing-target-table~1]
 // [itest->dsn~runtime-csv-import-file-stream~1]
 // [itest->dsn~runtime-csv-import-format-options~1]
-describe("Node Import", () => {
+describeImportWhenSupported("Node Import", () => {
 
   const randomId = new RandomUuid();
   let driver: IExasolDriver;
