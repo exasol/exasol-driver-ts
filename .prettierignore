@@ -1,7 +1,6 @@
-**/.git
-**/.svn
-**/.hg
-**/node_modules
-**/dist
-**/playwright-report
-**/playwright/.cache
+/.git
+/node_modules
+/dist
+/.github/
+*.md
+*.json

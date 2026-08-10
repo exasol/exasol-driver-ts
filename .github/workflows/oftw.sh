@@ -3,7 +3,7 @@
 set -o errexit
 set -o nounset
 
-readonly version="4.4.0"
+readonly version="4.9.0"
 readonly default_local_repo="${HOME}/.m2/repository"
 
 if [ -d "$default_local_repo" ]; then
