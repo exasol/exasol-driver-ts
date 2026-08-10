@@ -33,6 +33,13 @@ export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsock
       await driver.close();
     });
 
+    it('Connect to DB via URL', async () => {
+      const url = `wss://${container.getHost()}:${container.getMappedPort(8563)}`;
+      const driver = await openConnection(url, 'invalidHost', 1);
+      expect(driver).toBeDefined();
+      await driver.close();
+    });
+
 
     describe('query()', () => {
       // [itest->dsn~runtime-query-execution~1]
@@ -139,12 +146,13 @@ export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsock
       }
     });
 
-    const openConnection = async () => {
+    const openConnection = async (url?: string, host = container.getHost(), port = container.getMappedPort(8563)) => {
       expect(factory).toBeDefined();
       expect(container).toBeDefined();
       const driver = new ExasolDriver(factory, {
-        host: container.getHost(),
-        port: container.getMappedPort(8563),
+        host,
+        port,
+        url,
         user: 'sys',
         password: 'exasol'
       });
