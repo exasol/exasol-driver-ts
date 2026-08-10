@@ -260,7 +260,7 @@ const pool = new ExasolPool((url) => {
   host: 'localhost',
   port: 8563,
   user: 'sys',
-  password: 'exasol'
+  password: 'exasol',
   minimumPoolSize: 1,
   maximumPoolSize: 10,
 });
@@ -277,7 +277,7 @@ const pool = new ExasolPool((url) => {
   host: 'localhost',
   port: 8563,
   user: 'sys',
-  password: 'exasol'
+  password: 'exasol',
   minimumPoolSize: 1,
   maximumPoolSize: 10,
 });
