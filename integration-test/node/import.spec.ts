@@ -8,7 +8,7 @@ import { CsvFormatOptions, RowSeparator, TrimMode } from '../../src/lib/import/t
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { IExasolDriver } from '../../src/lib/sql-client.interface';
 import { loadCA } from '../loadCert';
-import { DOCKER_CONTAINER_VERSION_LATEST } from '../runner.config';
+import { DOCKER_CONTAINER_VERSION } from '../runner.config';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
@@ -26,7 +26,7 @@ describe("Node Import", () => {
   let tempDirectory = '';
 
   beforeAll(async () => {
-    container = await startNewDockerContainer(DOCKER_CONTAINER_VERSION_LATEST);
+    container = await startNewDockerContainer(DOCKER_CONTAINER_VERSION);
     const caString = await loadCA(container);
     factory = createWebsocketFactoryWithCertificate(caString);
   });

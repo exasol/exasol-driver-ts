@@ -1,5 +1,5 @@
 import { createWebsocketFactoryNoCert } from '../node/createWebsocketFactoryNoCert';
-import { DOCKER_CONTAINER_VERSION_V7 } from '../runner.config';
+import { DOCKER_CONTAINER_VERSION } from '../runner.config';
 import { basicPoolTests } from '../testcases/pool.basic.spec';
 
-basicPoolTests("Browser", createWebsocketFactoryNoCert, DOCKER_CONTAINER_VERSION_V7, false);
+basicPoolTests("Browser", createWebsocketFactoryNoCert, DOCKER_CONTAINER_VERSION, false);

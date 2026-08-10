@@ -1,2 +1,1 @@
-export const DOCKER_CONTAINER_VERSION_LATEST: string = 'exasol/docker-db:2026.1.1';
-export const DOCKER_CONTAINER_VERSION_V7: string = 'exasol/docker-db:7.1.30';
+export const DOCKER_CONTAINER_VERSION: string = process.env['EXASOL_DOCKER_VERSION'] ?? 'exasol/docker-db:2026.1.1';

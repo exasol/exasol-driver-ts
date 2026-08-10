@@ -56,6 +56,8 @@ The repository defines the following verification commands:
 
 SonarCloud consumes `coverage/lcov.info`, analyzes `src/`, excludes generated JavaScript and spec files from source analysis, and treats tests from `src/` and `integration-test/` as test input. The Sonar quality gate enforces minimum coverage for new code; new code must have at least 80% test coverage.
 
+The `ci-build.yml` workflow runs quality gates for pull requests and pushes to `main`. It runs the full test suite and SonarCloud scan for the latest Exasol release, and runs integration tests for the supported 2025.1 and 8 LTS releases. The workflow passes the selected Docker image through `EXASOL_DOCKER_VERSION`, while local integration test runs default to the latest release.
+
 ### Verification Gate Definition
 `dsn~verification-gate-definition~1`
 
