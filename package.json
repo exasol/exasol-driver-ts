@@ -73,5 +73,11 @@
   "bugs": {
     "url": "https://github.com/exasol/exasol-driver-ts/issues"
   },
-  "homepage": "https://github.com/exasol/exasol-driver-ts#readme"
+  "homepage": "https://github.com/exasol/exasol-driver-ts#readme",
+  "allowScripts": {
+    "cpu-features": false,
+    "protobufjs": false,
+    "ssh2": false,
+    "unrs-resolver": false
+  }
 }
