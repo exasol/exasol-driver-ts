@@ -4,6 +4,15 @@ Code name:
 
 ## Summary
 
+This release upgrades dependencies and runtime environment.
+
+Please note the following breaking changes:
+
+* TypeScript upgraded from 5.9.3 to 7.0.2
+* TypeScript configuration:
+  * `target` changed from `ES5` to `ES6`
+  * `moduleResolution` changed from `node` to `bundler`
+
 ## Features
 
 * ISSUE_NUMBER: description
