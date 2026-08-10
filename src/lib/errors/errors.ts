@@ -4,7 +4,17 @@ import { ExaErrorBuilder } from './error-reporting';
 export const ErrInvalidConn = new ExaErrorBuilder('E-EDJS-1').message('Invalid connection.').error();
 export const ErrNotConnected = new ExaErrorBuilder('E-EDJS-12').message('Not connected.').error();
 export const newSocketError = (cause: unknown) => {
-  return new ExaErrorBuilder('E-EDJS-13').message('Socket error: {{cause}}', JSON.stringify(cause)).error();
+  return new ExaErrorBuilder('E-EDJS-13').message('Socket error: {{cause}}', getSocketErrorMessage(cause)).error();
+};
+
+const getSocketErrorMessage = (cause: unknown): string => {
+  if (cause instanceof Error) {
+    return cause.message;
+  }
+  if (typeof cause === 'object' && cause !== null && 'message' in cause && typeof cause.message === 'string') {
+    return cause.message;
+  }
+  return JSON.stringify(cause) ?? String(cause);
 };
 export const ErrClosed = new ExaErrorBuilder('E-EDJS-2').message('Connection was closed.').error();
 export const ErrMalformedData = new ExaErrorBuilder('E-EDJS-3').message('Malformed result.').error();
