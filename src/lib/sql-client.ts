@@ -25,9 +25,12 @@ import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse,
 import { getURIScheme } from './utils';
 
 export interface Config {
+  /** Host name or IP address */
   host: string;
-  url?: string;
+  /** Exasol port, e.g. 8563 */
   port: number;
+  /** Websocket URL. Default: `wss://<host>:<port>`. This allows overriding the default URL if necessary.  */
+  url?: string;
   user?: string;
   password?: string;
   accessToken?: string;
