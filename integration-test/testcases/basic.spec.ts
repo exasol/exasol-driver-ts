@@ -1,13 +1,12 @@
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
-import { TestEnvironment } from '../common';
+import { TestEnvironment, TestWebsocketFactory } from '../common';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
-import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
 // [itest->dsn~runtime-browser-websocket~1]
 // [itest->dsn~runtime-node-websocket~1]
-export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType) =>
+export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocketFactory) =>
   describe(name, () => {
 
     const randomId = new RandomUuid();
