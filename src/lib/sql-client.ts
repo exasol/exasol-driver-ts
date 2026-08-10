@@ -110,6 +110,7 @@ export class ExasolDriver implements IExasolDriver {
       throw ErrLoggerNil;
     }
 
+    // [impl->req~do-not-allow-disabling-encryption~1]
     let url = `wss://${this.config.host}:${this.config.port}`;
     if (this.config.url) {
       url = this.config.url;

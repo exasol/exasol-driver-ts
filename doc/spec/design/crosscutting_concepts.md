@@ -24,7 +24,6 @@ Driver configuration is passed to constructors and merged with defaults. Importa
 * `clientName`: `Javascript client`
 * `clientVersion`: `1`
 * `autocommit`: `true`
-* `encryption`: `true`
 * `compression`: `false`
 
 Pool configuration defaults to `minimumPoolSize` `0` and `maximumPoolSize` `5`.

@@ -148,8 +148,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsock
         host: container.getHost(),
         port: container.getMappedPort(8563),
         user: 'sys',
-        password: 'exasol',
-        encryption: true,
+        password: 'exasol'
       });
       await driver.connect();
       tmpDriver = driver;

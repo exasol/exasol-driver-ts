@@ -177,8 +177,7 @@ describe("Node Import", () => {
       host: container.getHost(),
       port: container.getMappedPort(8563),
       user: 'sys',
-      password: 'exasol',
-      encryption: true,
+      password: 'exasol'
     });
     await driver.connect();
     return driver;

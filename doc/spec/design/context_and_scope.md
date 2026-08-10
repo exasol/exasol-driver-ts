@@ -36,7 +36,7 @@ The main public APIs are exported from `src/index.ts`:
 * logger types
 * CSV import option types
 
-The driver communicates with Exasol through WebSocket URLs based on `host`, `port`, `url`, and `encryption` configuration. CSV import additionally uses an Exasol import tunnel and generates an `IMPORT INTO ... FROM CSV` SQL statement.
+The driver communicates with Exasol through WebSocket URLs based on `host`, `port` and `url` configuration. CSV import additionally uses an Exasol import tunnel and generates an `IMPORT INTO ... FROM CSV` SQL statement.
 
 ## State and Persistence
 

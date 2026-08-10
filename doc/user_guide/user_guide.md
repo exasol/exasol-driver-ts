@@ -28,8 +28,7 @@ const driver = new ExasolDriver((url) => {
         host: "localhost",
         port: 8563,
         user: 'sys',
-        password: 'exasol',
-        encryption: false,
+        password: 'exasol'
     });
 
 // Connect
@@ -59,8 +58,7 @@ const driver = new ExasolDriver((url) => {
         host: "localhost",
         port: 8563,
         user: 'sys',
-        password: 'exasol',
-        encryption: false,
+        password: 'exasol'
     });
 
 await driver.connect();
@@ -147,8 +145,7 @@ const driver = new ExasolDriver((url) => {
   host: 'localhost',
   port: 8563,
   user: 'sys',
-  password: 'exasol',
-  encryption: false,
+  password: 'exasol'
 });
 
 await driver.connect();
@@ -180,8 +177,7 @@ const driver = new ExasolDriver((url) => {
   host: 'localhost',
   port: 8563,
   user: 'sys',
-  password: 'exasol',
-  encryption: false,
+  password: 'exasol'
 });
 
 await driver.connect();
@@ -224,8 +220,8 @@ See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#
 | `autocommit`       | false=off, true=on |        true         | Switch autocommit on or off.                                                                                                            |
 | `clientName`       |       string       | 'Javascript client' | Tell the server the application name.                                                                                                   |
 | `clientVersion`    |       string       |          1          | Tell the server the version of the application.                                                                                         |
-| `encryption`       | false=off, true=on |        true         | Switch automatic encryption on or off.                                                                                                  |
-| `compression`       | false=off, true=on |       false         | Switch compression on or off.                                                                                                  |
+| `encryption`       | false=off, true=on |        true         | Switch automatic encryption on or off. This property is deprecated and no longer has an effect. Encryption is always on.                |
+| `compression`      | false=off, true=on |       false        | Switch compression on or off.                                                                                                           |
 | `fetchSize`        |     number, >0     |     `128*1024`      | Amount of data in kB which should be obtained by Exasol during a fetch. The application can run out of memory if the value is too high. |
 | `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
 | `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
@@ -264,8 +260,7 @@ const pool = new ExasolPool((url) => {
   host: 'localhost',
   port: 8563,
   user: 'sys',
-  password: 'exasol',
-  encryption: false,
+  password: 'exasol'
   minimumPoolSize: 1,
   maximumPoolSize: 10,
 });
@@ -282,8 +277,7 @@ const pool = new ExasolPool((url) => {
   host: 'localhost',
   port: 8563,
   user: 'sys',
-  password: 'exasol',
-  encryption: false,
+  password: 'exasol'
   minimumPoolSize: 1,
   maximumPoolSize: 10,
 });
@@ -317,8 +311,8 @@ await pool.clear();
 | `autocommit`       | false=off, true=on |        true         | Switch autocommit on or off.                                                                                                            |
 | `clientName`       |       string       | 'Javascript client' | Tell the server the application name.                                                                                                   |
 | `clientVersion`    |       string       |          1          | Tell the server the version of the application.                                                                                         |
-| `encryption`       | false=off, true=on |        true         | Switch automatic encryption on or off.                                                                                                  |
-| `compression`       | false=off, true=on |       false         | Switch compression on or off.                                                                                                  |
+| `encryption`       | false=off, true=on |        true         | Switch automatic encryption on or off. This property is deprecated and no longer has an effect. Encryption is always on.                |
+| `compression`      | false=off, true=on |       false         | Switch compression on or off.                                                                                                  |
 | `fetchSize`        |     number, >0     |     `128*1024`      | Amount of data in kB which should be obtained by Exasol during a fetch. The application can run out of memory if the value is too high. |
 | `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
 | `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
