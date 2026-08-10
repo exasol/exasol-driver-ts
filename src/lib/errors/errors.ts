@@ -11,11 +11,11 @@ const getSocketErrorMessage = (cause: unknown): string => {
   if (cause instanceof Error) {
     return cause.message;
   }
-  if (cause instanceof Event) {
-    return `Event type ${cause.type}: ${JSON.stringify(cause)}`;
-  }
   if (typeof cause === 'object' && cause !== null && 'message' in cause && typeof cause.message === 'string') {
     return cause.message;
+  }
+  if (cause instanceof Event) {
+    return `Event type ${cause.type}: ${JSON.stringify(cause)}`;
   }
   return JSON.stringify(cause) ?? String(cause);
 };
