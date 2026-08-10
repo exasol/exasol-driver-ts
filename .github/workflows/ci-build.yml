@@ -69,6 +69,8 @@ jobs:
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm run test:all # Run all tests (not only integration tests) to collect test coverage for SonarCloud
+        env:
+          EXASOL_DOCKER_VERSION: ${{ env.EXASOL_DOCKER_VERSION }}
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         if: ${{ matrix.exasol-version == env.DEFAULT_EXASOL_VERSION && env.SONAR_TOKEN != null }}

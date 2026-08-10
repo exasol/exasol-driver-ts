@@ -1,25 +1,23 @@
-import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { Logger, LogLevel } from '../../src/lib/logger/logger';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
 import { TestEnvironment } from '../common';
-import { loadCA } from '../loadCert';
-import { startNewDockerContainer } from '../startNewDockerContainer';
+import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
 export const basicCompressionTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType) =>
   describe(name, () => {
     const randomId = new RandomUuid();
-    let container: StartedTestContainer;
+    let container: ExasolContainer;
     let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
     beforeAll(async () => {
       container = await startNewDockerContainer();
-      const certString = await loadCA(container);
+      const certString = await container.loadCA();
       factory = createWSFactory(certString);
     });
 
@@ -95,7 +93,7 @@ async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: stri
 }
 function createPool(
   factory: WebsocketFactory,
-  container: StartedTestContainer,
+  container: ExasolContainer,
   minimumPoolSize: number,
   maximumPoolSize: number,
   logLevel: LogLevel
@@ -114,7 +112,7 @@ function createPool(
     new Logger(logLevel),
   );
 }
-function createClient(factory: WebsocketFactory, container: StartedTestContainer, logLevel: LogLevel) {
+function createClient(factory: WebsocketFactory, container: ExasolContainer, logLevel: LogLevel) {
   return new ExasolDriver(
     factory,
     {

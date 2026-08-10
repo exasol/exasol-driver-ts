@@ -1,9 +1,7 @@
-import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { TestEnvironment } from '../common';
-import { loadCA } from '../loadCert';
-import { startNewDockerContainer } from '../startNewDockerContainer';
+import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
@@ -14,14 +12,14 @@ export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsock
 
     const randomId = new RandomUuid();
     let tmpDriver: ExasolDriver | undefined;
-    let container: StartedTestContainer;
+    let container: ExasolContainer;
     let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
     beforeAll(async () => {
       container = await startNewDockerContainer();
-      const caString = await loadCA(container);
+      const caString = await container.loadCA();
       factory = createWSFactory(caString);
     });
 

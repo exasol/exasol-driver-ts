@@ -1,11 +1,9 @@
-import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { QueryResult } from '../../src/lib/query-result';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
 import { TestEnvironment } from '../common';
-import { loadCA } from '../loadCert';
-import { startNewDockerContainer } from '../startNewDockerContainer';
+import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 // [itest->dsn~runtime-pool-capacity-management~1]
@@ -14,14 +12,14 @@ import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunc
 export const basicPoolTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType) =>
   describe(name, () => {
     const randomId = new RandomUuid();
-    let container: StartedTestContainer;
+    let container: ExasolContainer;
     let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
     beforeAll(async () => {
       container = await startNewDockerContainer();
-      const certString = await loadCA(container);
+      const certString = await container.loadCA();
       factory = createWSFactory(certString);
     });
 
@@ -158,7 +156,7 @@ async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: stri
   await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 }
 
-function createSetupClient(factory: WebsocketFactory, container: StartedTestContainer) {
+function createSetupClient(factory: WebsocketFactory, container: ExasolContainer) {
   return new ExasolDriver(factory, {
     host: container.getHost(),
     port: container.getMappedPort(8563),
@@ -167,7 +165,7 @@ function createSetupClient(factory: WebsocketFactory, container: StartedTestCont
   });
 }
 
-function createPoolWithDefaultSize(factory: WebsocketFactory, container: StartedTestContainer) {
+function createPoolWithDefaultSize(factory: WebsocketFactory, container: ExasolContainer) {
   return new ExasolPool(factory, {
     host: container.getHost(),
     port: container.getMappedPort(8563),
@@ -176,7 +174,7 @@ function createPoolWithDefaultSize(factory: WebsocketFactory, container: Started
   });
 }
 
-function createPool(factory: WebsocketFactory, container: StartedTestContainer, minimumPoolSize: number, maximumPoolSize: number) {
+function createPool(factory: WebsocketFactory, container: ExasolContainer, minimumPoolSize: number, maximumPoolSize: number) {
   return new ExasolPool(factory, {
     host: container.getHost(),
     port: container.getMappedPort(8563),

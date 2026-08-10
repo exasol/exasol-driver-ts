@@ -2,13 +2,11 @@
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { CsvFormatOptions, RowSeparator, TrimMode } from '../../src/lib/import/types';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { IExasolDriver } from '../../src/lib/sql-client.interface';
-import { loadCA } from '../loadCert';
-import { startNewDockerContainer } from '../startNewDockerContainer';
+import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
 // [itest->dsn~runtime-csv-import-missing-target-table~1]
@@ -18,7 +16,7 @@ describe("Node Import", () => {
 
   const randomId = new RandomUuid();
   let driver: IExasolDriver;
-  let container: StartedTestContainer;
+  let container: ExasolContainer;
   let factory: WebsocketFactory;
   jest.setTimeout(7000000);
   let schemaName = '';
@@ -26,7 +24,7 @@ describe("Node Import", () => {
 
   beforeAll(async () => {
     container = await startNewDockerContainer();
-    const caString = await loadCA(container);
+    const caString = await container.loadCA();
     factory = createWebsocketFactoryWithCertificate(caString);
   });
 
@@ -171,7 +169,7 @@ describe("Node Import", () => {
     });
   });
 
-  const openConnection = async (factory: WebsocketFactory, container: StartedTestContainer) => {
+  const openConnection = async (factory: WebsocketFactory, container: ExasolContainer) => {
     const driver = new ExasolDriver(factory, {
       host: container.getHost(),
       port: container.getMappedPort(8563),
