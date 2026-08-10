@@ -25,6 +25,27 @@ jobs:
       - run: npm run build
       - run: npm run trace
 
+  node-compatibility-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24', '26']
+    name: Node ${{ matrix.node }} compatibility tests
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npm run test
+
   integration-tests:
     runs-on: ubuntu-latest
     permissions:
@@ -47,8 +68,7 @@ jobs:
           node-version: '26'
           cache: 'npm'
       - run: npm ci --ignore-scripts
-      - name: Run all tests
-        run: npm run test:all
+      - run: npm run test:all # Run all tests (not only integration tests) to collect test coverage for SonarCloud
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         if: ${{ matrix.exasol-version == env.DEFAULT_EXASOL_VERSION && env.SONAR_TOKEN != null }}
@@ -60,6 +80,6 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: read
-    needs: [quality-gates, integration-tests]
+    needs: [quality-gates, node-compatibility-tests, integration-tests]
     steps:
       - run: echo "All checks passed, build successful!"

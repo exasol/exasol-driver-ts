@@ -21,7 +21,7 @@ npm run audit
 ```
 
 * Production dependencies may not have any audit findings.
-* Findings in dev dependencies can be excluded via [audit-ci.jsonc](../../audit-ci.jsonc) 
+* Findings in dev dependencies can be excluded via [audit-ci.jsonc](../../audit-ci.jsonc)
 
 ### OpenFastTrace
 
@@ -36,17 +36,13 @@ npm run trace:report
 ### Unit tests
 
 ```sh
-npm run test # Runs both test in parallel
-npm run test:dom
-npm run test:node
+npm run test
 ```
 
 ### Integration tests
 
 ```sh
-npm run itest # Runs both test in parallel
-npm run itest:dom
-npm run itest:node
+npm run itest
 ```
 
 #### MacOS
@@ -65,6 +61,12 @@ If you are using Lima on Linux, set
 export DOCKER_HOST=unix:///home/$(whoami)/.lima/default/sock/docker.sock
 ```
 
+### Upgrade Dependencies
+
+```sh
+npx npm-check-updates@latest --upgrade
+```
+
 ### Testing your changes locally before publishing
 
 You can use `npm install <directory of this project>` to install the driver locally in your other node test projects.
@@ -77,9 +79,8 @@ Currently we release this project by hand.
 
 #### Steps
 
-- Write a changelog file
-- Add a link to `doc/changes/changelog.md`
-- Update the version in `package.json`
+- Update release date in changelog file `doc/changes/change_<version>.md`
 - Merge Pull Request to `main`
 - Make a [new release](https://github.com/exasol/exasol-driver-ts/releases/new) on GitHub
+  - Use content from the changelog file as release description
   - This will trigger the [release workflow](../../.github/workflows/release.yml) and publish to [npmjs.com](https://www.npmjs.com/package/@exasol/extension-manager-interface)
