@@ -16,7 +16,7 @@ function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & P
   async function createClient() {
     const exasolClient: ExasolDriver = new ExasolDriver(websocketFactory, config, logger);
     await exasolClient.connect();
-    return Promise.resolve(exasolClient);
+    return exasolClient;
   }
 
   async function destroyClient(exasolClient: ExasolDriver) {
@@ -46,8 +46,8 @@ function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & P
  * @class ExasolPool
  */
 export class ExasolPool {
-  private internalPool: Pool<ExasolDriver>;
-  private logger: ILogger;
+  private readonly internalPool: Pool<ExasolDriver>;
+  private readonly logger: ILogger;
   /**
    * Creates an instance of ExasolPool.
    *
@@ -126,19 +126,17 @@ export class ExasolPool {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw',
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
-    {
-      // [impl->dsn~runtime-pooled-query-execution~1]
-      let exasolClient;
-      try {
-        exasolClient = await this.internalPool.acquire();
-        return await exasolClient.query(sqlStatement, attributes, getCancel, responseType);
-      } catch (err) {
-        this.logger.log('Query method error:' + err);
-        throw err;
-      } finally {
-        if (exasolClient) {
-          await this.internalPool.release(exasolClient);
-        }
+    // [impl->dsn~runtime-pooled-query-execution~1]
+    let exasolClient;
+    try {
+      exasolClient = await this.internalPool.acquire();
+      return await exasolClient.query(sqlStatement, attributes, getCancel, responseType);
+    } catch (err) {
+      this.logger.log('Query method error:' + err);
+      throw err;
+    } finally {
+      if (exasolClient) {
+        await this.internalPool.release(exasolClient);
       }
     }
   }
