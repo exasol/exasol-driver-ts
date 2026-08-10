@@ -1,9 +1,5 @@
 import { newInvalidHostRangeLimits } from './errors/errors';
 
-export const getURIScheme = (encryption: boolean): string => {
-  return encryption ? 'wss' : 'ws';
-};
-
 export const resolveHosts = async (host: string): Promise<string[]> => {
   const hosts: string[] = [];
   const hostRangeRegex = /^((.+?)(\d+))\.\.(\d+)$/;

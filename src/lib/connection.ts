@@ -1,10 +1,10 @@
-import { SQLResponse } from './types';
-import { Cancelable } from './sql-client.interface';
-import { PoolItem } from './pool/pool';
-import { ILogger } from './logger/logger';
-import { ErrClosed, ErrInvalidConn, ErrJobAlreadyRunning, MissingExceptionError } from './errors/errors';
-import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
 import { deflate, inflate } from 'pako';
+import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
+import { ErrClosed, ErrJobAlreadyRunning, ErrNotConnected, MissingExceptionError } from './errors/errors';
+import { ILogger } from './logger/logger';
+import { PoolItem } from './pool/pool';
+import { Cancelable } from './sql-client.interface';
+import { SQLResponse } from './types';
 
 // [impl->dsn~runtime-browser-websocket~1]
 // [impl->dsn~runtime-node-websocket~1]
@@ -133,7 +133,7 @@ export class Connection implements PoolItem {
     return new Promise<SQLResponse<T>>((resolve, reject) => {
       if (this.connection === undefined) {
         this.isBroken = true;
-        reject(ErrInvalidConn);
+        reject(ErrNotConnected);
       } else {
         this.connection.onmessage = (event) => {
           try {

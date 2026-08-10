@@ -11,6 +11,7 @@ import {
   GeneralSqlError,
   newInvalidReturnValueResultSet,
   newInvalidReturnValueRowCount,
+  newSocketError,
   newSqlError,
 } from './errors/errors';
 import { fetchData } from './fetch';
@@ -22,7 +23,6 @@ import { QueryResult } from './query-result';
 import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
 import { Statement } from './statement';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
-import { getURIScheme } from './utils';
 
 export interface Config {
   /** Host name or IP address */
@@ -109,7 +109,7 @@ export class ExasolDriver implements IExasolDriver {
       throw ErrLoggerNil;
     }
 
-    let url = `${getURIScheme(this.config.encryption)}://${this.config.host}:${this.config.port}`;
+    let url = `wss://${this.config.host}:${this.config.port}`;
     if (this.config.url) {
       url = this.config.url;
     }
@@ -118,12 +118,12 @@ export class ExasolDriver implements IExasolDriver {
     const connection = new Connection(webSocket, this.logger, Date.now() + '');
     return new Promise<void>((resolve, reject) => {
       webSocket.onerror = (err) => {
-        this.logger.debug('SQLClient] OnError', err);
+        this.logger.debug('[SQLClient] OnError', err);
         if (this.config.onError) {
           this.config.onError();
         }
         this.close();
-        reject(ErrInvalidConn);
+        reject(newSocketError(err));
       };
       webSocket.onclose = () => {
         this.logger.debug('[SQLClient] Got close event');

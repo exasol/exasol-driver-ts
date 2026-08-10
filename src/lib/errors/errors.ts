@@ -2,6 +2,10 @@ import { SQLException } from '../types';
 import { ExaErrorBuilder } from './error-reporting';
 
 export const ErrInvalidConn = new ExaErrorBuilder('E-EDJS-1').message('Invalid connection.').error();
+export const ErrNotConnected = new ExaErrorBuilder('E-EDJS-12').message('Not connected.').error();
+export const newSocketError = (cause: unknown) => {
+  return new ExaErrorBuilder('E-EDJS-13').message('Socket error: {{cause}}', JSON.stringify(cause)).error();
+};
 export const ErrClosed = new ExaErrorBuilder('E-EDJS-2').message('Connection was closed.').error();
 export const ErrMalformedData = new ExaErrorBuilder('E-EDJS-3').message('Malformed result.').error();
 export const ErrInvalidValuesCount = new ExaErrorBuilder('E-EDJS-4').message('Invalid value count for prepared status.').error();
