@@ -34,7 +34,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsock
     });
 
     it('Connect to DB via URL', async () => {
-      const url = `wss://${container.getHost()}:${container.getMappedPort(8563)}`;
+      const url = `wss://${container.getHost()}:${container.getPort()}`;
       const driver = await openConnection(url, 'invalidHost', 1);
       expect(driver).toBeDefined();
       await driver.close();
@@ -146,7 +146,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsock
       }
     });
 
-    const openConnection = async (url?: string, host = container.getHost(), port = container.getMappedPort(8563)) => {
+    const openConnection = async (url?: string, host = container.getHost(), port = container.getPort()) => {
       expect(factory).toBeDefined();
       expect(container).toBeDefined();
       const driver = new ExasolDriver(factory, {

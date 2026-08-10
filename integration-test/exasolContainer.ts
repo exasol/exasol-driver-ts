@@ -16,12 +16,20 @@ export class ExasolContainer {
     return !DOCKER_CONTAINER_VERSION.match(/(?:^|:)8(?:\.|$)/);
   }
 
-  getMappedPort(port: number): number | undefined {
-    return this.container.getMappedPort(port);
+  getPort(): number {
+    const port = this.container.getMappedPort(8563);
+    if (port === undefined) {
+      throw new Error('Port 8563 is not mapped in the container');
+    }
+    return port;
   }
 
-  getHost(): string | undefined {
-    return this.container.getHost();
+  getHost(): string {
+    const host = this.container.getHost();
+    if (host === undefined) {
+      throw new Error('Host is not available in the container');
+    }
+    return host;
   }
 
   public async loadCert() {

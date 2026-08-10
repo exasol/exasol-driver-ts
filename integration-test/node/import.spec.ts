@@ -174,7 +174,7 @@ describeImportWhenSupported("Node Import", () => {
   const openConnection = async (factory: WebsocketFactory, container: ExasolContainer) => {
     const driver = new ExasolDriver(factory, {
       host: container.getHost(),
-      port: container.getMappedPort(8563),
+      port: container.getPort(),
       user: 'sys',
       password: 'exasol'
     });

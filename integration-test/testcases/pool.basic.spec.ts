@@ -159,7 +159,7 @@ async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: stri
 function createSetupClient(factory: WebsocketFactory, container: ExasolContainer) {
   return new ExasolDriver(factory, {
     host: container.getHost(),
-    port: container.getMappedPort(8563),
+    port: container.getPort(),
     user: 'sys',
     password: 'exasol'
   });
@@ -168,7 +168,7 @@ function createSetupClient(factory: WebsocketFactory, container: ExasolContainer
 function createPoolWithDefaultSize(factory: WebsocketFactory, container: ExasolContainer) {
   return new ExasolPool(factory, {
     host: container.getHost(),
-    port: container.getMappedPort(8563),
+    port: container.getPort(),
     user: 'sys',
     password: 'exasol'
   });
@@ -177,7 +177,7 @@ function createPoolWithDefaultSize(factory: WebsocketFactory, container: ExasolC
 function createPool(factory: WebsocketFactory, container: ExasolContainer, minimumPoolSize: number, maximumPoolSize: number) {
   return new ExasolPool(factory, {
     host: container.getHost(),
-    port: container.getMappedPort(8563),
+    port: container.getPort(),
     user: 'sys',
     password: 'exasol',
     minimumPoolSize: minimumPoolSize,

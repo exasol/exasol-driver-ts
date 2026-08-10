@@ -102,7 +102,7 @@ function createPool(
     factory,
     {
       host: container.getHost(),
-      port: container.getMappedPort(8563),
+      port: container.getPort(),
       user: 'sys',
       password: 'exasol',
       minimumPoolSize: minimumPoolSize,
@@ -117,7 +117,7 @@ function createClient(factory: WebsocketFactory, container: ExasolContainer, log
     factory,
     {
       host: container.getHost(),
-      port: container.getMappedPort(8563),
+      port: container.getPort(),
       user: 'sys',
       password: 'exasol',
       compression: true,
