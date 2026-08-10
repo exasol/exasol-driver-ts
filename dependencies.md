@@ -13,5 +13,5 @@
 [1]: https://github.com/coopernurse/node-pool
 [2]: https://registry.npmjs.org/node-forge/-/node-forge-1.4.0.tgz
 [3]: https://github.com/digitalbazaar/forge
-[4]: https://registry.npmjs.org/pako/-/pako-2.1.0.tgz
+[4]: https://registry.npmjs.org/pako/-/pako-3.0.1.tgz
 [5]: https://github.com/nodeca/pako
