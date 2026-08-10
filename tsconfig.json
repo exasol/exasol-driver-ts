@@ -24,10 +24,8 @@
     "src/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
     "src/**/*.spec.ts",
     "src/**/*.spec.dom.ts",
     "src/**/*.spec.node.ts",
-    "dist"
   ]
 }

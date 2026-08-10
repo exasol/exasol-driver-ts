@@ -22,5 +22,6 @@
     "src/**/*.spec.ts",
     "src/**/*.d.ts",
     "integration-test/**/*.spec.ts"
-  ]
+  ],
+  "exclude": []
 }
