@@ -10,7 +10,7 @@
     "trace:report": "./.github/workflows/oftw.sh trace --output-format html --report-verbosity all --log-level WARNING --output-file dist/trace-report.html",
     "build": "rollup --failAfterWarnings --config rollup.config.mjs",
     "watch": "rollup --failAfterWarnings --watch --config rollup.config.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit --project tsconfig.json && tsc --noEmit --project tsconfig.spec.dom.json && tsc --noEmit --project tsconfig.spec.json",
     "test": "jest --selectProjects unit-dom unit-node --coverage",
     "test:dom": "jest --selectProjects unit-dom --coverage",
     "test:node": "jest --selectProjects unit-node --coverage",
