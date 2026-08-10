@@ -3,12 +3,13 @@ import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { Logger, LogLevel } from '../../src/lib/logger/logger';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
+import { TestEnvironment } from '../common';
 import { loadCA } from '../loadCert';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
-export const basicCompressionTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
+export const basicCompressionTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
     const randomId = new RandomUuid();
     let container: StartedTestContainer;

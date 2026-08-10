@@ -3,6 +3,7 @@ import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { QueryResult } from '../../src/lib/query-result';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
+import { TestEnvironment } from '../common';
 import { loadCA } from '../loadCert';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
@@ -10,7 +11,7 @@ import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunc
 // [itest->dsn~runtime-pool-capacity-management~1]
 // [itest->dsn~runtime-pooled-query-execution~1]
 // [itest->dsn~runtime-pool-shutdown~1]
-export const basicPoolTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
+export const basicPoolTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
     const randomId = new RandomUuid();
     let container: StartedTestContainer;

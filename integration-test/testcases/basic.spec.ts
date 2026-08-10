@@ -1,6 +1,7 @@
 import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
+import { TestEnvironment } from '../common';
 import { loadCA } from '../loadCert';
 import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
@@ -8,7 +9,7 @@ import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunc
 // [itest->dsn~runtime-connect-basic-authentication~1]
 // [itest->dsn~runtime-browser-websocket~1]
 // [itest->dsn~runtime-node-websocket~1]
-export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
+export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
   describe(name, () => {
 
     const randomId = new RandomUuid();
