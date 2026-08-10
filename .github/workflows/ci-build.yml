@@ -44,7 +44,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'npm'
       - run: npm ci --ignore-scripts
-      - run: npm run test
+      - run: npm run test # Run only unit tests to check compatibility with different Node.js versions
 
   integration-tests:
     runs-on: ubuntu-latest

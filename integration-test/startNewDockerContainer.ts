@@ -1,6 +1,8 @@
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 
-export async function startNewDockerContainer(DOCKER_CONTAINER_VERSION: string): Promise<StartedTestContainer> {
+export const DOCKER_CONTAINER_VERSION: string = process.env['EXASOL_DOCKER_VERSION'] ?? 'exasol/docker-db:2026.1.1';
+
+export async function startNewDockerContainer(): Promise<StartedTestContainer> {
   const containerLog: string[] = [];
   const startupTimeoutMillis = 2 * 60 * 1000; // 2 minutes
   const container = new GenericContainer(DOCKER_CONTAINER_VERSION)

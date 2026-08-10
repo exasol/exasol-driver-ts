@@ -11,7 +11,7 @@ import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunc
 // [itest->dsn~runtime-pool-capacity-management~1]
 // [itest->dsn~runtime-pooled-query-execution~1]
 // [itest->dsn~runtime-pool-shutdown~1]
-export const basicPoolTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string) =>
+export const basicPoolTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType) =>
   describe(name, () => {
     const randomId = new RandomUuid();
     let container: StartedTestContainer;
@@ -20,7 +20,7 @@ export const basicPoolTests = (name: TestEnvironment, createWSFactory: CreateWeb
     let schemaName = '';
 
     beforeAll(async () => {
-      container = await startNewDockerContainer(dockerDbVersion);
+      container = await startNewDockerContainer();
       const certString = await loadCA(container);
       factory = createWSFactory(certString);
     });

@@ -9,7 +9,7 @@ import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunc
 // [itest->dsn~runtime-connect-basic-authentication~1]
 // [itest->dsn~runtime-browser-websocket~1]
 // [itest->dsn~runtime-node-websocket~1]
-export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string) =>
+export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType) =>
   describe(name, () => {
 
     const randomId = new RandomUuid();
@@ -20,7 +20,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: CreateWebsock
     let schemaName = '';
 
     beforeAll(async () => {
-      container = await startNewDockerContainer(dockerDbVersion);
+      container = await startNewDockerContainer();
       const caString = await loadCA(container);
       factory = createWSFactory(caString);
     });

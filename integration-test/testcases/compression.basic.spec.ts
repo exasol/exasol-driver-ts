@@ -9,7 +9,7 @@ import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
-export const basicCompressionTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string) =>
+export const basicCompressionTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType) =>
   describe(name, () => {
     const randomId = new RandomUuid();
     let container: StartedTestContainer;
@@ -18,7 +18,7 @@ export const basicCompressionTests = (name: TestEnvironment, createWSFactory: Cr
     let schemaName = '';
 
     beforeAll(async () => {
-      container = await startNewDockerContainer(dockerDbVersion);
+      container = await startNewDockerContainer();
       const certString = await loadCA(container);
       factory = createWSFactory(certString);
     });

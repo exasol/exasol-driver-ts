@@ -45,6 +45,13 @@ npm run test
 npm run itest
 ```
 
+By default, integration tests use the current default Exasol Docker DB image. To test
+against a different database version, set `EXASOL_DOCKER_VERSION` to its Docker image:
+
+```sh
+EXASOL_DOCKER_VERSION=exasol/docker-db:2025.1.14 npm run itest
+```
+
 #### MacOS
 
 If you're using Docker Desktop, please set
