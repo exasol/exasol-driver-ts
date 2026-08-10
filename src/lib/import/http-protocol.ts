@@ -29,7 +29,7 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<str
 
     function onError(err: Error) {
       cleanup();
-      reject(new ExaErrorBuilder('E-EDJS-13').message('Failed to read HTTP request from tunnel: {{reason}}.', err.message).error());
+      reject(new ExaErrorBuilder('E-EDJS-14').message('Failed to read HTTP request from tunnel: {{reason}}.', err.message).error());
     }
 
     function cleanup() {
@@ -76,7 +76,7 @@ export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStre
     function onError(err: Error) {
       cleanup();
       reject(
-        new ExaErrorBuilder('E-EDJS-13').message('Failed to send chunked HTTP response through tunnel: {{reason}}.', err.message).error(),
+        new ExaErrorBuilder('E-EDJS-15').message('Failed to send chunked HTTP response through tunnel: {{reason}}.', err.message).error(),
       );
     }
 

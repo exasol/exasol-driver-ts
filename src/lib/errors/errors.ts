@@ -4,7 +4,7 @@ import { ExaErrorBuilder } from './error-reporting';
 export const ErrInvalidConn = new ExaErrorBuilder('E-EDJS-1').message('Invalid connection.').error();
 export const ErrNotConnected = new ExaErrorBuilder('E-EDJS-12').message('Not connected.').error();
 export const newSocketError = (cause: unknown) => {
-  return new ExaErrorBuilder('E-EDJS-13').message('Socket error: {{cause}}', getSocketErrorMessage(cause)).error();
+  return new ExaErrorBuilder('E-EDJS-16').message('Socket error: {{cause}}', getSocketErrorMessage(cause)).error();
 };
 
 const getSocketErrorMessage = (cause: unknown): string => {

@@ -26,13 +26,13 @@ describe('http-protocol', () => {
       expect(result).toBe('GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n');
     });
 
-    it('should reject with E-EDJS-13 if socket emits error', async () => {
+    it('should reject with E-EDJS-14 if socket emits error', async () => {
       const socket = new PassThrough();
       const requestPromise = readHttpRequest(socket as never);
 
       socket.destroy(new Error('connection reset'));
 
-      await expect(requestPromise).rejects.toThrow('E-EDJS-13');
+      await expect(requestPromise).rejects.toThrow('E-EDJS-14');
     });
 
     it('should reject with E-EDJS-13 if socket closes before headers are complete', async () => {
@@ -111,7 +111,7 @@ describe('http-protocol', () => {
       expect(output).toContain('0\r\n\r\n');
     });
 
-    it('should reject with E-EDJS-13 if data stream emits error', async () => {
+    it('should reject with E-EDJS-15 if data stream emits error', async () => {
       const socket = new PassThrough();
       const dataStream = new PassThrough();
 
@@ -119,7 +119,7 @@ describe('http-protocol', () => {
 
       dataStream.destroy(new Error('read error'));
 
-      await expect(responsePromise).rejects.toThrow("E-EDJS-13: Failed to send chunked HTTP response through tunnel: 'read error'.");
+      await expect(responsePromise).rejects.toThrow("E-EDJS-15: Failed to send chunked HTTP response through tunnel: 'read error'.");
     });
   });
 });

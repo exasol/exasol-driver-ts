@@ -5,7 +5,7 @@ describe('newSocketError in a browser runtime', () => {
     const errorEvent = new ErrorEvent('error', { message: 'WebSocket connection failed' });
 
     expect(newSocketError(errorEvent).message).toBe(
-      "E-EDJS-13: Socket error: 'WebSocket connection failed'",
+      "E-EDJS-16: Socket error: 'WebSocket connection failed'",
     );
   });
 });
