@@ -36,7 +36,8 @@ export interface Config {
   accessToken?: string;
   refreshToken?: string;
   autocommit: boolean;
-  encryption: boolean;
+  /** Disable encryption. @deprecated Exasol only supports encrypted connections. Setting this to `false` has no effect. */
+  encryption?: boolean;
   clientName: string;
   clientVersion: string;
   fetchSize: number;

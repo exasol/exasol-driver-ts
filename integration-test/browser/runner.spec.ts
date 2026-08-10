@@ -2,4 +2,4 @@ import { createWebsocketFactoryNoCert } from '../node/createWebsocketFactoryNoCe
 import { DOCKER_CONTAINER_VERSION } from '../runner.config';
 import { basicTests } from '../testcases/basic.spec';
 
-basicTests("Browser", createWebsocketFactoryNoCert, DOCKER_CONTAINER_VERSION, false);
+basicTests("Browser", createWebsocketFactoryNoCert, DOCKER_CONTAINER_VERSION);

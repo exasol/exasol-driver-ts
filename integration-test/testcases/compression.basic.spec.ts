@@ -9,7 +9,7 @@ import { startNewDockerContainer } from '../startNewDockerContainer';
 import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
-export const basicCompressionTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
+export const basicCompressionTests = (name: TestEnvironment, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string) =>
   describe(name, () => {
     const randomId = new RandomUuid();
     let container: StartedTestContainer;
@@ -28,7 +28,7 @@ export const basicCompressionTests = (name: TestEnvironment, createWSFactory: Cr
     });
 
     it('Exec and fetch', async () => {
-      const setupClient = createClient(factory, container, LogLevel.Off, useEncryption);
+      const setupClient = createClient(factory, container, LogLevel.Off);
 
       await setupClient.connect();
 
@@ -36,7 +36,7 @@ export const basicCompressionTests = (name: TestEnvironment, createWSFactory: Cr
       await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
       await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 
-      const clientWithCompression = createClient(factory, container, LogLevel.Off, useEncryption);
+      const clientWithCompression = createClient(factory, container, LogLevel.Off);
 
       await clientWithCompression.connect();
       const dataPromise1 = clientWithCompression.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
@@ -51,9 +51,9 @@ export const basicCompressionTests = (name: TestEnvironment, createWSFactory: Cr
       await setupClient.close();
     });
     it('Fetch multiple queries simultaneously/asynchronously', async () => {
-      const setupClient = createClient(factory, container, LogLevel.Off, useEncryption);
+      const setupClient = createClient(factory, container, LogLevel.Off);
 
-      const poolToQuery = createPool(factory, container, 1, 10, LogLevel.Off, useEncryption);
+      const poolToQuery = createPool(factory, container, 1, 10, LogLevel.Off);
 
       await setupClient.connect();
 
@@ -98,8 +98,7 @@ function createPool(
   container: StartedTestContainer,
   minimumPoolSize: number,
   maximumPoolSize: number,
-  logLevel: LogLevel,
-  useEncryption: boolean
+  logLevel: LogLevel
 ) {
   return new ExasolPool(
     factory,
@@ -108,7 +107,6 @@ function createPool(
       port: container.getMappedPort(8563),
       user: 'sys',
       password: 'exasol',
-      encryption: useEncryption,
       minimumPoolSize: minimumPoolSize,
       maximumPoolSize: maximumPoolSize,
       compression: true,
@@ -116,7 +114,7 @@ function createPool(
     new Logger(logLevel),
   );
 }
-function createClient(factory: WebsocketFactory, container: StartedTestContainer, logLevel: LogLevel, useEncryption: boolean) {
+function createClient(factory: WebsocketFactory, container: StartedTestContainer, logLevel: LogLevel) {
   return new ExasolDriver(
     factory,
     {
@@ -124,7 +122,6 @@ function createClient(factory: WebsocketFactory, container: StartedTestContainer
       port: container.getMappedPort(8563),
       user: 'sys',
       password: 'exasol',
-      encryption: useEncryption,
       compression: true,
     },
     new Logger(logLevel),

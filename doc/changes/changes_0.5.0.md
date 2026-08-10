@@ -14,6 +14,7 @@ Please note the following breaking changes:
   * `moduleResolution` changed from `node` to `bundler`
 * Exasol v7.1 is no longer supported.
 * The driver now only supports encrypted connections. Unencrypted connections are no longer supported.
+  * The `encryption` field of interface `Config` is now deprecated and no longer evaluated.
 
 ## Features
 
