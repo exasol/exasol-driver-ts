@@ -118,7 +118,7 @@ export class Connection implements PoolItem {
 
   public sendCommand<T>(cmd: Commands, getCancel?: (cancel?: Cancelable) => void): Promise<SQLResponse<T>> {
     // [impl->dsn~runtime-query-cancellation~1]
-    if (!this.connection || this.connection.readyState === ReadyState.CLOSED || this.connection.readyState === ReadyState.CLOSING) {
+    if (this.connection?.readyState === ReadyState.CLOSED || this.connection?.readyState === ReadyState.CLOSING) {
       this.isBroken = true;
       return Promise.reject(ErrClosed);
     }
