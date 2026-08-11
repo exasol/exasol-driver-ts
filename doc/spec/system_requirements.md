@@ -242,15 +242,19 @@ Covers:
 
 Needs: scn
 
-### Allow Disabling Encryption
-`req~allow-disabling-encryption~1`
+### Don't Allow Disabling Encryption
+`req~do-not-allow-disabling-encryption~1`
 
-The application developer explicitly disables encryption when needed for local or test setups.
+Disabling encryption is not possible.
+
+Rationale:
+
+All supported Exasol versions require encrypted connections. Unecrypted connections are rejected.
 
 Covers:
 - `feat~secure-configurable-sessions~1`
 
-Needs: scn
+Needs: impl
 
 ### Configure Session Attributes
 `req~configure-session-attributes~1`
@@ -473,18 +477,6 @@ Needs: dsn
 
 Covers:
 - `req~encrypt-connections-by-default~1`
-
-Needs: dsn
-
-#### Unencrypted Connection When Disabled
-`scn~unencrypted-connection-when-disabled~1`
-
-**Given** a driver configuration that explicitly sets `encryption` to `false`
-**When** the application connects
-**Then** the driver builds an unencrypted WebSocket URL
-
-Covers:
-- `req~allow-disabling-encryption~1`
 
 Needs: dsn
 

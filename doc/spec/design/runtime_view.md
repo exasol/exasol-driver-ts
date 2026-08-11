@@ -11,14 +11,13 @@ The connection, login, command, result, fetch, and cancellation flows are based 
 ### Connect with Basic Authentication
 `dsn~runtime-connect-basic-authentication~1`
 
-**Given** a driver configured with user, password, host, port, encryption flag, and WebSocket factory
+**Given** a driver configured with user, password, host, port, and WebSocket factory
 **When** `connect()` is called
 **Then** the driver builds the WebSocket URL, creates a `Connection`, sends a login command, encrypts the password with the returned public key, sends login metadata and session attributes, enables compression if configured, and resolves the connection promise
 
 Covers:
 - `scn~connect-with-basic-authentication~1`
 - `scn~encrypted-connection-by-default~1`
-- `scn~unencrypted-connection-when-disabled~1`
 - `scn~session-attributes-sent-during-login~1`
 - `constr~exasol-websocket-sql-protocol~1`
 

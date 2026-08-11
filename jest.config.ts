@@ -49,7 +49,7 @@ const config: Config = {
     },
     {
       displayName: 'itest-dom',
-      testEnvironment: 'jsdom',
+      testEnvironment: '<rootDir>/jest.environment.itest-dom.mjs',
       testMatch: ['<rootDir>/integration-test/browser/**/*.spec.ts'],
       transform: {
         '^.+\\.[tj]s$': [

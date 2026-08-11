@@ -1,43 +1,104 @@
-name: Main
+name: CI Build
 on:
   push:
     branches:
       - main
+  pull_request:
 jobs:
-  distributed-tasks:
+  quality-gates:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: true
-      matrix:
-        target: ['lint:ci', 'test:all', 'build']
-    env:
-      DEFAULT_TARGET: 'test:all'
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: '26'
           cache: 'npm'
-      - name: Free Disk Space
-        if: ${{ matrix.target == 'test:all' }}
-        run: |
-          df -h
-          echo "Cleaning up disk space by removing unnecessary files..."
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-          df -h
       - run: npm ci --ignore-scripts
-      - run: npm run ${{ matrix.target }}
-      - name: Run audit
-        if: ${{ matrix.target == env.DEFAULT_TARGET }}
-        run: npm run audit
+      - run: npm run lint:ci
+      - run: npm run typecheck
+      - run: npm run audit
+      - run: npm run build
+
+  trace-requirements:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+          cache: 'npm'
+      - name: Cache OFT JARs
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/
+          key: oft-${{ hashFiles('.github/workflows/oftw.sh') }}
+          restore-keys: oft
+      - run: npm run trace
+
+  node-compatibility-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24', '26']
+    name: Node ${{ matrix.node }} compatibility tests
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npm run test # Run only unit tests to check compatibility with different Node.js versions
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        exasol-version: ['2026.1.1', '2025.1.14', '8.29.13']
+    name: Exasol ${{ matrix.exasol-version }} integration tests
+    env:
+      DEFAULT_EXASOL_VERSION: '2026.1.1'
+      EXASOL_DOCKER_VERSION: exasol/docker-db:${{ matrix.exasol-version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Required for SonarCloud to work properly
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npm run test:all # Run all tests (not only integration tests) to collect test coverage for SonarCloud
+        env:
+          EXASOL_DOCKER_VERSION: ${{ env.EXASOL_DOCKER_VERSION }}
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
-        if: ${{ matrix.target == env.DEFAULT_TARGET }}
+        if: ${{ matrix.exasol-version == env.DEFAULT_EXASOL_VERSION && env.SONAR_TOKEN != null }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  build:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    needs: [quality-gates, trace-requirements, node-compatibility-tests, integration-tests]
+    steps:
+      - run: echo "All checks passed, build successful!"

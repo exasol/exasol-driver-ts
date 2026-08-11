@@ -1,5 +1,4 @@
-
-import { DOCKER_CONTAINER_VERSION_LATEST } from '../runner.config';
 import { basicCompressionTests } from '../testcases/compression.basic.spec';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
-basicCompressionTests('Node', createWebsocketFactoryWithCertificate, DOCKER_CONTAINER_VERSION_LATEST, true);
+
+basicCompressionTests('Node', createWebsocketFactoryWithCertificate);

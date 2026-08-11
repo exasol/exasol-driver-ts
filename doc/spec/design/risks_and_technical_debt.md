@@ -7,7 +7,6 @@ This chapter documents known architectural risks, limitations, and technical deb
 * Browser bundlers may need configuration to avoid bundling Node-only CSV import modules when browser applications import from the package root.
 * The minimum supported Node.js and browser versions are not documented, which can make compatibility promises ambiguous.
 * CSV import depends on Exasol import tunnel behavior and local network accessibility; failures may be environment-specific.
-* The package advertises encrypted communication, but users can disable encryption for local setups.
 
 ## Technical Debt
 

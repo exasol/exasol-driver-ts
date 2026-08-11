@@ -33,6 +33,13 @@ describe('connection', () => {
     });
   });
 
+  it('should reject sendCommand if not connected', async () => {
+    const connection = new Connection(undefined as unknown as ExaWebsocket, new Logger(), 'test');
+
+    await expect(connection.sendCommand({ command: 'disconnect' })).rejects.toThrow("E-EDJS-19: Not connected.");
+    expect(connection.broken).toBe(true);
+  });
+
   it('should work for sendCommand', async () => {
     const sendFunction = jest.fn();
     const mockSocket = {

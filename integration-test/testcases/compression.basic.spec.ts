@@ -1,24 +1,22 @@
-import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { Logger, LogLevel } from '../../src/lib/logger/logger';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
-import { loadCA } from '../loadCert';
-import { startNewDockerContainer } from '../startNewDockerContainer';
-import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
+import { TestEnvironment, TestWebsocketFactory } from '../common';
+import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
-export const basicCompressionTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
+export const basicCompressionTests = (name: TestEnvironment, createWSFactory: TestWebsocketFactory) =>
   describe(name, () => {
     const randomId = new RandomUuid();
-    let container: StartedTestContainer;
+    let container: ExasolContainer;
     let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
     beforeAll(async () => {
-      container = await startNewDockerContainer(dockerDbVersion);
-      const certString = await loadCA(container);
+      container = await startNewDockerContainer();
+      const certString = await container.loadCA();
       factory = createWSFactory(certString);
     });
 
@@ -27,7 +25,7 @@ export const basicCompressionTests = (name: string, createWSFactory: CreateWebso
     });
 
     it('Exec and fetch', async () => {
-      const setupClient = createClient(factory, container, LogLevel.Off, useEncryption);
+      const setupClient = createClient(factory, container, LogLevel.Off);
 
       await setupClient.connect();
 
@@ -35,7 +33,7 @@ export const basicCompressionTests = (name: string, createWSFactory: CreateWebso
       await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
       await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
 
-      const clientWithCompression = createClient(factory, container, LogLevel.Off, useEncryption);
+      const clientWithCompression = createClient(factory, container, LogLevel.Off);
 
       await clientWithCompression.connect();
       const dataPromise1 = clientWithCompression.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
@@ -50,9 +48,9 @@ export const basicCompressionTests = (name: string, createWSFactory: CreateWebso
       await setupClient.close();
     });
     it('Fetch multiple queries simultaneously/asynchronously', async () => {
-      const setupClient = createClient(factory, container, LogLevel.Off, useEncryption);
+      const setupClient = createClient(factory, container, LogLevel.Off);
 
-      const poolToQuery = createPool(factory, container, 1, 10, LogLevel.Off, useEncryption);
+      const poolToQuery = createPool(factory, container, 1, 10, LogLevel.Off);
 
       await setupClient.connect();
 
@@ -94,20 +92,18 @@ async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: stri
 }
 function createPool(
   factory: WebsocketFactory,
-  container: StartedTestContainer,
+  container: ExasolContainer,
   minimumPoolSize: number,
   maximumPoolSize: number,
-  logLevel: LogLevel,
-  useEncryption: boolean
+  logLevel: LogLevel
 ) {
   return new ExasolPool(
     factory,
     {
       host: container.getHost(),
-      port: container.getMappedPort(8563),
+      port: container.getPort(),
       user: 'sys',
       password: 'exasol',
-      encryption: useEncryption,
       minimumPoolSize: minimumPoolSize,
       maximumPoolSize: maximumPoolSize,
       compression: true,
@@ -115,15 +111,14 @@ function createPool(
     new Logger(logLevel),
   );
 }
-function createClient(factory: WebsocketFactory, container: StartedTestContainer, logLevel: LogLevel, useEncryption: boolean) {
+function createClient(factory: WebsocketFactory, container: ExasolContainer, logLevel: LogLevel) {
   return new ExasolDriver(
     factory,
     {
       host: container.getHost(),
-      port: container.getMappedPort(8563),
+      port: container.getPort(),
       user: 'sys',
       password: 'exasol',
-      encryption: useEncryption,
       compression: true,
     },
     new Logger(logLevel),

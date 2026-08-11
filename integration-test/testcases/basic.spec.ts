@@ -1,26 +1,24 @@
-import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
-import { loadCA } from '../loadCert';
-import { startNewDockerContainer } from '../startNewDockerContainer';
-import { CreateWebsocketFactoryFunctionType } from './CreateWebsocketFactoryFunctionType';
+import { TestEnvironment, TestWebsocketFactory } from '../common';
+import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
 // [itest->dsn~runtime-browser-websocket~1]
 // [itest->dsn~runtime-node-websocket~1]
-export const basicTests = (name: string, createWSFactory: CreateWebsocketFactoryFunctionType, dockerDbVersion: string, useEncryption: boolean) =>
+export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocketFactory) =>
   describe(name, () => {
 
     const randomId = new RandomUuid();
     let tmpDriver: ExasolDriver | undefined;
-    let container: StartedTestContainer;
+    let container: ExasolContainer;
     let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
 
     beforeAll(async () => {
-      container = await startNewDockerContainer(dockerDbVersion);
-      const caString = await loadCA(container);
+      container = await startNewDockerContainer();
+      const caString = await container.loadCA();
       factory = createWSFactory(caString);
     });
 
@@ -30,6 +28,13 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
 
     it('Connect to DB', async () => {
       const driver = await openConnection();
+      expect(driver).toBeDefined();
+      await driver.close();
+    });
+
+    it('Connect to DB via URL', async () => {
+      const url = `wss://${container.getHost()}:${container.getPort()}`;
+      const driver = await openConnection(url, 'invalidHost', 1);
       expect(driver).toBeDefined();
       await driver.close();
     });
@@ -140,15 +145,15 @@ export const basicTests = (name: string, createWSFactory: CreateWebsocketFactory
       }
     });
 
-    const openConnection = async () => {
+    const openConnection = async (url?: string, host = container.getHost(), port = container.getPort()) => {
       expect(factory).toBeDefined();
       expect(container).toBeDefined();
       const driver = new ExasolDriver(factory, {
-        host: container.getHost(),
-        port: container.getMappedPort(8563),
+        host,
+        port,
+        url,
         user: 'sys',
-        password: 'exasol',
-        encryption: useEncryption,
+        password: 'exasol'
       });
       await driver.connect();
       tmpDriver = driver;

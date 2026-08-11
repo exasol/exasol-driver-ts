@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: ['lint:ci', 'test:dom', 'test:node', 'itest:dom', 'itest:node']
+        target: ['lint:ci', 'test', 'itest']
     steps:
       - uses: actions/checkout@v6
         with:

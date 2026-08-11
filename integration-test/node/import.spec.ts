@@ -2,32 +2,31 @@
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { StartedTestContainer } from 'testcontainers';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { CsvFormatOptions, RowSeparator, TrimMode } from '../../src/lib/import/types';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { IExasolDriver } from '../../src/lib/sql-client.interface';
-import { loadCA } from '../loadCert';
-import { DOCKER_CONTAINER_VERSION_LATEST } from '../runner.config';
-import { startNewDockerContainer } from '../startNewDockerContainer';
+import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
+
+const describeImportWhenSupported = ExasolContainer.supportsCsvImport() ? describe : describe.skip;
 
 // [itest->dsn~runtime-csv-import-missing-target-table~1]
 // [itest->dsn~runtime-csv-import-file-stream~1]
 // [itest->dsn~runtime-csv-import-format-options~1]
-describe("Node Import", () => {
+describeImportWhenSupported("Node Import", () => {
 
   const randomId = new RandomUuid();
   let driver: IExasolDriver;
-  let container: StartedTestContainer;
+  let container: ExasolContainer;
   let factory: WebsocketFactory;
   jest.setTimeout(7000000);
   let schemaName = '';
   let tempDirectory = '';
 
   beforeAll(async () => {
-    container = await startNewDockerContainer(DOCKER_CONTAINER_VERSION_LATEST);
-    const caString = await loadCA(container);
+    container = await startNewDockerContainer();
+    const caString = await container.loadCA();
     factory = createWebsocketFactoryWithCertificate(caString);
   });
 
@@ -172,13 +171,12 @@ describe("Node Import", () => {
     });
   });
 
-  const openConnection = async (factory: WebsocketFactory, container: StartedTestContainer) => {
+  const openConnection = async (factory: WebsocketFactory, container: ExasolContainer) => {
     const driver = new ExasolDriver(factory, {
       host: container.getHost(),
-      port: container.getMappedPort(8563),
+      port: container.getPort(),
       user: 'sys',
-      password: 'exasol',
-      encryption: true,
+      password: 'exasol'
     });
     await driver.connect();
     return driver;

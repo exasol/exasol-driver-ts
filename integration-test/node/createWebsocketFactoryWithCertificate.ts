@@ -1,7 +1,8 @@
 import { WebSocket } from 'ws';
 import { ExaWebsocket } from '../../src/lib/connection';
+import { WebsocketFactory } from '../../src/lib/sql-client';
 
-export function createWebsocketFactoryWithCertificate(certString?: string | undefined) {
+export function createWebsocketFactoryWithCertificate(certString?: string): WebsocketFactory {
   //factory method that creates a websocket object
   const factoryWithCertificate = (url: string | URL) => {
     return new WebSocket(url, {
@@ -12,6 +13,6 @@ export function createWebsocketFactoryWithCertificate(certString?: string | unde
       }
     }) as ExaWebsocket;
   };
-  
+
   return factoryWithCertificate;
 }

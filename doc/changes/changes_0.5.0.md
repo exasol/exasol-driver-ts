@@ -12,6 +12,9 @@ Please note the following breaking changes:
 * TypeScript configuration:
   * `target` changed from `ES5` to `ES6`
   * `moduleResolution` changed from `node` to `bundler`
+* Exasol v7.1 is no longer supported.
+* The driver now only supports encrypted connections. Unencrypted connections are no longer supported.
+  * The `encryption` field of interface `Config` is now deprecated and no longer evaluated.
 
 ## Features
 
