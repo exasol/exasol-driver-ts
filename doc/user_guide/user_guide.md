@@ -39,6 +39,42 @@ await driver.query("SELECT * FROM EXA_ALL_SCHEMAS");
 await driver.close();
 ```
 
+### Automatic Resource Cleanup
+
+<!-- [uman->scn~async-dispose-driver~1] -->
+With TypeScript 5.2 or later, use `await using` to close drivers, prepared statements, and connection pools automatically when the surrounding scope exits. Enable the `esnext.disposable` TypeScript library declaration in your application if it is not already included by your compiler configuration.
+
+<!-- [uman->scn~async-dispose-prepared-statement~1] -->
+Use `await using` for prepared statements so their server-side handle and connection are released automatically:
+
+```ts
+async function runQuery() {
+  await using driver = new ExasolDriver(
+    (url) => new WebSocket(url) as ExaWebsocket,
+    { host: 'localhost', port: 8563, user: 'sys', password: 'exasol' },
+  );
+  await driver.connect();
+
+  await using statement = await driver.prepare('SELECT * FROM EXA_ALL_SCHEMAS WHERE SCHEMA_NAME = ?');
+  await statement.execute('SYS');
+} // The statement is closed and the driver connection is closed here.
+```
+
+The driver declaration in this example also closes its database connection when the function exits.
+
+<!-- [uman->scn~async-dispose-connection-pool~1] -->
+The pool can be managed the same way. Leaving the scope drains it and clears its connections:
+
+```ts
+async function runPooledQuery() {
+  await using pool = new ExasolPool(
+    (url) => new WebSocket(url) as ExaWebsocket,
+    { host: 'localhost', port: 8563, user: 'sys', password: 'exasol' },
+  );
+  await pool.query('SELECT * FROM EXA_ALL_SCHEMAS');
+}
+```
+
 #### Connecting With a Self-signed Certificate
 
 For an encrypted Exasol connection that uses a self-signed certificate, configure `ws` with that certificate as a trusted certificate authority (CA). Keep certificate validation enabled and disable hostname verification only when the certificate's hostname does not match the host used for the connection.

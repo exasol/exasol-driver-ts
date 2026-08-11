@@ -35,6 +35,18 @@ Covers:
 
 Needs: impl, utest
 
+### Driver Async Disposal
+`dsn~runtime-driver-async-disposal~1`
+
+**Given** a connected `ExasolDriver`
+**When** TypeScript invokes `Symbol.asyncDispose`
+**Then** the driver delegates to `close()` and waits for all connections to close
+
+Covers:
+- `scn~async-dispose-driver~1`
+
+Needs: impl, utest
+
 ## SQL Execution
 
 ### Query Execution
@@ -85,6 +97,18 @@ Covers:
 - `scn~prepared-statement-execution~1`
 
 Needs: impl
+
+### Prepared Statement Async Disposal
+`dsn~runtime-prepared-statement-async-disposal~1`
+
+**Given** a prepared `Statement`
+**When** TypeScript invokes `Symbol.asyncDispose`
+**Then** the statement delegates to `close()`, closes the remote statement, and releases its connection
+
+Covers:
+- `scn~async-dispose-prepared-statement~1`
+
+Needs: impl, utest
 
 ### Query Cancellation
 `dsn~runtime-query-cancellation~1`
@@ -165,6 +189,18 @@ Covers:
 - `scn~pool-shutdown~1`
 
 Needs: impl, itest
+
+### Pool Async Disposal
+`dsn~runtime-pool-async-disposal~1`
+
+**Given** an `ExasolPool`
+**When** TypeScript invokes `Symbol.asyncDispose`
+**Then** the pool drains before clearing its pooled driver instances
+
+Covers:
+- `scn~async-dispose-connection-pool~1`
+
+Needs: impl, utest
 
 ## CSV Import
 

@@ -29,9 +29,9 @@ This specification was reverse-engineered from:
 
 ## Notation
 
-This document uses OpenFastTrace specification items to express product features, user requirements, and acceptance scenarios. Each specification item has a unique identifier in the form `<artifact-type>~<name>~<revision>`.
+This document uses OpenFastTrace specification items to express product features, user requirements, acceptance scenarios, and user-manual guidance. Each specification item has a unique identifier in the form `<artifact-type>~<name>~<revision>`.
 
-In this document, feature items use the artifact type `feat`, user requirements use `req`, and acceptance scenarios use `scn`. Design items under `doc/spec/design/` cover the scenarios with artifact type `dsn`. Architecture constraints in `doc/spec/design/constraints.md` use artifact type `constr` and are also covered by `dsn` items.
+In this document, feature items use the artifact type `feat`, user requirements use `req`, and acceptance scenarios use `scn`. Design items under `doc/spec/design/` cover the scenarios with artifact type `dsn`; user-guide items use `uman`. Architecture constraints in `doc/spec/design/constraints.md` use artifact type `constr` and are also covered by `dsn` items.
 
 ## Terms and Abbreviations
 
@@ -79,6 +79,13 @@ A person or automation responsible for providing database host, port, credential
 `feat~sql-connectivity~1`
 
 The driver lets applications connect to Exasol, authenticate, execute SQL, read results, and close the connection.
+
+Needs: req
+
+### Explicit Resource Management
+`feat~explicit-resource-management~1`
+
+The driver supports TypeScript explicit resource management for closeable driver resources.
 
 Needs: req
 
@@ -171,6 +178,16 @@ The application developer cancels active database work through the driver.
 
 Covers:
 - `feat~sql-connectivity~1`
+
+Needs: scn
+
+#### Automatically Dispose Driver Resources
+`req~automatically-dispose-driver-resources~1`
+
+The application developer uses TypeScript `await using` declarations to automatically clean up drivers, prepared statements, and connection pools when leaving scope.
+
+Covers:
+- `feat~explicit-resource-management~1`
 
 Needs: scn
 
@@ -356,6 +373,30 @@ Covers:
 
 Needs: dsn
 
+### Automatically Dispose a Driver
+`scn~async-dispose-driver~1`
+
+**Given** a connected `ExasolDriver` in an `await using` declaration
+**When** execution leaves the declaration's scope
+**Then** the driver closes its database connections
+
+Covers:
+- `req~automatically-dispose-driver-resources~1`
+
+Needs: dsn, uman
+
+### Automatically Dispose a Prepared Statement
+`scn~async-dispose-prepared-statement~1`
+
+**Given** a prepared statement in an `await using` declaration
+**When** execution leaves the declaration's scope
+**Then** the driver closes the prepared statement and releases its connection
+
+Covers:
+- `req~automatically-dispose-driver-resources~1`
+
+Needs: dsn, uman
+
 ### Browser Connection Uses Native WebSocket
 `scn~browser-connection-uses-native-websocket~1`
 
@@ -415,6 +456,18 @@ Covers:
 - `req~manage-connection-pool~1`
 
 Needs: dsn
+
+### Automatically Dispose a Connection Pool
+`scn~async-dispose-connection-pool~1`
+
+**Given** an `ExasolPool` in an `await using` declaration
+**When** execution leaves the declaration's scope
+**Then** the pool drains and clears its driver instances
+
+Covers:
+- `req~automatically-dispose-driver-resources~1`
+
+Needs: dsn, uman
 
 ### CSV Import
 

@@ -15,3 +15,13 @@ Run OpenFastTrace verification with:
 ```sh
 npm run trace
 ```
+
+### User Guide Traceability
+
+Keep `doc/user_guide/user_guide.md` reader-focused: do not add complete OpenFastTrace specification items there. To trace user documentation to a scenario, add an inline HTML comment directly before the relevant guidance:
+
+```md
+<!-- [uman->scn~scenario-name~revision] -->
+```
+
+When adding such a `uman` coverage tag, include `uman` in the scenario's `Needs` list alongside its design coverage, and list `uman` in the quality-requirements artifact hierarchy.

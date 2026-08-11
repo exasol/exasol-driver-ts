@@ -1,9 +1,9 @@
-import { SQLQueriesResponse, SQLQueryColumn, SQLResponse } from './types';
-import { IStatement } from './sql-client.interface';
-import { ConnectionPool } from './pool/pool';
-import { ErrInvalidValuesCount } from './errors/errors';
-import { Connection } from './connection';
 import { ClosePreparedStatementCommand, ExecutePreparedStatementCommand } from './commands';
+import { Connection } from './connection';
+import { ErrInvalidValuesCount } from './errors/errors';
+import { ConnectionPool } from './pool/pool';
+import { IStatement } from './sql-client.interface';
+import { SQLQueriesResponse, SQLQueryColumn, SQLResponse } from './types';
 
 // [impl->dsn~runtime-prepared-statement-execution~1]
 export class Statement implements IStatement {
@@ -12,7 +12,7 @@ export class Statement implements IStatement {
     private readonly pool: ConnectionPool<Connection>,
     private readonly statementHandle: number,
     private readonly columns: SQLQueryColumn[]
-  ) {}
+  ) { }
 
   /**
    * @inheritDoc
@@ -28,6 +28,11 @@ export class Statement implements IStatement {
         this.pool.release(this.connection);
         throw err;
       });
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    // [impl->dsn~runtime-prepared-statement-async-disposal~1]
+    return this.close();
   }
 
   /**

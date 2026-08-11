@@ -25,6 +25,20 @@ describe('sqlClient', () => {
         expect(err.name).toEqual('ExaError');
       });
     });
+
+    // [utest->dsn~runtime-driver-async-disposal~1]
+    it('should close the connection when disposed with await using', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      {
+        await using managedDriver = driver;
+        await managedDriver.query('select 1');
+      }
+
+      expect(mockSocketFactory.mockSocket.closed).toBe(true);
+    });
   });
 
   describe('query', () => {

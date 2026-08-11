@@ -16,6 +16,7 @@ Use this OFT hierarchy:
 6. `impl`: implementation
 7. `utest`: unit test
 8. `itest`: integration test
+9. `uman`: user-manual guidance
 
 Runtime design requirements `dsn` should cover one scenario or constraint at a time when practical. Grouping is acceptable for facade-level or component-level descriptions that would otherwise duplicate the same design text.
 
