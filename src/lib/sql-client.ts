@@ -451,16 +451,16 @@ export class ExasolDriver implements IExasolDriver {
     if (this.closed) {
       throw ErrClosed;
     }
-    return importCsvFile(
-      this.config.host,
-      this.config.port,
+    return importCsvFile({
+      host: this.config.host,
+      port: this.config.port,
       tableName,
       filePath,
-      (sql: string) => this.execute(sql),
+      executeSql: (sql: string) => this.execute(sql),
       csvOptions,
       options,
-      () => this.cancel(),
-    );
+      cancelSql: () => this.cancel(),
+    });
   }
 
   private async acquire() {

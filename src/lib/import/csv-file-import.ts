@@ -9,17 +9,28 @@ import { buildCsvImportSql } from './import-sql-builder';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
 import { CsvFormatOptions, CsvImportOptions } from './types';
 
+interface ImportCsvFileParameters {
+  host: string;
+  port: number;
+  tableName: string;
+  filePath: string;
+  executeSql: (sql: string) => Promise<number>;
+  csvOptions?: CsvFormatOptions;
+  options?: CsvImportOptions;
+  cancelSql?: () => Promise<void>;
+}
+
 // [impl->dsn~decision-stream-csv-through-import-tunnel~1]
-export async function importCsvFile(
-  host: string,
-  port: number,
-  tableName: string,
-  filePath: string,
-  executeSql: (sql: string) => Promise<number>,
-  csvOptions?: CsvFormatOptions,
-  options?: CsvImportOptions,
-  cancelSql?: () => Promise<void>,
-): Promise<number> {
+export async function importCsvFile({
+  host,
+  port,
+  tableName,
+  filePath,
+  executeSql,
+  csvOptions,
+  options,
+  cancelSql,
+}: ImportCsvFileParameters): Promise<number> {
   // [impl->dsn~runtime-csv-import-file-readability-check~1]
   // [impl->dsn~runtime-csv-import-missing-target-table~1]
   // [impl->dsn~runtime-csv-import-file-stream~1]
