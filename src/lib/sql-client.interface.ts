@@ -3,7 +3,7 @@
  * Date: 2022-04-14 07:21:51
  */
 import { Attributes, Commands, CommandsNoResult } from './commands';
-import { CsvFormatOptions } from './import/types';
+import { CsvFormatOptions, CsvImportOptions } from './import/types';
 import { QueryResult } from './query-result';
 import { SQLQueriesResponse, SQLResponse } from './types';
 
@@ -135,9 +135,10 @@ export interface IExasolDriver extends AsyncDisposable {
    * @param tableName Target table name (optionally schema-qualified)
    * @param filePath Path to the local CSV file
    * @param csvOptions Optional CSV format options
+   * @param options Optional import control options
    * @returns Number of rows imported
    */
-  importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number>;
+  importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions, options?: CsvImportOptions): Promise<number>;
 }
 
 export interface IStatement extends AsyncDisposable {

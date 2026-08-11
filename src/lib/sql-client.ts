@@ -16,7 +16,7 @@ import {
 } from './errors/errors';
 import { fetchData } from './fetch';
 import { importCsvFile } from './import/csv-file-import';
-import { CsvFormatOptions } from './import/types';
+import { CsvFormatOptions, CsvImportOptions } from './import/types';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { ConnectionPool } from './pool/pool';
 import { QueryResult } from './query-result';
@@ -442,18 +442,25 @@ export class ExasolDriver implements IExasolDriver {
   /**
    * @inheritDoc
    */
-  public async importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number> {
+  public async importFromCsvFile(
+    tableName: string,
+    filePath: string,
+    csvOptions?: CsvFormatOptions,
+    options?: CsvImportOptions,
+  ): Promise<number> {
     if (this.closed) {
       throw ErrClosed;
     }
-    return importCsvFile(
-      this.config.host,
-      this.config.port,
+    return importCsvFile({
+      host: this.config.host,
+      port: this.config.port,
       tableName,
       filePath,
-      (sql: string) => this.execute(sql),
+      executeSql: (sql: string) => this.execute(sql),
       csvOptions,
-    );
+      options,
+      cancelSql: () => this.cancel(),
+    });
   }
 
   private async acquire() {

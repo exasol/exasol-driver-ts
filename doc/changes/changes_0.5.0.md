@@ -27,6 +27,7 @@ await driver.connect();
 ## Features
 
 * #73: Added TypeScript `await using` support for drivers, prepared statements, and connection pools.
+* #68: Added `AbortSignal` cancellation for local CSV imports.
 
 ## Dependency Updates
 

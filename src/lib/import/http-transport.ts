@@ -32,13 +32,26 @@ export function parseResponse(data: Buffer): InternalAddress {
   return { host, port };
 }
 
-export function createTunnel(host: string, port: number): Promise<{ socket: net.Socket; internalAddress: InternalAddress }> {
+export function createTunnel(host: string, port: number, signal?: AbortSignal): Promise<{ socket: net.Socket; internalAddress: InternalAddress }> {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ host, port }, () => {
       socket.write(buildMagicPacket());
     });
 
+    const abortTunnel = () => {
+      socket.destroy();
+      const message = new ExaErrorBuilder('E-EDJS-21').message('The CSV import was aborted.').toString();
+      reject(new DOMException(message, 'AbortError'));
+    };
+
+    if (signal?.aborted) {
+      abortTunnel();
+    } else {
+      signal?.addEventListener('abort', abortTunnel, { once: true });
+    }
+
     socket.once('data', (data: Buffer) => {
+      signal?.removeEventListener('abort', abortTunnel);
       if (data.length < RESPONSE_SIZE) {
         socket.destroy();
         reject(
@@ -53,6 +66,7 @@ export function createTunnel(host: string, port: number): Promise<{ socket: net.
     });
 
     socket.on('error', (err: Error) => {
+      signal?.removeEventListener('abort', abortTunnel);
       socket.destroy();
       reject(
         new ExaErrorBuilder('E-EDJS-12')

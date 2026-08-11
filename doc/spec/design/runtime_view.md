@@ -254,3 +254,15 @@ Covers:
 - `scn~csv-import-applies-format-options~1`
 
 Needs: impl, utest, itest
+
+### CSV Import Cancellation
+`dsn~runtime-csv-import-cancellation~1`
+
+**Given** an in-flight CSV import with an `AbortSignal`
+**When** the signal is aborted
+**Then** the driver destroys the file stream and both import-tunnel sockets, sends `abortQuery` for the server-side import without waiting for its response, and rejects the import promise with an `AbortError`
+
+Covers:
+- `scn~csv-import-is-cancelled~1`
+
+Needs: impl, utest, itest

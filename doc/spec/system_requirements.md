@@ -249,6 +249,16 @@ Covers:
 
 Needs: scn
 
+#### Cancel CSV File Import
+`req~cancel-csv-file-import~1`
+
+The Node.js application cancels an in-flight CSV file import through an `AbortSignal` and promptly releases the local file and import-tunnel resources.
+
+Covers:
+- `feat~csv-file-import~1`
+
+Needs: scn
+
 ### Encrypt Connections by Default
 `req~encrypt-connections-by-default~1`
 
@@ -518,6 +528,18 @@ Covers:
 - `req~configure-csv-format~1`
 
 Needs: dsn
+
+#### CSV Import Is Cancelled
+`scn~csv-import-is-cancelled~1`
+
+**Given** a Node.js application importing a local CSV file with an `AbortSignal`
+**When** the application aborts the signal while the import is in flight
+**Then** the driver stops streaming the file, closes the import tunnel, aborts the server-side import query, and rejects promptly with an `AbortError`
+
+Covers:
+- `req~cancel-csv-file-import~1`
+
+Needs: dsn, uman
 
 ### Connection Encryption
 
