@@ -14,13 +14,12 @@ await driver.connect();
 // The driver is closed automatically when this scope exits.
 ```
 
-### Breaking Changes
+### Beaking Changes
 
-* Node.js 22 is no longer supported, because it does not support `Symbol.asyncDispose`. Please use Node.js 24 or 26.
 * TypeScript upgraded from 5.9.3 to 7.0.2
-* TypeScript configuration changed:
-  * `target`: `ES5` -> `ES6`
-  * `moduleResolution`: `node` -> `bundler`
+* TypeScript configuration:
+  * `target` changed from `ES5` to `ES6`
+  * `moduleResolution` changed from `node` to `bundler`
 * Exasol v7.1 is no longer supported.
 * The driver now only supports encrypted connections. Unencrypted connections are no longer supported.
   * The `encryption` field of interface `Config` is now deprecated and no longer evaluated.
