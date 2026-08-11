@@ -28,7 +28,6 @@ export interface IExasolDriver extends AsyncDisposable {
    *  Close current connection
    */
   close(): Promise<void>;
-  [Symbol.asyncDispose](): Promise<void>;
 
   /**
    * Query single SQL statement
@@ -147,7 +146,6 @@ export interface IStatement extends AsyncDisposable {
    * Close statement
    */
   close(): Promise<void>;
-  [Symbol.asyncDispose](): Promise<void>;
   /**
    *  Execute prepared statement with given args
    *
