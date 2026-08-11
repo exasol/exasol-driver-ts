@@ -252,7 +252,7 @@ Needs: scn
 #### Cancel CSV File Import
 `req~cancel-csv-file-import~1`
 
-The Node.js application developer cancels an in-flight CSV file import through an `AbortSignal` and promptly releases the local file and import-tunnel resources.
+The Node.js application cancels an in-flight CSV file import through an `AbortSignal` and promptly releases the local file and import-tunnel resources.
 
 Covers:
 - `feat~csv-file-import~1`
