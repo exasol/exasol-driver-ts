@@ -77,11 +77,6 @@ export async function receiveHttpRequestBody(
 }
 
 async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: HttpRequest): AsyncGenerator<Buffer> {
-  if (hasChunkedTransferEncoding(request.headers)) {
-    yield* readChunkedRequestBody(socket, request.initialBody);
-    return;
-  }
-
   let remaining = getContentLength(request.headers);
 
   if (request.initialBody.length > 0) {
@@ -112,72 +107,6 @@ async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: Htt
   }
 }
 
-/**
- * Decodes an HTTP/1.1 chunked message body. The terminating zero-size chunk
- * marks the end of the body, so a persistent tunnel connection need not close.
- */
-async function* readChunkedRequestBody(socket: net.Socket | tls.TLSSocket, initialBody: Buffer): AsyncGenerator<Buffer> {
-  let buffered = initialBody;
-  let state: 'size' | 'data' | 'data-terminator' | 'trailers' = 'size';
-  let chunkSize = 0;
-
-  const bodyIterator = socket.iterator({ destroyOnReturn: false });
-  while (true) {
-    if (state === 'size') {
-      const lineEnd = buffered.indexOf('\r\n');
-      if (lineEnd !== -1) {
-        const sizeLine = buffered.subarray(0, lineEnd).toString('ascii');
-        const match = /^([0-9A-Fa-f]+)(?:;[^\r\n]*)?$/.exec(sizeLine);
-        if (match === null) {
-          throw new Error(`Invalid HTTP chunk size: '${sizeLine}'.`);
-        }
-        chunkSize = Number.parseInt(match[1], 16);
-        if (!Number.isSafeInteger(chunkSize)) {
-          throw new Error(`HTTP chunk size exceeds the supported range: '${sizeLine}'.`);
-        }
-        buffered = buffered.subarray(lineEnd + 2);
-        state = chunkSize === 0 ? 'trailers' : 'data';
-        continue;
-      }
-    } else if (state === 'data') {
-      if (buffered.length >= chunkSize) {
-        yield buffered.subarray(0, chunkSize);
-        buffered = buffered.subarray(chunkSize);
-        state = 'data-terminator';
-        continue;
-      }
-    } else if (state === 'data-terminator') {
-      if (buffered.length >= 2) {
-        if (buffered[0] !== 13 || buffered[1] !== 10) {
-          throw new Error('HTTP chunk data is not followed by a CRLF delimiter.');
-        }
-        buffered = buffered.subarray(2);
-        state = 'size';
-        continue;
-      }
-    } else {
-      const lineEnd = buffered.indexOf('\r\n');
-      if (lineEnd !== -1) {
-        buffered = buffered.subarray(lineEnd + 2);
-        if (lineEnd === 0) {
-          return;
-        }
-        continue;
-      }
-    }
-
-    const next = await bodyIterator.next();
-    if (next.done) {
-      throw new Error('Socket closed before receiving the complete chunked HTTP request body.');
-    }
-    buffered = Buffer.concat([buffered, Buffer.isBuffer(next.value) ? next.value : Buffer.from(next.value)]);
-  }
-}
-
-function hasChunkedTransferEncoding(headers: string): boolean {
-  const transferEncoding = /^transfer-encoding:\s*(.+?)\s*$/im.exec(headers)?.[1];
-  return transferEncoding?.split(',').some((encoding) => encoding.trim().toLowerCase() === 'chunked') ?? false;
-}
 
 function getContentLength(headers: string): number | undefined {
   const contentLength = /^content-length:\s*(\d+)\s*$/im.exec(headers)?.[1];
