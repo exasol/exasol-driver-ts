@@ -6,6 +6,14 @@ Code name:
 
 This release upgrades dependencies and runtime environment.
 
+The driver now supports TypeScript's automatic resource management with `await using`:
+
+```ts
+await using driver = new ExasolDriver(websocketFactory, config);
+await driver.connect();
+// The driver is closed automatically when this scope exits.
+```
+
 Please note the following breaking changes:
 
 * TypeScript upgraded from 5.9.3 to 7.0.2
@@ -18,7 +26,7 @@ Please note the following breaking changes:
 
 ## Features
 
-* ISSUE_NUMBER: description
+* #73: Added TypeScript `await using` support for drivers, prepared statements, and connection pools.
 
 ## Dependency Updates
 

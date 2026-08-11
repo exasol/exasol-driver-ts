@@ -45,7 +45,7 @@ function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & P
  * @export
  * @class ExasolPool
  */
-export class ExasolPool {
+export class ExasolPool implements AsyncDisposable {
   private readonly internalPool: Pool<ExasolDriver>;
   private readonly logger: ILogger;
   /**
@@ -157,5 +157,11 @@ export class ExasolPool {
   public async clear() {
     // [impl->dsn~runtime-pool-shutdown~1]
     await this.internalPool.clear();
+  }
+
+  public async [Symbol.asyncDispose](): Promise<void> {
+    // [impl->dsn~runtime-pool-async-disposal~1]
+    await this.drain();
+    await this.clear();
   }
 }

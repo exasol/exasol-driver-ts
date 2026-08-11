@@ -11,7 +11,7 @@ export type Cancelable = () => void;
 
 export type CetCancelFunction = (cancel?: Cancelable) => void;
 
-export interface IExasolDriver {
+export interface IExasolDriver extends AsyncDisposable {
   /**
    * Connect to database
    *
@@ -28,6 +28,7 @@ export interface IExasolDriver {
    *  Close current connection
    */
   close(): Promise<void>;
+  [Symbol.asyncDispose](): Promise<void>;
 
   /**
    * Query single SQL statement
@@ -140,11 +141,12 @@ export interface IExasolDriver {
   importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number>;
 }
 
-export interface IStatement {
+export interface IStatement extends AsyncDisposable {
   /**
    * Close statement
    */
   close(): Promise<void>;
+  [Symbol.asyncDispose](): Promise<void>;
   /**
    *  Execute prepared statement with given args
    *

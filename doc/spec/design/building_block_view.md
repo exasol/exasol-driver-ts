@@ -32,9 +32,9 @@ CsvImport --> Exasol
 ## Component Design Items
 
 ### Driver API
-`dsn~driver-api~1`
+`dsn~driver-api~2`
 
-`ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV imports.
+`ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV imports. It supports asynchronous disposal by delegating `Symbol.asyncDispose` to `close()`.
 
 Covers:
 - `scn~connect-with-basic-authentication~1`
@@ -45,6 +45,8 @@ Covers:
 - `scn~prepared-statement-execution~1`
 - `scn~cancel-active-work~1`
 - `scn~session-attributes-sent-during-login~1`
+- `scn~async-dispose-driver~1`
+- `scn~async-dispose-prepared-statement~1`
 
 ### WebSocket Connection
 `dsn~websocket-connection~1`
@@ -66,14 +68,15 @@ Covers:
 - `scn~result-row-limit-applied-during-fetch~1`
 
 ### Pool API
-`dsn~pool-api~1`
+`dsn~pool-api~2`
 
-`ExasolPool` wraps `generic-pool` and manages reusable `ExasolDriver` instances according to configured minimum and maximum pool size.
+`ExasolPool` wraps `generic-pool` and manages reusable `ExasolDriver` instances according to configured minimum and maximum pool size. It supports asynchronous disposal by draining and then clearing the pool.
 
 Covers:
 - `scn~pool-reuses-drivers-for-queries~1`
 - `scn~pool-enforces-configured-size-limits~1`
 - `scn~pool-shutdown~1`
+- `scn~async-dispose-connection-pool~1`
 
 ### CSV Import Components
 `dsn~csv-import-components~1`

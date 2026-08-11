@@ -93,6 +93,22 @@ describe('statement', () => {
     expect(pool.release).toHaveBeenCalledWith(connection);
   });
 
+  // [utest->dsn~runtime-prepared-statement-async-disposal~1]
+  it('should close the prepared statement when disposed with await using', async () => {
+    const sendCommand = jest.fn().mockResolvedValue({});
+    const { statement, connection, pool } = createStatement(sendCommand);
+
+    {
+      await using managedStatement = statement;
+      await managedStatement.execute('a', 'b', 'c', 'd');
+    }
+
+    expect(sendCommand).toHaveBeenLastCalledWith(expect.objectContaining({
+      command: 'closePreparedStatement',
+    }));
+    expect(pool.release).toHaveBeenCalledWith(connection);
+  });
+
   it('should release the connection back to the pool when close fails', async () => {
     const closeError = new Error('close failed');
     const sendCommand = jest.fn().mockRejectedValue(closeError);

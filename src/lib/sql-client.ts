@@ -195,6 +195,11 @@ export class ExasolDriver implements IExasolDriver {
     this.pool.clear();
   }
 
+  public async [Symbol.asyncDispose](): Promise<void> {
+    // [impl->dsn~runtime-driver-async-disposal~1]
+    return this.close();
+  }
+
   /**
    * @inheritDoc
    */
