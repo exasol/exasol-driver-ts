@@ -262,6 +262,7 @@ await driver.close();
 ```
 
 The optional `csvOptions` argument can be used to configure the CSV format, for example the column separator, row separator, header rows to skip, trimming mode, encoding, or additional NULL representation.
+
 #### Cancelling a Running Import
 <!-- [uman->scn~csv-import-is-cancelled~1] -->
 

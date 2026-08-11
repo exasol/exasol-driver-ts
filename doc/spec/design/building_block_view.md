@@ -32,7 +32,7 @@ CsvImport --> Exasol
 ## Component Design Items
 
 ### Driver API
-`dsn~driver-api~2`
+`dsn~driver-api~3`
 
 `ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV imports. It supports asynchronous disposal by delegating `Symbol.asyncDispose` to `close()`.
 
