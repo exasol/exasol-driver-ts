@@ -42,6 +42,7 @@ Deliver the work as three dependent pull requests. Do not release the API until 
 - [x] Refactor the internal HTTP/TLS tunnel helpers to retain bytes coalesced with HTTP headers and stream incoming request bodies with backpressure.
 - [x] Keep `importFromCsvFile()` behavior unchanged and retain its existing trace coverage.
 - [x] Add Node unit tests for fragmented and coalesced headers/body data, supported body transfer modes, socket and write failures, and cleanup.
+- [x] Add loopback-TCP integration tests for receiving headers and request bodies and sending chunked responses without socket or stream mocks.
 - [x] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, and `npm run trace`.
 
 ### PR 2: Export API, Requirements, Design, and Tests
