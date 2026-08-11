@@ -24,6 +24,7 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<Htt
       buffer = Buffer.concat([buffer, chunk]);
       const headerEnd = buffer.indexOf(HEADER_TERMINATOR);
       if (headerEnd !== -1) {
+        socket.pause();
         cleanup();
         const bodyStart = headerEnd + HEADER_TERMINATOR.length;
         resolve({
@@ -86,7 +87,9 @@ async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: Htt
     return;
   }
 
-  for await (const chunk of socket) {
+  const bodyIterator = socket[Symbol.asyncIterator]();
+  socket.resume();
+  for await (const chunk of bodyIterator) {
     const body = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     const nextBody = takeBodyBytes(body, remaining);
     yield nextBody.bytes;

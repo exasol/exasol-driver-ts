@@ -69,6 +69,59 @@ describe('HTTP tunnel protocol', () => {
     }
   });
 
+  it('retains a body sent after the header handoff until the body reader starts', async () => {
+    let resolveHeadersRead!: () => void;
+    let rejectHeadersRead!: (error: unknown) => void;
+    const headersRead = new Promise<void>((resolve, reject) => {
+      resolveHeadersRead = resolve;
+      rejectHeadersRead = reject;
+    });
+    let startBodyReader!: () => void;
+    const bodyReaderStarted = new Promise<void>((resolve) => {
+      startBodyReader = resolve;
+    });
+    let resolveTransfer!: () => void;
+    let rejectTransfer!: (error: unknown) => void;
+    const transferCompleted = new Promise<void>((resolve, reject) => {
+      resolveTransfer = resolve;
+      rejectTransfer = reject;
+    });
+    const server = await startServer((socket) => {
+      void (async () => {
+        const request = await readHttpRequest(socket);
+        resolveHeadersRead();
+        await bodyReaderStarted;
+
+        const destination = new PassThrough();
+        const received: Buffer[] = [];
+        destination.on('data', (chunk: Buffer) => received.push(chunk));
+        await receiveHttpRequestBody(socket, request, destination);
+
+        expect(Buffer.concat(received).toString()).toBe('hello');
+        socket.end();
+        resolveTransfer();
+      })().catch((error) => {
+        rejectHeadersRead(error);
+        rejectTransfer(error);
+      });
+    });
+
+    try {
+      const client = await connect(server.port);
+      client.write('PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n');
+      await headersRead;
+      client.write('hello');
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      startBodyReader();
+      client.end();
+
+      await transferCompleted;
+      await once(client, 'close');
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   it('sends a chunked HTTP response over TCP', async () => {
     let resolveResponse!: () => void;
     let rejectResponse!: (error: unknown) => void;

@@ -15,6 +15,7 @@ describe('http-protocol', () => {
         headers: 'GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n',
         initialBody: Buffer.alloc(0),
       });
+      expect(socket.isPaused()).toBe(true);
     });
 
     it('should accumulate data arriving in multiple chunks', async () => {
