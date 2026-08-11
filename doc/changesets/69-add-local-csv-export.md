@@ -47,9 +47,9 @@ Deliver the work as four dependent pull requests. Do not release the API until a
 
 ### PR 2: Core Export API, Requirements, Design, and Tests
 
-- [ ] Add `feat~csv-file-export~1` to the system requirements.
-- [ ] Add requirements and scenarios for successful table/query export, export format options, existing-file rejection, and unsupported chunked request bodies.
-- [ ] Add runtime, building-block, architecture-decision, and Node-only constraint `dsn` items for the public API, reverse TLS tunnel, SQL generation, streaming, transfer failures, existing-file protection, and unsupported chunked request bodies.
+- [x] Add `feat~csv-file-export~1` to the system requirements.
+- [x] Add requirements and scenarios for successful table/query export, export format options, existing-file rejection, and unsupported chunked request bodies.
+- [x] Add runtime, building-block, architecture-decision, and Node-only constraint `dsn` items for the public API, reverse TLS tunnel, SQL generation, streaming, transfer failures, existing-file protection, and unsupported chunked request bodies.
 - [ ] Add `impl`, `utest`, and `itest` tags so every new runtime design item has a clean `feat -> req -> scn -> dsn -> impl/utest/itest` trace chain.
 - [ ] Stop and ask the user for a review of the requirements and design.
 - [ ] Add and export `CsvExportFormatOptions` (`columnSeparator`, `columnDelimiter`, `rowSeparator`, `encoding`, `null`, `withColumnNames`).

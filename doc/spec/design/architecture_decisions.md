@@ -87,6 +87,37 @@ Needs: impl
 
 Tags: csv-import, nodejs
 
+## CSV Export
+
+### Use Exasol Export Tunnel
+
+The CSV export implementation streams data from Exasol to a new local file through an export tunnel instead of buffering the complete result in memory.
+
+Considered alternatives:
+
+1. Read the exported result through the WebSocket SQL protocol.
+2. Buffer the complete exported CSV in memory before writing.
+3. Stream the export through Exasol's export tunnel.
+
+#### Stream CSV Through Export Tunnel
+`dsn~decision-stream-csv-through-export-tunnel~1`
+
+The system exports local CSV files by opening an Exasol export tunnel and streaming Exasol's content-length-delimited HTTP request body into a newly reserved file.
+
+Rationale:
+
+Streaming supports larger files and matches Exasol's `EXPORT ... INTO CSV AT ... FILE ...` mechanism while avoiding an overwrite race at the local destination.
+
+Covers:
+- `scn~csv-export-table-succeeds~1`
+- `scn~csv-export-query-succeeds~1`
+- `scn~csv-export-rejects-existing-destination~1`
+- `constr~node-only-csv-export~1`
+
+Needs: impl
+
+Tags: csv-export, nodejs
+
 ## Packaging
 
 ### Build CommonJS and ES Module Outputs
