@@ -97,7 +97,7 @@ async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: Htt
   }
 
   if (remaining !== undefined) {
-    throw new ExaErrorBuilder('E-EDJS-28')
+    throw new ExaErrorBuilder('E-EDJS-29')
       .message(`Socket closed before receiving complete HTTP request body. Expected ${remaining} more bytes.`)
       .error();
   }

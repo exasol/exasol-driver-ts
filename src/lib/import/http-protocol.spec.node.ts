@@ -119,7 +119,7 @@ describe('http-protocol', () => {
       const bodyPromise = receiveHttpRequestBody(socket as never, request, destination);
       socket.push(null);
 
-      await expect(bodyPromise).rejects.toThrow("E-EDJS-28: Failed to receive HTTP request body from tunnel: 'E-EDJS-28: Socket closed before receiving complete HTTP request body. Expected 2 more bytes.'.");
+      await expect(bodyPromise).rejects.toThrow("E-EDJS-28: Failed to receive HTTP request body from tunnel: 'E-EDJS-29: Socket closed before receiving complete HTTP request body. Expected 2 more bytes.'.");
     });
 
     it('should reject when the destination fails', async () => {
