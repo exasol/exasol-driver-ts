@@ -43,14 +43,7 @@ describe('HTTP tunnel protocol', () => {
     });
     const server = await startServer((socket) => {
       void (async () => {
-        const request = await readHttpRequest(socket);
-        const destination = new PassThrough();
-        const received: Buffer[] = [];
-        destination.on('data', (chunk: Buffer) => received.push(chunk));
-
-        await receiveHttpRequestBody(socket, request, destination);
-
-        expect(Buffer.concat(received).toString()).toBe('hello world');
+        expect(await receiveRequestBody(socket)).toBe('hello world');
         socket.end('HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n');
         resolveTransfer();
       })().catch(rejectTransfer);
@@ -78,14 +71,7 @@ describe('HTTP tunnel protocol', () => {
     });
     const server = await startServer((socket) => {
       void (async () => {
-        const request = await readHttpRequest(socket);
-        const destination = new PassThrough();
-        const received: Buffer[] = [];
-        destination.on('data', (chunk: Buffer) => received.push(chunk));
-
-        await receiveHttpRequestBody(socket, request, destination);
-
-        expect(Buffer.concat(received).toString()).toBe('hello world');
+        expect(await receiveRequestBody(socket)).toBe('hello world');
         socket.end('HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n');
         resolveTransfer();
       })().catch(rejectTransfer);
@@ -211,6 +197,15 @@ async function readSocket(socket: net.Socket): Promise<string> {
   socket.on('data', (chunk: Buffer) => chunks.push(chunk));
   await once(socket, 'end');
   return Buffer.concat(chunks).toString();
+}
+
+async function receiveRequestBody(socket: net.Socket): Promise<string> {
+  const request = await readHttpRequest(socket);
+  const destination = new PassThrough();
+  const received: Buffer[] = [];
+  destination.on('data', (chunk: Buffer) => received.push(chunk));
+  await receiveHttpRequestBody(socket, request, destination);
+  return Buffer.concat(received).toString();
 }
 
 async function closeServer(server: net.Server): Promise<void> {

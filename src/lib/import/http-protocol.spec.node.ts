@@ -68,13 +68,7 @@ describe('http-protocol', () => {
   describe('receiveHttpRequestBody', () => {
     it('should stream initial and subsequent body bytes until content length is reached', async () => {
       const socket = new PassThrough();
-      const received: Buffer[] = [];
-      const destination = new Writable({
-        write(chunk, _encoding, callback) {
-          received.push(Buffer.from(chunk));
-          callback();
-        },
-      });
+      const { destination, getReceivedBody } = createBodyDestination();
       const request: HttpRequest = {
         headers: 'PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n',
         initialBody: Buffer.from('hel'),
@@ -84,7 +78,7 @@ describe('http-protocol', () => {
       socket.push('lo');
 
       await bodyPromise;
-      expect(Buffer.concat(received).toString()).toBe('hello');
+      expect(getReceivedBody()).toBe('hello');
     });
 
     it('should resume the socket after receiving a fully buffered body', async () => {
@@ -103,13 +97,7 @@ describe('http-protocol', () => {
 
     it('should stream body bytes until the socket ends when content length is absent', async () => {
       const socket = new PassThrough();
-      const received: Buffer[] = [];
-      const destination = new Writable({
-        write(chunk, _encoding, callback) {
-          received.push(Buffer.from(chunk));
-          callback();
-        },
-      });
+      const { destination, getReceivedBody } = createBodyDestination();
       const request: HttpRequest = {
         headers: 'PUT /001.csv HTTP/1.1\r\n\r\n',
         initialBody: Buffer.from('hel'),
@@ -120,18 +108,12 @@ describe('http-protocol', () => {
       socket.push(null);
 
       await bodyPromise;
-      expect(Buffer.concat(received).toString()).toBe('hello');
+      expect(getReceivedBody()).toBe('hello');
     });
 
     it('should decode a complete chunked body received with the headers without waiting for socket closure', async () => {
       const socket = new PassThrough();
-      const received: Buffer[] = [];
-      const destination = new Writable({
-        write(chunk, _encoding, callback) {
-          received.push(Buffer.from(chunk));
-          callback();
-        },
-      });
+      const { destination, getReceivedBody } = createBodyDestination();
       const request: HttpRequest = {
         headers: 'PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n',
         initialBody: Buffer.from('5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n'),
@@ -139,15 +121,13 @@ describe('http-protocol', () => {
 
       await receiveHttpRequestBody(socket as never, request, destination);
 
-      expect(Buffer.concat(received).toString()).toBe('hello world');
+      expect(getReceivedBody()).toBe('hello world');
       expect(socket.isPaused()).toBe(false);
     });
 
     it('should decode chunk framing split across socket reads', async () => {
       const socket = new PassThrough();
-      const destination = new PassThrough();
-      const received: Buffer[] = [];
-      destination.on('data', (chunk: Buffer) => received.push(chunk));
+      const { destination, getReceivedBody } = createBodyDestination();
       const request: HttpRequest = {
         headers: 'PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: gzip, chunked\r\n\r\n',
         initialBody: Buffer.from('5\r'),
@@ -159,7 +139,7 @@ describe('http-protocol', () => {
       socket.push('\r\n');
 
       await bodyPromise;
-      expect(Buffer.concat(received).toString()).toBe('hello ');
+      expect(getReceivedBody()).toBe('hello ');
     });
 
     it('should reject when the socket closes before the declared content length', async () => {
@@ -271,3 +251,14 @@ describe('http-protocol', () => {
     });
   });
 });
+
+function createBodyDestination(): { destination: Writable; getReceivedBody: () => string } {
+  const received: Buffer[] = [];
+  const destination = new Writable({
+    write(chunk, _encoding, callback) {
+      received.push(Buffer.from(chunk));
+      callback();
+    },
+  });
+  return { destination, getReceivedBody: () => Buffer.concat(received).toString() };
+}
