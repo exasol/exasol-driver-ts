@@ -161,7 +161,10 @@ export class ExasolPool implements AsyncDisposable {
 
   public async [Symbol.asyncDispose](): Promise<void> {
     // [impl->dsn~runtime-pool-async-disposal~1]
-    await this.drain();
-    await this.clear();
+    try {
+      await this.drain();
+    } finally {
+      await this.clear();
+    }
   }
 }
