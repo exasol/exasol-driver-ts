@@ -34,7 +34,7 @@ describe('HTTP tunnel protocol', () => {
     }
   });
 
-  it('streams an HTTP request body received over TCP into a writable destination', async () => {
+  it('streams an HTTP request body and returns a response without the client half-closing', async () => {
     let resolveTransfer!: () => void;
     let rejectTransfer!: (error: unknown) => void;
     const transferCompleted = new Promise<void>((resolve, reject) => {
@@ -59,7 +59,7 @@ describe('HTTP tunnel protocol', () => {
     try {
       const client = await connect(server.port);
       client.write('PUT /001.csv HTTP/1.1\r\nContent-Length: 11\r\n\r\nhello');
-      client.end(' world');
+      client.write(' world');
 
       await transferCompleted;
       const response = await readSocket(client);

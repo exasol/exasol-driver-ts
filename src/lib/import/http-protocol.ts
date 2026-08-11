@@ -87,7 +87,7 @@ async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: Htt
     return;
   }
 
-  const bodyIterator = socket[Symbol.asyncIterator]();
+  const bodyIterator = socket.iterator({ destroyOnReturn: false });
   socket.resume();
   for await (const chunk of bodyIterator) {
     const body = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
