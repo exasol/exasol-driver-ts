@@ -87,6 +87,20 @@ describe('http-protocol', () => {
       expect(Buffer.concat(received).toString()).toBe('hello');
     });
 
+    it('should resume the socket after receiving a fully buffered body', async () => {
+      const socket = new PassThrough();
+      const destination = new PassThrough();
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n',
+        initialBody: Buffer.from('hello'),
+      };
+
+      socket.pause();
+      await receiveHttpRequestBody(socket as never, request, destination);
+
+      expect(socket.isPaused()).toBe(false);
+    });
+
     it('should stream body bytes until the socket ends when content length is absent', async () => {
       const socket = new PassThrough();
       const received: Buffer[] = [];

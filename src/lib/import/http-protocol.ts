@@ -71,6 +71,8 @@ export async function receiveHttpRequestBody(
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new ExaErrorBuilder('E-EDJS-28').message('Failed to receive HTTP request body from tunnel: {{reason}}.', reason).error();
+  } finally {
+    socket.resume();
   }
 }
 
@@ -88,7 +90,6 @@ async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: Htt
   }
 
   const bodyIterator = socket.iterator({ destroyOnReturn: false });
-  socket.resume();
   for await (const chunk of bodyIterator) {
     const body = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     const nextBody = takeBodyBytes(body, remaining);
