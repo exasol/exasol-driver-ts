@@ -12,7 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
@@ -23,6 +22,25 @@ jobs:
       - run: npm run typecheck
       - run: npm run audit
       - run: npm run build
+
+  trace-requirements:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+          cache: 'npm'
+      - name: Cache OFT JARs
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/
+          key: oft-${{ hashFiles('.github/workflows/oftw.sh') }}
+          restore-keys: oft
       - run: npm run trace
 
   node-compatibility-tests:
@@ -37,7 +55,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
@@ -61,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Required for SonarCloud to work properly
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
@@ -82,6 +99,6 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: read
-    needs: [quality-gates, node-compatibility-tests, integration-tests]
+    needs: [quality-gates, trace-requirements, node-compatibility-tests, integration-tests]
     steps:
       - run: echo "All checks passed, build successful!"
