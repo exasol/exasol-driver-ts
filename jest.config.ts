@@ -5,6 +5,7 @@ const config: Config = {
     {
       displayName: 'unit-dom',
       testEnvironment: 'jsdom',
+      setupFiles: ['<rootDir>/jest.setup.ts'],
       testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/src/**/*.spec.dom.ts'],
       transform: {
         '^.+\\.[tj]s$': [
@@ -20,6 +21,7 @@ const config: Config = {
     {
       displayName: 'unit-node',
       testEnvironment: 'node',
+      setupFiles: ['<rootDir>/jest.setup.ts'],
       testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/src/**/*.spec.node.ts'],
       transform: {
         '^.+\\.[tj]s$': [
@@ -35,6 +37,7 @@ const config: Config = {
     {
       displayName: 'itest-node',
       testEnvironment: 'node',
+      setupFiles: ['<rootDir>/jest.setup.ts'],
       testMatch: ['<rootDir>/integration-test/node/**/*.spec.ts'],
       transform: {
         '^.+\\.[tj]s$': [
@@ -63,7 +66,7 @@ const config: Config = {
       },
       transformIgnorePatterns: ['node_modules/(?!.*.mjs$)'],
       moduleFileExtensions: ['ts', 'js', 'json'],
-      setupFiles: ['<rootDir>/jest.setup.itest-dom.ts'],
+      setupFiles: ['<rootDir>/jest.setup.ts', '<rootDir>/jest.setup.itest-dom.ts'],
     },
   ],
   displayName: 'exasol-driver',
