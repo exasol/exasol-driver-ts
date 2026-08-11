@@ -90,4 +90,4 @@ Currently we release this project by hand.
 - Merge Pull Request to `main`
 - Make a [new release](https://github.com/exasol/exasol-driver-ts/releases/new) on GitHub
   - Use content from the changelog file as release description
-  - This will trigger the [release workflow](../../.github/workflows/release.yml) and publish to [npmjs.com](https://www.npmjs.com/package/@exasol/extension-manager-interface)
+  - This will trigger the [release workflow](../../.github/workflows/release.yml) and publish to [npmjs.com](https://www.npmjs.com/package/@exasol/exasol-driver-ts)
