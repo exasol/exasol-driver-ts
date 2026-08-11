@@ -25,3 +25,7 @@ Keep `doc/user_guide/user_guide.md` reader-focused: do not add complete OpenFast
 ```
 
 When adding such a `uman` coverage tag, include `uman` in the scenario's `Needs` list alongside its design coverage, and list `uman` in the quality-requirements artifact hierarchy.
+
+## Error Codes
+
+Every new error created with `ExaErrorBuilder` must use a unique `E-EDJS-<number>` code. Before assigning a code, search the repository for existing `E-EDJS-` identifiers. Allocate new codes monotonically after the highest code already in use; do not reuse historical gaps.

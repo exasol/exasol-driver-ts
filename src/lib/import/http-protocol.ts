@@ -6,19 +6,31 @@ import { ExaErrorBuilder } from '../errors/error-reporting';
 // [impl->dsn~runtime-csv-import-file-stream~1]
 const HEADER_TERMINATOR = '\r\n\r\n';
 
+export interface HttpRequest {
+  headers: string;
+  initialBody: Buffer;
+}
+
 /**
- * Waits for and reads the HTTP GET request from Exasol through the tunnel.
- * Returns when headers are fully received (reads until \r\n\r\n).
+ * Waits for and reads an HTTP request from Exasol through the tunnel.
+ * Returns when headers are fully received and retains body bytes that arrived
+ * in the same socket chunk.
  */
-export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<string> {
+export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<HttpRequest> {
   return new Promise((resolve, reject) => {
-    let buffer = '';
+    let buffer = Buffer.alloc(0);
 
     function onData(chunk: Buffer) {
-      buffer += chunk.toString();
-      if (buffer.includes(HEADER_TERMINATOR)) {
+      buffer = Buffer.concat([buffer, chunk]);
+      const headerEnd = buffer.indexOf(HEADER_TERMINATOR);
+      if (headerEnd !== -1) {
+        socket.pause();
         cleanup();
-        resolve(buffer);
+        const bodyStart = headerEnd + HEADER_TERMINATOR.length;
+        resolve({
+          headers: buffer.subarray(0, bodyStart).toString(),
+          initialBody: buffer.subarray(bodyStart),
+        });
       }
     }
 
@@ -42,6 +54,73 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<str
     socket.on('end', onEnd);
     socket.on('error', onError);
   });
+}
+
+/**
+ * Streams an HTTP request body into a writable destination. If the request
+ * specifies a content length, the stream ends after exactly that many bytes
+ * without waiting for the tunnel connection to close.
+ */
+export async function receiveHttpRequestBody(
+  socket: net.Socket | tls.TLSSocket,
+  request: HttpRequest,
+  destination: stream.Writable,
+): Promise<void> {
+  try {
+    await stream.promises.pipeline(stream.Readable.from(readRequestBody(socket, request)), destination);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new ExaErrorBuilder('E-EDJS-28').message('Failed to receive HTTP request body from tunnel: {{reason}}.', reason).error();
+  } finally {
+    socket.resume();
+  }
+}
+
+async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: HttpRequest): AsyncGenerator<Buffer> {
+  let remaining = getContentLength(request.headers);
+
+  if (request.initialBody.length > 0) {
+    const initialBody = takeBodyBytes(request.initialBody, remaining);
+    yield initialBody.bytes;
+    remaining = initialBody.remaining;
+  }
+
+  if (remaining === 0) {
+    return;
+  }
+
+  const bodyIterator = socket.iterator({ destroyOnReturn: false });
+  for await (const chunk of bodyIterator) {
+    const body = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    const nextBody = takeBodyBytes(body, remaining);
+    yield nextBody.bytes;
+    remaining = nextBody.remaining;
+    if (remaining === 0) {
+      return;
+    }
+  }
+
+  if (remaining !== undefined) {
+    throw new ExaErrorBuilder('E-EDJS-29')
+      .message(`Socket closed before receiving complete HTTP request body. Expected ${remaining} more bytes.`)
+      .error();
+  }
+}
+
+
+function getContentLength(headers: string): number | undefined {
+  const contentLength = /^content-length:\s*(\d+)\s*$/im.exec(headers)?.[1];
+  return contentLength === undefined ? undefined : Number(contentLength);
+}
+
+function takeBodyBytes(bytes: Buffer, remaining: number | undefined): { bytes: Buffer; remaining: number | undefined } {
+  if (remaining === undefined) {
+    return { bytes, remaining };
+  }
+  if (bytes.length > remaining) {
+    throw new Error(`Received more HTTP request body bytes than declared by Content-Length (${remaining}).`);
+  }
+  return { bytes, remaining: remaining - bytes.length };
 }
 
 /**

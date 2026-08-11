@@ -1,5 +1,5 @@
-import { PassThrough } from 'node:stream';
-import { readHttpRequest, sendChunkedResponse } from './http-protocol';
+import { PassThrough, Writable } from 'node:stream';
+import { HttpRequest, readHttpRequest, receiveHttpRequestBody, sendChunkedResponse } from './http-protocol';
 
 // [utest->dsn~runtime-csv-import-file-stream~1]
 describe('http-protocol', () => {
@@ -11,7 +11,11 @@ describe('http-protocol', () => {
       socket.push('GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n');
 
       const result = await requestPromise;
-      expect(result).toBe('GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n');
+      expect(result).toEqual({
+        headers: 'GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n',
+        initialBody: Buffer.alloc(0),
+      });
+      expect(socket.isPaused()).toBe(true);
     });
 
     it('should accumulate data arriving in multiple chunks', async () => {
@@ -23,7 +27,22 @@ describe('http-protocol', () => {
       socket.push('\r\n');
 
       const result = await requestPromise;
-      expect(result).toBe('GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n');
+      expect(result).toEqual({
+        headers: 'GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n',
+        initialBody: Buffer.alloc(0),
+      });
+    });
+
+    it('should retain request body bytes received together with headers', async () => {
+      const socket = new PassThrough();
+      const requestPromise = readHttpRequest(socket as never);
+
+      socket.push('PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\nhello');
+
+      await expect(requestPromise).resolves.toEqual({
+        headers: 'PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n',
+        initialBody: Buffer.from('hello'),
+      });
     });
 
     it('should reject with E-EDJS-17 if socket emits error', async () => {
@@ -32,7 +51,7 @@ describe('http-protocol', () => {
 
       socket.destroy(new Error('connection reset'));
 
-      await expect(requestPromise).rejects.toThrow('E-EDJS-17');
+      await expect(requestPromise).rejects.toThrow("E-EDJS-17: Failed to read HTTP request from tunnel: 'connection reset'.");
     });
 
     it('should reject with E-EDJS-13 if socket closes before headers are complete', async () => {
@@ -43,6 +62,84 @@ describe('http-protocol', () => {
       socket.push(null);
 
       await expect(requestPromise).rejects.toThrow('E-EDJS-13');
+    });
+  });
+
+  describe('receiveHttpRequestBody', () => {
+    it('should stream initial and subsequent body bytes until content length is reached', async () => {
+      const socket = new PassThrough();
+      const { destination, getReceivedBody } = createBodyDestination();
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n',
+        initialBody: Buffer.from('hel'),
+      };
+
+      const bodyPromise = receiveHttpRequestBody(socket as never, request, destination);
+      socket.push('lo');
+
+      await bodyPromise;
+      expect(getReceivedBody()).toBe('hello');
+    });
+
+    it('should resume the socket after receiving a fully buffered body', async () => {
+      const socket = new PassThrough();
+      const destination = new PassThrough();
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n',
+        initialBody: Buffer.from('hello'),
+      };
+
+      socket.pause();
+      await receiveHttpRequestBody(socket as never, request, destination);
+
+      expect(socket.isPaused()).toBe(false);
+    });
+
+    it('should stream body bytes until the socket ends when content length is absent', async () => {
+      const socket = new PassThrough();
+      const { destination, getReceivedBody } = createBodyDestination();
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\n\r\n',
+        initialBody: Buffer.from('hel'),
+      };
+
+      const bodyPromise = receiveHttpRequestBody(socket as never, request, destination);
+      socket.push('lo');
+      socket.push(null);
+
+      await bodyPromise;
+      expect(getReceivedBody()).toBe('hello');
+    });
+
+    it('should reject when the socket closes before the declared content length', async () => {
+      const socket = new PassThrough();
+      const destination = new PassThrough();
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n',
+        initialBody: Buffer.from('hel'),
+      };
+
+      const bodyPromise = receiveHttpRequestBody(socket as never, request, destination);
+      socket.push(null);
+
+      await expect(bodyPromise).rejects.toThrow("E-EDJS-28: Failed to receive HTTP request body from tunnel: 'E-EDJS-29: Socket closed before receiving complete HTTP request body. Expected 2 more bytes.'.");
+    });
+
+    it('should reject when the destination fails', async () => {
+      const socket = new PassThrough();
+      const destination = new Writable({
+        write(_chunk, _encoding, callback) {
+          callback(new Error('disk full'));
+        },
+      });
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n',
+        initialBody: Buffer.from('hello'),
+      };
+
+      await expect(receiveHttpRequestBody(socket as never, request, destination)).rejects.toThrow(
+        "E-EDJS-28: Failed to receive HTTP request body from tunnel: 'disk full'.",
+      );
     });
   });
 
@@ -123,3 +220,14 @@ describe('http-protocol', () => {
     });
   });
 });
+
+function createBodyDestination(): { destination: Writable; getReceivedBody: () => string } {
+  const received: Buffer[] = [];
+  const destination = new Writable({
+    write(chunk, _encoding, callback) {
+      received.push(Buffer.from(chunk));
+      callback();
+    },
+  });
+  return { destination, getReceivedBody: () => Buffer.concat(received).toString() };
+}

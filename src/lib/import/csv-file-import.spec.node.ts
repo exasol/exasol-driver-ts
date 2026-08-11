@@ -93,7 +93,10 @@ describe('csv-file-import', () => {
       });
       mockedGenerateAdHocCertificate.mockReturnValue({ key: {} as never, cert: {} as never, fingerprint: 'fingerprint' });
       mockedWrapWithTls.mockReturnValue(secureSocket as never);
-      mockedReadHttpRequest.mockResolvedValue('GET /001.csv HTTP/1.1\r\n\r\n');
+      mockedReadHttpRequest.mockResolvedValue({
+        headers: 'GET /001.csv HTTP/1.1\r\n\r\n',
+        initialBody: Buffer.alloc(0),
+      });
       mockedSendChunkedResponse.mockImplementation(() => new Promise<void>(() => undefined));
       mockedCreateReadStream.mockReturnValue(fileStream as never);
 
