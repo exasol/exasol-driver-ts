@@ -3,6 +3,7 @@ import { ExaWebsocket } from './connection';
 import { createMockWebsocketFactory, MockWebsocketFactory } from './mock-socket';
 import { ExasolDriver } from './sql-client';
 import { IExasolDriver } from './sql-client.interface';
+import { itWithAsyncDispose } from '../../test/test-utils';
 
 describe('sqlClient', () => {
   let mockSocketFactory: MockWebsocketFactory;
@@ -27,7 +28,7 @@ describe('sqlClient', () => {
     });
 
     // [utest->dsn~runtime-driver-async-disposal~1]
-    it('should close the connection when disposed with await using', async () => {
+    itWithAsyncDispose('should close the connection when disposed with await using', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
