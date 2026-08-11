@@ -14,7 +14,7 @@ await driver.connect();
 // The driver is closed automatically when this scope exits.
 ```
 
-### Beaking Changes
+### Breaking Changes
 
 * TypeScript upgraded from 5.9.3 to 7.0.2
 * TypeScript configuration:
