@@ -1,5 +1,4 @@
 import { Statement } from './statement';
-import { itWithAsyncDispose } from '../../test/test-utils';
 import { Connection } from './connection';
 import { ConnectionPool } from './pool/pool';
 import { ExecutePreparedStatementCommand } from './commands';
@@ -95,7 +94,7 @@ describe('statement', () => {
   });
 
   // [utest->dsn~runtime-prepared-statement-async-disposal~1]
-  itWithAsyncDispose('should close the prepared statement when disposed with await using', async () => {
+  it('should close the prepared statement when disposed with await using', async () => {
     const sendCommand = jest.fn().mockResolvedValue({});
     const { statement, connection, pool } = createStatement(sendCommand);
 
