@@ -69,6 +69,40 @@ describe('HTTP tunnel protocol', () => {
     }
   });
 
+  it('decodes a chunked HTTP request received with its headers and responds while the client stays open', async () => {
+    let resolveTransfer!: () => void;
+    let rejectTransfer!: (error: unknown) => void;
+    const transferCompleted = new Promise<void>((resolve, reject) => {
+      resolveTransfer = resolve;
+      rejectTransfer = reject;
+    });
+    const server = await startServer((socket) => {
+      void (async () => {
+        const request = await readHttpRequest(socket);
+        const destination = new PassThrough();
+        const received: Buffer[] = [];
+        destination.on('data', (chunk: Buffer) => received.push(chunk));
+
+        await receiveHttpRequestBody(socket, request, destination);
+
+        expect(Buffer.concat(received).toString()).toBe('hello world');
+        socket.end('HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n');
+        resolveTransfer();
+      })().catch(rejectTransfer);
+    });
+
+    try {
+      const client = await connect(server.port);
+      client.write('PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\nB\r\nhello world\r\n0\r\n\r\n');
+
+      await transferCompleted;
+      const response = await readSocket(client);
+      expect(response).toBe('HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n');
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   it('retains a body sent after the header handoff until the body reader starts', async () => {
     let resolveHeadersRead!: () => void;
     let rejectHeadersRead!: (error: unknown) => void;

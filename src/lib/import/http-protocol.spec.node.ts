@@ -123,6 +123,45 @@ describe('http-protocol', () => {
       expect(Buffer.concat(received).toString()).toBe('hello');
     });
 
+    it('should decode a complete chunked body received with the headers without waiting for socket closure', async () => {
+      const socket = new PassThrough();
+      const received: Buffer[] = [];
+      const destination = new Writable({
+        write(chunk, _encoding, callback) {
+          received.push(Buffer.from(chunk));
+          callback();
+        },
+      });
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n',
+        initialBody: Buffer.from('5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n'),
+      };
+
+      await receiveHttpRequestBody(socket as never, request, destination);
+
+      expect(Buffer.concat(received).toString()).toBe('hello world');
+      expect(socket.isPaused()).toBe(false);
+    });
+
+    it('should decode chunk framing split across socket reads', async () => {
+      const socket = new PassThrough();
+      const destination = new PassThrough();
+      const received: Buffer[] = [];
+      destination.on('data', (chunk: Buffer) => received.push(chunk));
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: gzip, chunked\r\n\r\n',
+        initialBody: Buffer.from('5\r'),
+      };
+
+      const bodyPromise = receiveHttpRequestBody(socket as never, request, destination);
+      socket.push('\nhello\r\n1');
+      socket.push('\r\n \r\n0\r\n');
+      socket.push('\r\n');
+
+      await bodyPromise;
+      expect(Buffer.concat(received).toString()).toBe('hello ');
+    });
+
     it('should reject when the socket closes before the declared content length', async () => {
       const socket = new PassThrough();
       const destination = new PassThrough();
