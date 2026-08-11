@@ -39,6 +39,38 @@ await driver.query("SELECT * FROM EXA_ALL_SCHEMAS");
 await driver.close();
 ```
 
+#### Connecting With a Self-signed Certificate
+
+For an encrypted Exasol connection that uses a self-signed certificate, configure `ws` with that certificate as a trusted certificate authority (CA). Keep certificate validation enabled and disable hostname verification only when the certificate's hostname does not match the host used for the connection.
+
+```ts
+import { readFile } from 'node:fs/promises';
+import { ExasolDriver, ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { WebSocket } from 'ws';
+
+const ca = await readFile('./exasol-ca.pem', 'utf8');
+
+const driver = new ExasolDriver(
+  (url) =>
+    new WebSocket(url, {
+      rejectUnauthorized: true,
+      ca,
+      // Required only if the certificate hostname differs from `host` below.
+      checkServerIdentity: () => false
+    }) as ExaWebsocket,
+  {
+    host: 'localhost',
+    port: 8563,
+    user: 'sys',
+    password: 'exasol'
+  }
+);
+
+await driver.connect();
+```
+
+Do not use `rejectUnauthorized: false`: it accepts any server certificate. When the certificate hostname matches the configured host, omit `checkServerIdentity` so that Node verifies it as well.
+
 ### Browser
 
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
