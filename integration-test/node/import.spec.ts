@@ -61,6 +61,20 @@ describeImportWhenSupported("Node Import", () => {
   }
 
   describe('importFromCsvFile', () => {
+    // [itest->dsn~runtime-csv-import-cancellation~1]
+    it('cancels an in-flight CSV import', async () => {
+      await driver.execute(`CREATE SCHEMA ${schemaName}`);
+      const tableName = `${schemaName}.TEST_TABLE`;
+      await driver.execute(`CREATE TABLE ${tableName} (X VARCHAR(2000000))`);
+
+      const controller = new AbortController();
+      const importPromise = driver.importFromCsvFile(tableName, '/dev/zero', undefined, { signal: controller.signal });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      controller.abort();
+
+      await expect(importPromise).rejects.toThrow("E-EDJS-20: The CSV import was aborted.");
+    });
+
     it('fails when target table does not exist', async () => {
       const tableName = 'MISSING_TABLE';
       const csvContent = '1,one\n2,two\n3,three';

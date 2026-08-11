@@ -262,6 +262,23 @@ await driver.close();
 ```
 
 The optional `csvOptions` argument can be used to configure the CSV format, for example the column separator, row separator, header rows to skip, trimming mode, encoding, or additional NULL representation.
+#### Cancelling a Running Import
+<!-- [uman->scn~csv-import-is-cancelled~1] -->
+
+To cancel an in-flight import, pass an `AbortSignal` as the fourth argument. Aborting the signal stops the file transfer, closes the import tunnel, and rejects the import promise with an `AbortError`.
+
+```ts
+const controller = new AbortController();
+const importPromise = driver.importFromCsvFile(
+  'MY_SCHEMA.MY_TABLE',
+  '/absolute/path/to/data.csv',
+  undefined,
+  { signal: controller.signal },
+);
+
+controller.abort();
+await importPromise;
+```
 
 #### Available CSV Options
 

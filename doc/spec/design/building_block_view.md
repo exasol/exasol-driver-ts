@@ -44,6 +44,7 @@ Covers:
 - `scn~raw-response-requested~1`
 - `scn~prepared-statement-execution~1`
 - `scn~cancel-active-work~1`
+- `scn~csv-import-is-cancelled~1`
 - `scn~session-attributes-sent-during-login~1`
 - `scn~async-dispose-driver~1`
 - `scn~async-dispose-prepared-statement~1`
@@ -88,6 +89,7 @@ Covers:
 - `scn~csv-import-rejects-missing-file~1`
 - `scn~csv-import-rejects-missing-target-table~1`
 - `scn~csv-import-applies-format-options~1`
+- `scn~csv-import-is-cancelled~1`
 
 ### Runtime Packaging
 `dsn~runtime-packaging~1`

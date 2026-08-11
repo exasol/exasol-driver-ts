@@ -5,7 +5,7 @@
 import { SQLQueriesResponse, SQLResponse } from './types';
 import { CommandsNoResult, Attributes, Commands } from './commands';
 import { QueryResult } from './query-result';
-import { CsvFormatOptions } from './import/types';
+import { CsvFormatOptions, CsvImportOptions } from './import/types';
 
 export type Cancelable = () => void;
 
@@ -136,9 +136,10 @@ export interface IExasolDriver extends AsyncDisposable {
    * @param tableName Target table name (optionally schema-qualified)
    * @param filePath Path to the local CSV file
    * @param csvOptions Optional CSV format options
+   * @param options Optional import control options
    * @returns Number of rows imported
    */
-  importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions): Promise<number>;
+  importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions, options?: CsvImportOptions): Promise<number>;
 }
 
 export interface IStatement extends AsyncDisposable {
