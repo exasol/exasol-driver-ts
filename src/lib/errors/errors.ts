@@ -17,7 +17,11 @@ const getSocketErrorMessage = (cause: unknown): string => {
   if (cause instanceof Event) {
     return `Event type ${cause.type}: ${JSON.stringify(cause)}`;
   }
-  return JSON.stringify(cause) ?? String(cause);
+  try {
+    return JSON.stringify(cause) ?? String(cause);
+  } catch {
+    return String(cause);
+  }
 };
 export const ErrClosed = new ExaErrorBuilder('E-EDJS-2').message('Connection was closed.').error();
 export const ErrMalformedData = new ExaErrorBuilder('E-EDJS-3').message('Malformed result.').error();
