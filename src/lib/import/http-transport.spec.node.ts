@@ -40,6 +40,41 @@ describe('http-transport', () => {
   });
 
   describe('createTunnel', () => {
+    // [utest->dsn~runtime-csv-import-cancellation~1]
+    it('should reject and destroy the socket when the signal aborts during the handshake', async () => {
+      const controller = new AbortController();
+      const mockSocket = {
+        on: jest.fn(),
+        once: jest.fn(),
+        write: jest.fn(),
+        destroy: jest.fn(),
+      } as unknown as net.Socket;
+
+      (net.createConnection as jest.Mock).mockReturnValue(mockSocket);
+
+      const tunnelPromise = createTunnel('192.168.1.10', 8563, controller.signal);
+      controller.abort();
+
+      await expect(tunnelPromise).rejects.toThrow(new DOMException('E-EDJS-21: The CSV import was aborted.', 'AbortError'));
+      expect(mockSocket.destroy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reject and destroy the socket for an already-aborted signal', async () => {
+      const controller = new AbortController();
+      const mockSocket = {
+        on: jest.fn(),
+        once: jest.fn(),
+        write: jest.fn(),
+        destroy: jest.fn(),
+      } as unknown as net.Socket;
+      controller.abort();
+
+      (net.createConnection as jest.Mock).mockReturnValue(mockSocket);
+
+      await expect(createTunnel('192.168.1.10', 8563, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+      expect(mockSocket.destroy).toHaveBeenCalledTimes(1);
+    });
+
     it('should reject with descriptive error and close socket on connection error', async () => {
       const mockSocket = {
         on: jest.fn(),

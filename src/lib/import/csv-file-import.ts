@@ -63,7 +63,7 @@ export async function importCsvFile({
   }
 
   try {
-    const tunnel = await createTunnel(host, port);
+    const tunnel = await Promise.race([createTunnel(host, port, options?.signal), abortPromise]);
     unencryptedSocket = tunnel.socket;
     throwIfAborted(options?.signal);
 

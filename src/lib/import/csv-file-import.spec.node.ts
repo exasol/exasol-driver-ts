@@ -116,5 +116,26 @@ describe('csv-file-import', () => {
       expect(secureSocket.destroy).toHaveBeenCalled();
       expect(unencryptedSocket.destroy).toHaveBeenCalled();
     });
+
+    // [utest->dsn~runtime-csv-import-cancellation~1]
+    it('should reject promptly when the signal aborts while establishing the tunnel', async () => {
+      const controller = new AbortController();
+      const executeSql = jest.fn();
+      mockedCreateTunnel.mockImplementation(() => new Promise(() => undefined));
+
+      const importPromise = importCsvFile({
+        host: 'localhost',
+        port: 8563,
+        tableName: 'test_table',
+        filePath: 'README.md',
+        executeSql,
+        options: { signal: controller.signal },
+      });
+
+      controller.abort();
+
+      await expect(importPromise).rejects.toThrow("E-EDJS-20: The CSV import was aborted.");
+      expect(executeSql).not.toHaveBeenCalled();
+    });
   });
 });
