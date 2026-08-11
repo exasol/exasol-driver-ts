@@ -20,7 +20,7 @@ export default [
     external: [
       ...Object.keys(pkg.dependencies || {}),
       ...Object.keys(pkg.peerDependencies || {}),
-      'node:fs', 'node:net', 'node:tls', 'node:path',
+      'node:fs', 'node:net', 'node:tls', 'node:path', 'node:stream',
     ],
     plugins: [typescript()],
   },
