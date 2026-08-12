@@ -42,7 +42,7 @@ describe('sqlClient', () => {
   });
 
   describe('query', () => {
-    // [utest->dsn~runtime-query-execution~1]
+    // [utest->dsn~runtime-query-execution~2]
     it('should result set', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
@@ -60,6 +60,7 @@ describe('sqlClient', () => {
       });
     });
 
+    // [utest->scn~configured-fetch-size-used-during-fetch~1]
     it('should use the configured fetch size in fetch commands', async () => {
       driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', fetchSize: 42 });
       const connectPromise = driver.connect();

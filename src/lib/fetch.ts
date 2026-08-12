@@ -34,7 +34,7 @@ export const fetchData = async (
   fetchSizeBytes: number,
   resultSetMaxRows?: number
 ): Promise<SQLResponse<SQLQueriesResponse>> => {
-  // [impl->dsn~runtime-query-execution~1]
+  // [impl->dsn~runtime-query-execution~2]
   const batchResponse = rawData.responseData;
 
   for (let index = 0; index < (batchResponse?.numResults ?? 0); index++) {
@@ -77,7 +77,7 @@ const fetchMoreData = async (
   fetchSizeBytes: number,
   logger: ILogger
 ): Promise<ResultSet> => {
-  // [impl->dsn~runtime-query-execution~1]
+  // [impl->dsn~runtime-query-execution~2]
   logger.debug('[WebSQL]: fetchMoreData:', fetchedRows, expectedRows);
   if (fetchedRows < expectedRows && resultSet.resultSetHandle) {
     await sendFetchCommand(resultSet.resultSetHandle, fetchedRows, connection, fetchSizeBytes).then(async (fetchResponse) => {
@@ -115,6 +115,7 @@ const fetchMoreData = async (
   return resultSet;
 };
 
+// [impl->scn~configured-fetch-size-used-during-fetch~1]
 const sendFetchCommand = async (
   resultSetHandle: number,
   startPosition: number,
