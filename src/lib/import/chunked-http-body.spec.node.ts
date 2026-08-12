@@ -17,19 +17,25 @@ describe('decodeChunkedHttpBody', () => {
 
   it('rejects an invalid chunk size', async () => {
     await expect(readBody(Readable.from([]), Buffer.from('invalid\r\n'))).rejects.toThrow(
-      'Malformed chunked HTTP request body: invalid chunk size.',
+      "E-EDJS-33: Malformed chunked HTTP request body: invalid chunk size 'invalid'.",
     );
   });
 
   it('rejects a missing chunk terminator', async () => {
     await expect(readBody(Readable.from([]), Buffer.from('3\r\nabcxx'))).rejects.toThrow(
-      'Malformed chunked HTTP request body: missing chunk terminator.',
+      'E-EDJS-32: Malformed chunked HTTP request body: missing chunk terminator.',
     );
   });
 
   it('rejects an incomplete body', async () => {
     await expect(readBody(Readable.from([]), Buffer.from('5\r\nabc'))).rejects.toThrow(
-      'Socket closed before receiving complete chunked HTTP request body.',
+      'E-EDJS-34: Socket closed before receiving complete chunked HTTP request body.',
+    );
+  });
+
+  it('rejects incomplete trailers', async () => {
+    await expect(readBody(Readable.from([]), Buffer.from('0\r\nTrailer: value\r\n'))).rejects.toThrow(
+      'E-EDJS-35: Socket closed before receiving complete chunked HTTP request trailers.',
     );
   });
 });
