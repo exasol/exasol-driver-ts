@@ -141,6 +141,28 @@ describe('csv-file-export', () => {
       expect(unencryptedSocket.destroy).toHaveBeenCalled();
       await expect(readFile(destination)).rejects.toMatchObject({ code: 'ENOENT' });
     });
+
+    it('does not cancel SQL after the export query has completed', async () => {
+      const controller = new AbortController();
+      let notifyTransferStarted!: () => void;
+      const transferStarted = new Promise<void>((resolve) => {
+        notifyTransferStarted = resolve;
+      });
+      executeSql.mockResolvedValue(2);
+      mockedReadHttpRequest.mockImplementation(async () => {
+        notifyTransferStarted();
+        return new Promise(() => undefined);
+      });
+
+      const exportPromise = exportFile({ options: { signal: controller.signal } });
+      await transferStarted;
+      await Promise.resolve();
+
+      controller.abort();
+
+      await expect(exportPromise).rejects.toMatchObject({ name: 'AbortError', message: 'E-EDJS-31: The CSV export was aborted.' });
+      expect(cancelSql).not.toHaveBeenCalled();
+    });
   });
 
   it('rejects an existing destination before opening the tunnel', async () => {

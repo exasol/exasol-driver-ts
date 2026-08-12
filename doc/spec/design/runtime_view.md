@@ -326,7 +326,7 @@ Needs: impl, utest, itest
 
 **Given** an in-flight CSV export with an `AbortSignal`
 **When** the signal is aborted
-**Then** the driver destroys the destination write stream and both export-tunnel sockets, sends `abortQuery` for the server-side export once it has started without waiting for its response, removes the newly created destination file, and rejects the export promise with an `AbortError` using `E-EDJS-31`
+**Then** the driver destroys the destination write stream and both export-tunnel sockets, sends `abortQuery` for a still-pending server-side export without waiting for its response, removes the newly created destination file, and rejects the export promise with an `AbortError` using `E-EDJS-31`
 
 Covers:
 - `scn~csv-export-is-cancelled~1`

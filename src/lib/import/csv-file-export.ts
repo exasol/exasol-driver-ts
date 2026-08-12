@@ -38,7 +38,7 @@ class ExportOperation {
   private secureSocket: tls.TLSSocket | undefined;
   private destinationCreated = false;
   private completed = false;
-  private queryStarted = false;
+  private queryPending = false;
   private destinationFilePromise: Promise<fs.promises.FileHandle> | undefined;
 
   public constructor(
@@ -51,7 +51,7 @@ class ExportOperation {
         this.fileStream?.destroy();
         this.secureSocket?.destroy();
         this.unencryptedSocket?.destroy();
-        if (this.queryStarted) {
+        if (this.queryPending) {
           void this.parameters.cancelSql().catch(() => undefined);
         }
         reject(newExportAbortedError());
@@ -94,8 +94,10 @@ class ExportOperation {
       this.parameters.source, tunnel.internalAddress, certificate.fingerprint, this.parameters.csvOptions,
     );
 
-    this.queryStarted = true;
-    const sqlPromise = this.parameters.executeSql(exportSql);
+    this.queryPending = true;
+    const sqlPromise = this.parameters.executeSql(exportSql).finally(() => {
+      this.queryPending = false;
+    });
     const transferPromise = this.transferToDestination();
     const [rowCount] = await Promise.race([Promise.all([sqlPromise, transferPromise]), this.abortPromise]);
     return rowCount;
