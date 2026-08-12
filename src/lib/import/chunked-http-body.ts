@@ -5,63 +5,91 @@ export async function* decodeChunkedHttpBody(
   chunks: AsyncIterable<Buffer | Uint8Array | string>,
   initialBody: Buffer,
 ): AsyncGenerator<Buffer> {
-  let buffer = initialBody;
-  const iterator = chunks[Symbol.asyncIterator]();
-  let remainingChunkBytes: number | undefined;
+  yield* new ChunkedHttpBodyDecoder(chunks[Symbol.asyncIterator](), initialBody).decode();
+}
 
-  while (true) {
-    if (remainingChunkBytes === undefined) {
-      const chunkLength = readChunkLength(buffer);
-      if (chunkLength === undefined) {
-        buffer = await appendNextChunk(iterator, buffer, incompleteChunkedBodyError());
+class ChunkedHttpBodyDecoder {
+  private remainingPayloadLength: number | undefined;
+
+  constructor(
+    private readonly iterator: AsyncIterator<Buffer | Uint8Array | string>,
+    private buffer: Buffer,
+  ) { }
+
+  async *decode(): AsyncGenerator<Buffer> {
+    while (true) {
+      await this.readChunkHeader();
+
+      if (this.remainingPayloadLength === 0) {
+        await this.consumeFinalTrailers();
+        return;
+      }
+
+      yield* this.yieldAvailablePayload();
+
+      if (this.remainingPayloadLength !== undefined && this.remainingPayloadLength > 0) {
         continue;
       }
-      remainingChunkBytes = chunkLength.size;
-      buffer = buffer.subarray(chunkLength.headerLength);
-    }
 
-    if (remainingChunkBytes === 0) {
-      while (!hasCompleteTrailers(buffer)) {
-        buffer = await appendNextChunk(iterator, buffer, incompleteChunkedTrailersError());
-      }
+      await this.consumePayloadTerminator();
+      this.remainingPayloadLength = undefined;
+    }
+  }
+
+  private async readChunkHeader(): Promise<void> {
+    if (this.remainingPayloadLength !== undefined) {
       return;
     }
 
-    if (buffer.length === 0) {
-      buffer = await appendNextChunk(iterator, buffer, incompleteChunkedBodyError());
-      continue;
+    while (true) {
+      const chunkLength = readChunkLength(this.buffer);
+      if (chunkLength !== undefined) {
+        this.remainingPayloadLength = chunkLength.size;
+        this.buffer = this.buffer.subarray(chunkLength.headerLength);
+        return;
+      }
+      await this.appendNextChunk(incompleteChunkedBodyError());
+    }
+  }
+
+  private *yieldAvailablePayload(): Generator<Buffer> {
+    const dataLength = Math.min(this.buffer.length, this.remainingPayloadLength ?? 0);
+    if (dataLength === 0) {
+      return;
     }
 
-    const dataLength = Math.min(buffer.length, remainingChunkBytes);
-    yield buffer.subarray(0, dataLength);
-    buffer = buffer.subarray(dataLength);
-    remainingChunkBytes -= dataLength;
+    yield this.buffer.subarray(0, dataLength);
+    this.buffer = this.buffer.subarray(dataLength);
+    this.remainingPayloadLength! -= dataLength;
+  }
 
-    if (remainingChunkBytes > 0) {
-      continue;
-    }
-
-    while (buffer.length < 2) {
-      buffer = await appendNextChunk(iterator, buffer, incompleteChunkedBodyError());
-    }
-    if (buffer.subarray(0, 2).toString() !== '\r\n') {
+  private async consumePayloadTerminator(): Promise<void> {
+    await this.ensureBuffered(2, incompleteChunkedBodyError());
+    if (this.buffer.subarray(0, 2).toString() !== '\r\n') {
       throw new ExaErrorBuilder('E-EDJS-32').message('Malformed chunked HTTP request body: missing chunk terminator.').error();
     }
-    buffer = buffer.subarray(2);
-    remainingChunkBytes = undefined;
+    this.buffer = this.buffer.subarray(2);
   }
-}
 
-async function appendNextChunk(
-  iterator: AsyncIterator<Buffer | Uint8Array | string>,
-  buffer: Buffer,
-  error: Error,
-): Promise<Buffer> {
-  const next = await iterator.next();
-  if (next.done) {
-    throw error;
+  private async consumeFinalTrailers(): Promise<void> {
+    while (!hasCompleteTrailers(this.buffer)) {
+      await this.appendNextChunk(incompleteChunkedTrailersError());
+    }
   }
-  return Buffer.concat([buffer, Buffer.isBuffer(next.value) ? next.value : Buffer.from(next.value)]);
+
+  private async ensureBuffered(length: number, error: Error): Promise<void> {
+    while (this.buffer.length < length) {
+      await this.appendNextChunk(error);
+    }
+  }
+
+  private async appendNextChunk(error: Error): Promise<void> {
+    const next = await this.iterator.next();
+    if (next.done) {
+      throw error;
+    }
+    this.buffer = Buffer.concat([this.buffer, Buffer.isBuffer(next.value) ? next.value : Buffer.from(next.value)]);
+  }
 }
 
 function readChunkLength(buffer: Buffer): { size: number; headerLength: number } | undefined {
