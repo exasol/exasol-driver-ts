@@ -35,6 +35,9 @@ export async function exportCsvFile({
   let secureSocket: tls.TLSSocket | undefined;
   let destinationCreated = false;
   let completed = false;
+  let rowCount: number | undefined;
+  let exportError: unknown;
+  let cleanupError: unknown;
 
   try {
     const fileHandle = await createDestinationFile(absoluteFilePath);
@@ -53,9 +56,10 @@ export async function exportCsvFile({
         await receiveHttpRequestBody(secureSocket!, request, fileStream!);
         await sendSuccessResponse(secureSocket!);
       });
-    const [rowCount] = await Promise.all([sqlPromise, transferPromise]);
+    [rowCount] = await Promise.all([sqlPromise, transferPromise]);
     completed = true;
-    return rowCount;
+  } catch (error) {
+    exportError = error;
   } finally {
     secureSocket?.destroy();
     unencryptedSocket?.destroy();
@@ -63,9 +67,25 @@ export async function exportCsvFile({
       fileStream.destroy();
     }
     if (destinationCreated && !completed) {
-      await fs.promises.unlink(absoluteFilePath);
+      try {
+        await fs.promises.unlink(absoluteFilePath);
+      } catch (error) {
+        cleanupError = error;
+      }
     }
   }
+
+  if (!completed) {
+    if (cleanupError !== undefined) {
+      throw new AggregateError(
+        [exportError, cleanupError],
+        'CSV export failed and the partial destination file could not be removed.',
+        { cause: exportError },
+      );
+    }
+    throw exportError;
+  }
+  return rowCount!;
 }
 
 function sendSuccessResponse(socket: tls.TLSSocket): Promise<void> {

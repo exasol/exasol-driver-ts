@@ -92,16 +92,21 @@ describe('csv-file-export', () => {
     await expect(readFile(destination, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
-  it('rejects with the cleanup failure when removing a partial export fails', async () => {
+  it('reports both export and cleanup failures when removing a partial export fails', async () => {
+    const exportError = new Error('transfer failed');
     const cleanupError = new Error('cleanup failed');
     const unlink = jest.spyOn(fs.promises, 'unlink').mockRejectedValue(cleanupError);
-    mockedReceiveHttpRequestBody.mockRejectedValue(new Error('transfer failed'));
+    mockedReceiveHttpRequestBody.mockRejectedValue(exportError);
     const destination = join(tempDirectory, 'export.csv');
 
     await expect(exportCsvFile({
       host: 'localhost', port: 8563, source: 'MYTABLE', filePath: destination,
       executeSql: jest.fn().mockResolvedValue(2),
-    })).rejects.toThrow(cleanupError);
+    })).rejects.toMatchObject({
+      message: 'CSV export failed and the partial destination file could not be removed.',
+      cause: exportError,
+      errors: [exportError, cleanupError],
+    });
 
     expect(unlink).toHaveBeenCalledWith(destination);
     await expect(readFile(destination)).resolves.toEqual(Buffer.alloc(0));
