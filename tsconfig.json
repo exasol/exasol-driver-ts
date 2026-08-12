@@ -8,7 +8,8 @@
       "es2016",
       "es2017",
       "es2022",
-      "esnext.disposable"
+      "esnext.disposable",
+      "DOM"
     ],
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -18,16 +19,15 @@
     "experimentalDecorators": true,
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
+    "types": [
+      "jest",
+      "node"
+    ],
     "declaration": true,
     "rootDir": "./src/",
     "outDir": "./dist/"
   },
   "include": [
     "src/**/*.ts"
-  ],
-  "exclude": [
-    "src/**/*.spec.ts",
-    "src/**/*.spec.dom.ts",
-    "src/**/*.spec.node.ts",
   ]
 }

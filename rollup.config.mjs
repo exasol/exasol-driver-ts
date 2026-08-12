@@ -22,6 +22,6 @@ export default [
       ...Object.keys(pkg.peerDependencies || {}),
       'node:fs', 'node:net', 'node:tls', 'node:path', 'node:stream',
     ],
-    plugins: [typescript()],
+    plugins: [typescript({ tsconfig: './tsconfig.build.json' })],
   },
 ];
