@@ -115,6 +115,37 @@ describe('HTTP tunnel protocol', () => {
     }
   });
 
+  // [itest->dsn~runtime-csv-export-chunked-request-stream~1]
+  it('decodes a chunked request body before forwarding data', async () => {
+    let resolveTransferred!: () => void;
+    let rejectTransferred!: (error: unknown) => void;
+    const transferred = new Promise<void>((resolve, reject) => {
+      resolveTransferred = resolve;
+      rejectTransferred = reject;
+    });
+    const server = await startServer((socket) => {
+      void (async () => {
+        const request = await readHttpRequest(socket);
+        const destination = new PassThrough();
+        const received: Buffer[] = [];
+        destination.on('data', (chunk: Buffer) => received.push(chunk));
+        await receiveHttpRequestBody(socket, request, destination);
+        expect(Buffer.concat(received).toString()).toBe('hello');
+        socket.end();
+        resolveTransferred();
+      })().catch(rejectTransferred);
+    });
+
+    try {
+      const client = await connect(server.port);
+      client.end('PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n');
+      await transferred;
+      await once(client, 'close');
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   it('sends a chunked HTTP response over TCP', async () => {
     let resolveResponse!: () => void;
     let rejectResponse!: (error: unknown) => void;

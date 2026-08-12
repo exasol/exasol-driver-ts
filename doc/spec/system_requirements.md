@@ -110,6 +110,13 @@ The driver lets Node.js applications import local CSV files into Exasol tables.
 
 Needs: req
 
+### CSV File Export
+`feat~csv-file-export~1`
+
+The driver lets Node.js applications export Exasol tables or query results to new local CSV files.
+
+Needs: req
+
 ### Secure and Configurable Sessions
 `feat~secure-configurable-sessions~1`
 
@@ -256,6 +263,28 @@ The Node.js application cancels an in-flight CSV file import through an `AbortSi
 
 Covers:
 - `feat~csv-file-import~1`
+
+Needs: scn
+
+### CSV Export
+
+#### Export Local CSV Files
+`req~export-local-csv-files~1`
+
+The Node.js application exports an Exasol table or query result to a new local CSV file and receives the exported row count.
+
+Covers:
+- `feat~csv-file-export~1`
+
+Needs: scn
+
+#### Configure CSV Export Format
+`req~configure-csv-export-format~1`
+
+The Node.js application configures CSV export format options including column separator, column delimiter, row separator, encoding, NULL representation, and column names.
+
+Covers:
+- `feat~csv-file-export~1`
 
 Needs: scn
 
@@ -540,6 +569,68 @@ Covers:
 - `req~cancel-csv-file-import~1`
 
 Needs: dsn, uman
+
+### CSV Export
+
+#### CSV Export Table Succeeds
+`scn~csv-export-table-succeeds~1`
+
+**Given** a Node.js application, an authenticated driver, an Exasol table, and a destination path that does not exist
+**When** the application calls `exportToCsvFile()`
+**Then** the driver streams the exported CSV data through Exasol's export tunnel into the new local file and resolves with the exported row count
+
+Covers:
+- `req~export-local-csv-files~1`
+
+Needs: dsn
+
+#### CSV Export Query Succeeds
+`scn~csv-export-query-succeeds~1`
+
+**Given** a Node.js application, an authenticated driver, a parenthesized Exasol `SELECT` query, and a destination path that does not exist
+**When** the application calls `exportToCsvFile()`
+**Then** the driver streams the query result as CSV data through Exasol's export tunnel into the new local file and resolves with the exported row count
+
+Covers:
+- `req~export-local-csv-files~1`
+
+Needs: dsn
+
+#### CSV Export Rejects Existing Destination
+`scn~csv-export-rejects-existing-destination~1`
+
+**Given** a Node.js application, an authenticated driver, and a destination path that already exists
+**When** the application calls `exportToCsvFile()`
+**Then** the driver rejects before opening the export tunnel with error code `E-EDJS-30` and leaves the existing file unchanged
+
+Covers:
+- `req~export-local-csv-files~1`
+
+Needs: dsn
+
+#### CSV Export Applies Format Options
+`scn~csv-export-applies-format-options~1`
+
+**Given** a Node.js application and CSV export format options for `columnSeparator`, `columnDelimiter`, `rowSeparator`, `encoding`, `null`, or `withColumnNames`
+**When** the application calls `exportToCsvFile()` with those options
+**Then** the driver adds the corresponding Exasol `EXPORT INTO CSV` format clauses
+
+Covers:
+- `req~configure-csv-export-format~1`
+
+Needs: dsn
+
+#### CSV Export Streams Chunked Request Bodies
+`scn~csv-export-streams-chunked-request-body~1`
+
+**Given** an in-flight CSV export whose tunnel sends an HTTP request with `Transfer-Encoding: chunked`
+**When** the driver receives the request body
+**Then** the driver decodes the HTTP chunks and writes their payload data to the destination file
+
+Covers:
+- `req~export-local-csv-files~1`
+
+Needs: dsn
 
 ### Connection Encryption
 

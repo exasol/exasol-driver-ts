@@ -66,6 +66,23 @@ describe('http-protocol', () => {
   });
 
   describe('receiveHttpRequestBody', () => {
+    // [utest->dsn~runtime-csv-export-chunked-request-stream~1]
+    it('should decode fragmented chunked request bodies before writing data', async () => {
+      const socket = new PassThrough();
+      const { destination, getReceivedBody } = createBodyDestination();
+      const request: HttpRequest = {
+        headers: 'PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: gzip, Chunked\r\n\r\n',
+        initialBody: Buffer.from('5\r\nhe'),
+      };
+
+      const bodyPromise = receiveHttpRequestBody(socket as never, request, destination);
+      socket.push('llo\r\n6\r\n world\r\n0\r\n');
+      socket.push('\r\n');
+
+      await bodyPromise;
+      expect(getReceivedBody()).toBe('hello world');
+    });
+
     it('should stream initial and subsequent body bytes until content length is reached', async () => {
       const socket = new PassThrough();
       const { destination, getReceivedBody } = createBodyDestination();

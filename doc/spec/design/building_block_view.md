@@ -91,6 +91,20 @@ Covers:
 - `scn~csv-import-applies-format-options~1`
 - `scn~csv-import-is-cancelled~1`
 
+### CSV Export Components
+`dsn~csv-export-components~1`
+
+The CSV export modules reserve a new local file, create an Exasol export tunnel, wrap the tunnel with TLS, build Exasol `EXPORT INTO CSV` SQL, stream content-length-delimited or chunked HTTP request bodies into the file, and return the SQL row count.
+
+Covers:
+- `scn~csv-export-table-succeeds~1`
+- `scn~csv-export-query-succeeds~1`
+- `scn~csv-export-rejects-existing-destination~1`
+- `scn~csv-export-applies-format-options~1`
+- `scn~csv-export-streams-chunked-request-body~1`
+
+Needs: impl
+
 ### Runtime Packaging
 `dsn~runtime-packaging~1`
 

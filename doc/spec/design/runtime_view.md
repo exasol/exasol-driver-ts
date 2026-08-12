@@ -266,3 +266,57 @@ Covers:
 - `scn~csv-import-is-cancelled~1`
 
 Needs: impl, utest, itest
+
+## CSV Export
+
+### CSV Export Destination File
+`dsn~runtime-csv-export-destination-file~1`
+
+**Given** a Node.js driver and a local CSV export destination path
+**When** `exportToCsvFile()` is called
+**Then** the driver exclusively reserves the resolved path before creating an Exasol tunnel, rejects an existing file with `E-EDJS-30`, and removes its newly-created file when the export fails
+
+Covers:
+- `scn~csv-export-rejects-existing-destination~1`
+- `constr~node-only-csv-export~1`
+
+Needs: impl, utest, itest
+
+### CSV Export File Stream
+`dsn~runtime-csv-export-file-stream~1`
+
+**Given** a Node.js driver, an Exasol table or parenthesized `SELECT` query, and a new local CSV destination
+**When** `exportToCsvFile()` is called
+**Then** the driver creates an Exasol tunnel, wraps it with TLS, executes `EXPORT <source> INTO CSV`, streams Exasol's content-length-delimited or chunked HTTP request body into the file, destroys the tunnel sockets, and returns the export row count
+
+Covers:
+- `scn~csv-export-table-succeeds~1`
+- `scn~csv-export-query-succeeds~1`
+- `constr~node-only-csv-export~1`
+
+Needs: impl, utest, itest
+
+### CSV Export Format Options
+`dsn~runtime-csv-export-format-options~1`
+
+**Given** CSV export format options
+**When** the export SQL is built
+**Then** the driver appends Exasol CSV clauses for configured separator, delimiter, row separator, encoding, NULL literal, and column names while escaping SQL string literals
+
+Covers:
+- `scn~csv-export-applies-format-options~1`
+
+Needs: impl, utest, itest
+
+### CSV Export Chunked Request Stream
+`dsn~runtime-csv-export-chunked-request-stream~1`
+
+**Given** a tunnel HTTP request with `Transfer-Encoding: chunked`
+**When** the shared tunnel body reader receives the request
+**Then** it decodes the chunks and forwards only their payload data to a destination
+
+Covers:
+- `scn~csv-export-streams-chunked-request-body~1`
+- `constr~node-only-csv-export~1`
+
+Needs: impl, utest, itest

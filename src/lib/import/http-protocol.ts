@@ -2,6 +2,7 @@ import * as net from 'node:net';
 import * as stream from 'node:stream';
 import * as tls from 'node:tls';
 import { ExaErrorBuilder } from '../errors/error-reporting';
+import { decodeChunkedHttpBody } from './chunked-http-body';
 
 // [impl->dsn~runtime-csv-import-file-stream~1]
 const HEADER_TERMINATOR = '\r\n\r\n';
@@ -76,7 +77,21 @@ export async function receiveHttpRequestBody(
   }
 }
 
+function hasChunkedTransferEncoding(headers: string): boolean {
+  const transferEncoding = headers
+    .split('\r\n')
+    .find((line) => line.toLowerCase().startsWith('transfer-encoding:'))
+    ?.slice('transfer-encoding:'.length);
+  return transferEncoding?.split(',').some((value) => value.trim().toLowerCase() === 'chunked') ?? false;
+}
+
 async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: HttpRequest): AsyncGenerator<Buffer> {
+  // [impl->dsn~runtime-csv-export-chunked-request-stream~1]
+  if (hasChunkedTransferEncoding(request.headers)) {
+    yield* decodeChunkedHttpBody(socket.iterator({ destroyOnReturn: false }), request.initialBody);
+    return;
+  }
+
   let remaining = getContentLength(request.headers);
 
   if (request.initialBody.length > 0) {
@@ -106,7 +121,6 @@ async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: Htt
       .error();
   }
 }
-
 
 function getContentLength(headers: string): number | undefined {
   const contentLength = /^content-length:\s*(\d+)\s*$/im.exec(headers)?.[1];

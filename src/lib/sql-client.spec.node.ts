@@ -235,6 +235,17 @@ describe('sqlClient', () => {
     });
   });
 
+  describe('exportToCsvFile', () => {
+    it('should fail due to closed connection', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      await driver.close();
+
+      await expect(driver.exportToCsvFile('TARGET_TABLE', '/tmp/export.csv')).rejects.toThrow('E-EDJS-2: Connection was closed.');
+    });
+  });
+
   describe('cancel', () => {
     // [utest->dsn~runtime-query-cancellation~1]
     it('should send abort query command', async () => {
