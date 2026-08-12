@@ -40,6 +40,7 @@ class ExportOperation {
   private completed = false;
   private queryPending = false;
   private destinationFilePromise: Promise<fs.promises.FileHandle> | undefined;
+  private abortExport!: () => void;
 
   public constructor(
     filePath: string,
@@ -143,9 +144,6 @@ class ExportOperation {
     }
     return undefined;
   }
-
-  private abortExport = (): void => {
-  };
 }
 
 function getExportResult(completed: boolean, rowCount: number | undefined, exportError: unknown, cleanupError: unknown): number {
