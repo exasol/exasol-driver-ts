@@ -31,7 +31,7 @@ export const fetchData = async (
   rawData: SQLResponse<SQLQueriesResponse>,
   connection: Connection,
   logger: ILogger,
-  fetchSizeNumBytes: number,
+  fetchSizeBytes: number,
   resultSetMaxRows?: number
 ): Promise<SQLResponse<SQLQueriesResponse>> => {
   // [impl->dsn~runtime-query-execution~1]
@@ -48,7 +48,7 @@ export const fetchData = async (
         Math.min(response.resultSet.numRows, resultSetMaxRows ?? response.resultSet.numRows),
         resultSetMaxRows ?? response.resultSet.numRows,
         connection,
-        fetchSizeNumBytes,
+        fetchSizeBytes,
         logger
       );
       batchResponse.results[index].resultSet = fetched;
@@ -74,13 +74,13 @@ const fetchMoreData = async (
   expectedRows: number,
   resultSetMaxRows: number,
   connection: Connection,
-  fetchSizeNumBytes: number,
+  fetchSizeBytes: number,
   logger: ILogger
 ): Promise<ResultSet> => {
   // [impl->dsn~runtime-query-execution~1]
   logger.debug('[WebSQL]: fetchMoreData:', fetchedRows, expectedRows);
   if (fetchedRows < expectedRows && resultSet.resultSetHandle) {
-    await sendFetchCommand(resultSet.resultSetHandle, fetchedRows, connection, fetchSizeNumBytes).then(async (fetchResponse) => {
+    await sendFetchCommand(resultSet.resultSetHandle, fetchedRows, connection, fetchSizeBytes).then(async (fetchResponse) => {
       resultSet.data = resultSet.data ?? [];
 
       if (fetchResponse.responseData.data) {
@@ -106,7 +106,7 @@ const fetchMoreData = async (
         expectedRows,
         resultSetMaxRows,
         connection,
-        fetchSizeNumBytes,
+        fetchSizeBytes,
         logger
       );
       return undefined;
@@ -119,11 +119,11 @@ const sendFetchCommand = async (
   resultSetHandle: number,
   startPosition: number,
   connection: Connection,
-  fetchSizeNumBytes: number
+  fetchSizeBytes: number
 ): Promise<SQLResponse<FetchResponse>> => {
   return connection.sendCommand<FetchResponse>(
     new FetchCommand({
-      numBytes: fetchSizeNumBytes,
+      numBytes: fetchSizeBytes,
       resultSetHandle,
       startPosition,
     })

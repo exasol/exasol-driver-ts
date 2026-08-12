@@ -41,6 +41,7 @@ export interface Config {
   encryption?: boolean;
   clientName: string;
   clientVersion: string;
+  /** Number of bytes to fetch per request. Default: 1024 * 1024 (1 MB) */
   fetchSize: number;
   schema?: string;
   /** Limit max rows fetched */
@@ -62,7 +63,7 @@ export class ExasolDriver implements IExasolDriver {
   private readonly defaultConfig: Config & InternalConfig = {
     host: 'localhost',
     port: 8563,
-    fetchSize: 1024 * 1024,
+    fetchSize: 1024 * 1024, // in bytes = 1 MB
     clientName: 'Javascript client',
     clientVersion: '1',
     autocommit: true,
@@ -296,10 +297,9 @@ export class ExasolDriver implements IExasolDriver {
   }
 
   async fetchData(data: SQLResponse<SQLQueriesResponse>, connection: Connection): Promise<SQLResponse<SQLQueriesResponse>> {
-    const fetchSizeNumBytes = this.config.fetchSize || 1024 * 1024;
-    return fetchData(data, connection, this.logger, fetchSizeNumBytes, this.config.resultSetMaxRows);
+    const fetchSizeBytes = this.config.fetchSize || this.defaultConfig.fetchSize;
+    return fetchData(data, connection, this.logger, fetchSizeBytes, this.config.resultSetMaxRows);
   }
-
 
   /**
    * @inheritDoc
