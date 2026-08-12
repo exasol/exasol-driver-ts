@@ -41,9 +41,9 @@ export const newInvalidHostRangeLimits = (host: string) => {
   return new ExaErrorBuilder('E-EDJS-9').message('Invalid host range limits: {{host name}}.', host).error();
 };
 
-export const newSqlError = (exception: SQLException) => {
-  return new ExaErrorBuilder('E-EDJS-25').message('SQL error: code: {{code}}, message: {{message}}', exception.sqlCode, exception.text).error();
-}
+export const newSqlError = (sqlStatement: string, exception: SQLException) => {
+  return new ExaErrorBuilder('E-EDJS-25').message('SQL error: {{sqlStatement}} code: {{code}}, message: {{message}}', sqlStatement, exception.sqlCode, exception.text).error();
+};
 
 export const GeneralSqlError = new ExaErrorBuilder('E-EDJS-26').message("Query failed with status 'error'.").error();
 export const MissingExceptionError = new ExaErrorBuilder('E-EDJS-27').message("Received error response with missing exception details.").error();
