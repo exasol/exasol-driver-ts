@@ -7,7 +7,7 @@ import { buildCsvExportSql } from './export-sql-builder';
 import { readHttpRequest, receiveHttpRequestBody } from './http-protocol';
 import { createTunnel } from './http-transport';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
-import { CsvExportFormatOptions } from './types';
+import { CsvExportFormatOptions, CsvExportOptions } from './types';
 
 interface ExportCsvFileParameters {
   host: string;
@@ -16,6 +16,8 @@ interface ExportCsvFileParameters {
   filePath: string;
   executeSql: (sql: string) => Promise<number>;
   csvOptions?: CsvExportFormatOptions;
+  options?: CsvExportOptions;
+  cancelSql?: () => Promise<void>;
 }
 
 // [impl->dsn~decision-stream-csv-through-export-tunnel~1]
@@ -26,41 +28,70 @@ export async function exportCsvFile({
   filePath,
   executeSql,
   csvOptions,
+  options,
+  cancelSql,
 }: ExportCsvFileParameters): Promise<number> {
   // [impl->dsn~runtime-csv-export-destination-file~1]
   // [impl->dsn~runtime-csv-export-file-stream~1]
+  // [impl->dsn~runtime-csv-export-cancellation~1]
   const absoluteFilePath = path.resolve(filePath);
   let fileStream: fs.WriteStream | undefined;
   let unencryptedSocket: net.Socket | undefined;
   let secureSocket: tls.TLSSocket | undefined;
   let destinationCreated = false;
   let completed = false;
+  let queryStarted = false;
+  let abortExport: (() => void) | undefined;
   let rowCount: number | undefined;
   let exportError: unknown;
   let cleanupError: unknown;
+
+  throwIfAborted(options?.signal);
+
+  const abortPromise = new Promise<never>((_, reject) => {
+    abortExport = () => {
+      fileStream?.destroy();
+      secureSocket?.destroy();
+      unencryptedSocket?.destroy();
+      if (queryStarted) {
+        void cancelSql?.().catch(() => undefined);
+      }
+      reject(newExportAbortedError());
+    };
+  });
+
+  if (options?.signal && abortExport) {
+    options.signal.addEventListener('abort', abortExport, { once: true });
+  }
 
   try {
     const fileHandle = await createDestinationFile(absoluteFilePath);
     destinationCreated = true;
     fileStream = fileHandle.createWriteStream();
+    throwIfAborted(options?.signal);
 
-    const tunnel = await createTunnel(host, port);
+    const tunnel = await Promise.race([createTunnel(host, port, options?.signal), abortPromise]);
     unencryptedSocket = tunnel.socket;
+    throwIfAborted(options?.signal);
     const cert = generateAdHocCertificate();
     secureSocket = wrapWithTls(unencryptedSocket, cert.key, cert.cert);
     const exportSql = buildCsvExportSql(source, tunnel.internalAddress, cert.fingerprint, csvOptions);
 
+    queryStarted = true;
     const sqlPromise = executeSql(exportSql);
     const transferPromise = readHttpRequest(secureSocket)
       .then(async (request) => {
         await receiveHttpRequestBody(secureSocket!, request, fileStream!);
         await sendSuccessResponse(secureSocket!);
       });
-    [rowCount] = await Promise.all([sqlPromise, transferPromise]);
+    [rowCount] = await Promise.race([Promise.all([sqlPromise, transferPromise]), abortPromise]);
     completed = true;
   } catch (error) {
     exportError = error;
   } finally {
+    if (options?.signal && abortExport) {
+      options.signal.removeEventListener('abort', abortExport);
+    }
     secureSocket?.destroy();
     unencryptedSocket?.destroy();
     if (fileStream && !fileStream.closed) {
@@ -86,6 +117,17 @@ export async function exportCsvFile({
     throw exportError;
   }
   return rowCount!;
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw newExportAbortedError();
+  }
+}
+
+function newExportAbortedError(): DOMException {
+  const message = new ExaErrorBuilder('E-EDJS-31').message('The CSV export was aborted.').toString();
+  return new DOMException(message, 'AbortError');
 }
 
 function sendSuccessResponse(socket: tls.TLSSocket): Promise<void> {

@@ -320,3 +320,15 @@ Covers:
 - `constr~node-only-csv-export~1`
 
 Needs: impl, utest, itest
+
+### CSV Export Cancellation
+`dsn~runtime-csv-export-cancellation~1`
+
+**Given** an in-flight CSV export with an `AbortSignal`
+**When** the signal is aborted
+**Then** the driver destroys the destination write stream and both export-tunnel sockets, sends `abortQuery` for the server-side export once it has started without waiting for its response, removes the newly created destination file, and rejects the export promise with an `AbortError` using `E-EDJS-31`
+
+Covers:
+- `scn~csv-export-is-cancelled~1`
+
+Needs: impl, utest, itest

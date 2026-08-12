@@ -55,6 +55,62 @@ describe('csv-file-export', () => {
     await expect(readFile(destination, 'utf8')).resolves.toBe('ID\n1\n2\n');
   });
 
+  // [utest->dsn~runtime-csv-export-cancellation~1]
+  describe('cancellation', () => {
+    it('rejects a pre-aborted export without creating its destination or opening a tunnel', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const destination = join(tempDirectory, 'export.csv');
+      const executeSql = jest.fn();
+
+      await expect(exportCsvFile({
+        host: 'localhost', port: 8563, source: 'MYTABLE', filePath: destination, executeSql,
+        options: { signal: controller.signal },
+      })).rejects.toMatchObject({ name: 'AbortError', message: 'E-EDJS-31: The CSV export was aborted.' });
+
+      await expect(readFile(destination)).rejects.toMatchObject({ code: 'ENOENT' });
+      expect(mockedCreateTunnel).not.toHaveBeenCalled();
+      expect(executeSql).not.toHaveBeenCalled();
+    });
+
+    it('cancels an in-flight export, destroys tunnel resources, and removes the partial destination', async () => {
+      const controller = new AbortController();
+      const unencryptedSocket = { destroy: jest.fn() };
+      const secureSocket = { destroy: jest.fn(), write: jest.fn() };
+      const destination = join(tempDirectory, 'export.csv');
+      let notifyQueryStarted!: () => void;
+      const queryStarted = new Promise<void>((resolve) => {
+        notifyQueryStarted = resolve;
+      });
+      const executeSql = jest.fn(() => {
+        notifyQueryStarted();
+        return new Promise<number>(() => undefined);
+      });
+      const cancelSql = jest.fn().mockResolvedValue(undefined);
+
+      mockedCreateTunnel.mockResolvedValue({
+        socket: unencryptedSocket as never,
+        internalAddress: { host: '127.0.0.1', port: 8563 },
+      });
+      mockedWrapWithTls.mockReturnValue(secureSocket as never);
+      mockedReadHttpRequest.mockImplementation(() => new Promise(() => undefined));
+
+      const exportPromise = exportCsvFile({
+        host: 'localhost', port: 8563, source: 'MYTABLE', filePath: destination, executeSql, cancelSql,
+        options: { signal: controller.signal },
+      });
+      await queryStarted;
+
+      controller.abort();
+
+      await expect(exportPromise).rejects.toMatchObject({ name: 'AbortError', message: 'E-EDJS-31: The CSV export was aborted.' });
+      expect(cancelSql).toHaveBeenCalledTimes(1);
+      expect(secureSocket.destroy).toHaveBeenCalled();
+      expect(unencryptedSocket.destroy).toHaveBeenCalled();
+      await expect(readFile(destination)).rejects.toMatchObject({ code: 'ENOENT' });
+    });
+  });
+
   it('rejects an existing destination before opening the tunnel', async () => {
     const destination = join(tempDirectory, 'export.csv');
     await writeFile(destination, 'keep me');

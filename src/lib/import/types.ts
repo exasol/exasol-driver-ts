@@ -128,6 +128,12 @@ export interface CsvExportFormatOptions {
   withColumnNames?: boolean;
 }
 
+/** Options that control the lifetime of a CSV export. */
+export interface CsvExportOptions {
+  /** Cancels the export and releases its file and network resources. */
+  signal?: AbortSignal;
+}
+
 /** Defines the line break character. */
 export enum RowSeparator {
   /** Default: corresponds to the ASCII character 0x0a (Unix/Linux) */

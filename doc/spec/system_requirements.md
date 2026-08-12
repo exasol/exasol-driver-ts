@@ -288,6 +288,16 @@ Covers:
 
 Needs: scn
 
+#### Cancel CSV File Export
+`req~cancel-csv-file-export~1`
+
+The Node.js application cancels an in-flight CSV file export through an `AbortSignal`, promptly releases the local file and export-tunnel resources, and removes the partial output file.
+
+Covers:
+- `feat~csv-file-export~1`
+
+Needs: scn
+
 ### Encrypt Connections by Default
 `req~encrypt-connections-by-default~1`
 
@@ -629,6 +639,18 @@ Needs: dsn
 
 Covers:
 - `req~export-local-csv-files~1`
+
+Needs: dsn
+
+#### CSV Export Is Cancelled
+`scn~csv-export-is-cancelled~1`
+
+**Given** a Node.js application exporting a local CSV file with an `AbortSignal`
+**When** the application aborts the signal while the export is in flight
+**Then** the driver stops receiving export data, closes the export tunnel, aborts the server-side export query, removes the partial local file, and rejects promptly with an `AbortError` using `E-EDJS-31`
+
+Covers:
+- `req~cancel-csv-file-export~1`
 
 Needs: dsn
 

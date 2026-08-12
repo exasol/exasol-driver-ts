@@ -72,12 +72,12 @@ Deliver the work as five dependent pull requests. Do not release the API until a
 
 ### PR 3: Export Cancellation
 
-- [ ] Add CSV export cancellation requirements, scenarios, runtime design, and trace coverage.
-- [ ] Add and export `CsvExportOptions` (`signal`) and extend `exportToCsvFile(source, filePath, csvOptions?, options?)` on `IExasolDriver` and `ExasolDriver`.
-- [ ] On abort, destroy file and tunnel resources, cancel the active SQL operation once started, remove the newly-created partial output file, and reject with `AbortError` using `E-EDJS-31`.
-- [ ] Add Node unit tests for pre-aborted and in-flight cancellation, SQL cancellation, and output-file cleanup.
-- [ ] Add Node integration tests for in-flight cancellation and partial-file removal.
-- [ ] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, `npm run itest`, `npm run audit`, `npm run build`, and `npm run trace`.
+- [x] Add CSV export cancellation requirements, scenarios, runtime design, and trace coverage.
+- [x] Add and export `CsvExportOptions` (`signal`) and extend `exportToCsvFile(source, filePath, csvOptions?, options?)` on `IExasolDriver` and `ExasolDriver`.
+- [x] On abort, destroy file and tunnel resources, cancel the active SQL operation once started, remove the newly-created partial output file, and reject with `AbortError` using `E-EDJS-31`.
+- [x] Add Node unit tests for pre-aborted and in-flight cancellation, SQL cancellation, and output-file cleanup.
+- [x] Add Node integration tests for in-flight cancellation and partial-file removal.
+- [x] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, `npm run itest`, `npm run audit`, `npm run build`, and `npm run trace`.
 
 ### PR 4: Compressed Local CSV Export
 
@@ -97,4 +97,3 @@ Deliver the work as five dependent pull requests. Do not release the API until a
 - [ ] Place `uman` coverage tags directly before the relevant guidance; add `uman` to the documented scenarios' `Needs` lists and to the quality-requirements artifact hierarchy.
 - [ ] Update `doc/changes/changes_0.5.0.md` with a GH-69 feature entry, a concise `exportToCsvFile()` example, and a link to the user guide. Do not change the version or changelog index.
 - [ ] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, `npm run itest`, `npm run audit`, `npm run build`, and `npm run trace`.
-
