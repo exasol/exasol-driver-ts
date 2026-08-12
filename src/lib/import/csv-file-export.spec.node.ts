@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -89,5 +90,20 @@ describe('csv-file-export', () => {
     })).rejects.toThrow('SQL failed');
 
     await expect(readFile(destination, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('rejects with the cleanup failure when removing a partial export fails', async () => {
+    const cleanupError = new Error('cleanup failed');
+    const unlink = jest.spyOn(fs.promises, 'unlink').mockRejectedValue(cleanupError);
+    mockedReceiveHttpRequestBody.mockRejectedValue(new Error('transfer failed'));
+    const destination = join(tempDirectory, 'export.csv');
+
+    await expect(exportCsvFile({
+      host: 'localhost', port: 8563, source: 'MYTABLE', filePath: destination,
+      executeSql: jest.fn().mockResolvedValue(2),
+    })).rejects.toThrow(cleanupError);
+
+    expect(unlink).toHaveBeenCalledWith(destination);
+    await expect(readFile(destination)).resolves.toEqual(Buffer.alloc(0));
   });
 });

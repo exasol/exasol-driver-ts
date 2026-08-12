@@ -63,7 +63,7 @@ export async function exportCsvFile({
       fileStream.destroy();
     }
     if (destinationCreated && !completed) {
-      await fs.promises.unlink(absoluteFilePath).catch(() => undefined);
+      await fs.promises.unlink(absoluteFilePath);
     }
   }
 }
