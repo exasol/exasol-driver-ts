@@ -12,7 +12,8 @@ export class ExasolContainer {
     this.certProvider = new CertificateProvider(container);
   }
 
-  public static supportsCsvImport(): boolean {
+  public static supportsEncryptedImportExport(): boolean {
+    // Exasol 8.x does not support `PUBLIC KEY` option
     return !DOCKER_CONTAINER_VERSION.match(/(?:^|:)8(?:\.|$)/);
   }
 

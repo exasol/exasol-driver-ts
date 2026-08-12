@@ -9,7 +9,7 @@ import { IExasolDriver } from '../../src/lib/sql-client.interface';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
-const describeImportWhenSupported = ExasolContainer.supportsCsvImport() ? describe : describe.skip;
+const describeImportWhenSupported = ExasolContainer.supportsEncryptedImportExport() ? describe : describe.skip;
 
 // [itest->dsn~runtime-csv-import-missing-target-table~1]
 // [itest->dsn~runtime-csv-import-file-stream~1]

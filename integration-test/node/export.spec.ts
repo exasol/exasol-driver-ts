@@ -8,7 +8,7 @@ import { IExasolDriver } from '../../src/lib/sql-client.interface';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
-const describeExportWhenSupported = ExasolContainer.supportsCsvImport() ? describe : describe.skip;
+const describeExportWhenSupported = ExasolContainer.supportsEncryptedImportExport() ? describe : describe.skip;
 
 // [itest->dsn~runtime-csv-export-destination-file~1]
 // [itest->dsn~runtime-csv-export-file-stream~1]
@@ -89,7 +89,7 @@ describeExportWhenSupported('Node Export', () => {
 
 async function openConnection(factory: WebsocketFactory, container: ExasolContainer): Promise<IExasolDriver> {
   const driver = new ExasolDriver(factory, {
-    host: container.getHost(), port: container.getPort(), user: 'sys', password: 'exasol',
+    host: container.getHost(), port: container.getPort(), user: 'sys', password: 'exasol', compression: true
   });
   await driver.connect();
   return driver;
