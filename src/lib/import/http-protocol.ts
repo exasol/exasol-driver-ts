@@ -78,7 +78,10 @@ export async function receiveHttpRequestBody(
 }
 
 function hasChunkedTransferEncoding(headers: string): boolean {
-  const transferEncoding = /^transfer-encoding:\s*(.+)$/im.exec(headers)?.[1];
+  const transferEncoding = headers
+    .split('\r\n')
+    .find((line) => line.toLowerCase().startsWith('transfer-encoding:'))
+    ?.slice('transfer-encoding:'.length);
   return transferEncoding?.split(',').some((value) => value.trim().toLowerCase() === 'chunked') ?? false;
 }
 

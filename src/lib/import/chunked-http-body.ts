@@ -77,7 +77,7 @@ function readChunkLength(buffer: Buffer): { size: number; headerLength: number }
 }
 
 function hasCompleteTrailers(buffer: Buffer): boolean {
-  return buffer.subarray(0, 2).toString() === '\r\n' || buffer.indexOf('\r\n\r\n') !== -1;
+  return buffer.subarray(0, 2).toString() === '\r\n' || buffer.includes('\r\n\r\n');
 }
 
 function incompleteChunkedBodyError(): Error {

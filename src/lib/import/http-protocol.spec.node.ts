@@ -71,7 +71,7 @@ describe('http-protocol', () => {
       const socket = new PassThrough();
       const { destination, getReceivedBody } = createBodyDestination();
       const request: HttpRequest = {
-        headers: 'PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: Chunked\r\n\r\n',
+        headers: 'PUT /001.csv HTTP/1.1\r\nTransfer-Encoding: gzip, Chunked\r\n\r\n',
         initialBody: Buffer.from('5\r\nhe'),
       };
 
