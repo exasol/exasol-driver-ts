@@ -86,6 +86,29 @@ describe('csv-file-export', () => {
       expect(executeSql).not.toHaveBeenCalled();
     });
 
+    it('rejects promptly and cleans up when the destination is created after cancellation', async () => {
+      const controller = new AbortController();
+      let resolveFileHandle!: (fileHandle: fs.promises.FileHandle) => void;
+      const fileHandlePromise = new Promise<fs.promises.FileHandle>((resolve) => {
+        resolveFileHandle = resolve;
+      });
+      const close = jest.fn().mockResolvedValue(undefined);
+      const open = jest.spyOn(fs.promises, 'open').mockReturnValueOnce(fileHandlePromise);
+      const unlink = jest.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined);
+
+      const exportPromise = exportFile({ options: { signal: controller.signal } });
+      controller.abort();
+
+      await expect(exportPromise).rejects.toMatchObject({ name: 'AbortError', message: 'E-EDJS-31: The CSV export was aborted.' });
+      resolveFileHandle({ close } as unknown as fs.promises.FileHandle);
+      await new Promise(setImmediate);
+
+      expect(close).toHaveBeenCalledTimes(1);
+      expect(unlink).toHaveBeenCalledWith(destination);
+      open.mockRestore();
+      unlink.mockRestore();
+    });
+
     it('cancels an in-flight export, destroys tunnel resources, and removes the partial destination', async () => {
       const controller = new AbortController();
       const unencryptedSocket = { destroy: jest.fn() };

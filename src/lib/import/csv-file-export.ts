@@ -45,6 +45,7 @@ export async function exportCsvFile({
   let rowCount: number | undefined;
   let exportError: unknown;
   let cleanupError: unknown;
+  let destinationFilePromise: Promise<fs.promises.FileHandle> | undefined;
 
   throwIfAborted(options.signal);
 
@@ -65,7 +66,8 @@ export async function exportCsvFile({
   }
 
   try {
-    const fileHandle = await createDestinationFile(absoluteFilePath);
+    destinationFilePromise = createDestinationFile(absoluteFilePath);
+    const fileHandle = await Promise.race([destinationFilePromise, abortPromise]);
     destinationCreated = true;
     fileStream = fileHandle.createWriteStream();
     throwIfAborted(options.signal);
@@ -103,6 +105,8 @@ export async function exportCsvFile({
       } catch (error) {
         cleanupError = error;
       }
+    } else if (!completed && destinationFilePromise) {
+      removeLateDestinationFile(destinationFilePromise, absoluteFilePath);
     }
   }
 
@@ -117,6 +121,20 @@ export async function exportCsvFile({
     throw exportError;
   }
   return rowCount!;
+}
+
+function removeLateDestinationFile(destinationFilePromise: Promise<fs.promises.FileHandle>, filePath: string): void {
+  void destinationFilePromise.then(
+    async (fileHandle) => {
+      try {
+        await fileHandle.close();
+        await fs.promises.unlink(filePath);
+      } catch {
+        // The export has already rejected with the cancellation error.
+      }
+    },
+    () => undefined,
+  );
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
