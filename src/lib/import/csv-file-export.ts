@@ -16,8 +16,8 @@ interface ExportCsvFileParameters {
   filePath: string;
   executeSql: (sql: string) => Promise<number>;
   csvOptions?: CsvExportFormatOptions;
-  options?: CsvExportOptions;
-  cancelSql?: () => Promise<void>;
+  options: CsvExportOptions;
+  cancelSql: () => Promise<void>;
 }
 
 // [impl->dsn~decision-stream-csv-through-export-tunnel~1]
@@ -46,7 +46,7 @@ export async function exportCsvFile({
   let exportError: unknown;
   let cleanupError: unknown;
 
-  throwIfAborted(options?.signal);
+  throwIfAborted(options.signal);
 
   const abortPromise = new Promise<never>((_, reject) => {
     abortExport = () => {
@@ -54,13 +54,13 @@ export async function exportCsvFile({
       secureSocket?.destroy();
       unencryptedSocket?.destroy();
       if (queryStarted) {
-        void cancelSql?.().catch(() => undefined);
+        void cancelSql().catch(() => undefined);
       }
       reject(newExportAbortedError());
     };
   });
 
-  if (options?.signal && abortExport) {
+  if (options.signal && abortExport) {
     options.signal.addEventListener('abort', abortExport, { once: true });
   }
 
@@ -68,11 +68,11 @@ export async function exportCsvFile({
     const fileHandle = await createDestinationFile(absoluteFilePath);
     destinationCreated = true;
     fileStream = fileHandle.createWriteStream();
-    throwIfAborted(options?.signal);
+    throwIfAborted(options.signal);
 
-    const tunnel = await Promise.race([createTunnel(host, port, options?.signal), abortPromise]);
+    const tunnel = await Promise.race([createTunnel(host, port, options.signal), abortPromise]);
     unencryptedSocket = tunnel.socket;
-    throwIfAborted(options?.signal);
+    throwIfAborted(options.signal);
     const cert = generateAdHocCertificate();
     secureSocket = wrapWithTls(unencryptedSocket, cert.key, cert.cert);
     const exportSql = buildCsvExportSql(source, tunnel.internalAddress, cert.fingerprint, csvOptions);
@@ -89,7 +89,7 @@ export async function exportCsvFile({
   } catch (error) {
     exportError = error;
   } finally {
-    if (options?.signal && abortExport) {
+    if (options.signal && abortExport) {
       options.signal.removeEventListener('abort', abortExport);
     }
     secureSocket?.destroy();

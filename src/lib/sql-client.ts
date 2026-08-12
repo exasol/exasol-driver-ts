@@ -476,7 +476,7 @@ export class ExasolDriver implements IExasolDriver {
       filePath,
       executeSql: (sql: string) => this.execute(sql),
       csvOptions,
-      options,
+      options: options || {},
       cancelSql: () => this.cancel(),
     });
   }
