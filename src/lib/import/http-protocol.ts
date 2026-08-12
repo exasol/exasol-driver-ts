@@ -2,6 +2,7 @@ import * as net from 'node:net';
 import * as stream from 'node:stream';
 import * as tls from 'node:tls';
 import { ExaErrorBuilder } from '../errors/error-reporting';
+import { decodeChunkedHttpBody } from './chunked-http-body';
 
 // [impl->dsn~runtime-csv-import-file-stream~1]
 const HEADER_TERMINATOR = '\r\n\r\n';
@@ -84,7 +85,7 @@ function hasChunkedTransferEncoding(headers: string): boolean {
 async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: HttpRequest): AsyncGenerator<Buffer> {
   // [impl->dsn~runtime-csv-export-chunked-request-stream~1]
   if (hasChunkedTransferEncoding(request.headers)) {
-    yield* readChunkedRequestBody(socket, request.initialBody);
+    yield* decodeChunkedHttpBody(socket.iterator({ destroyOnReturn: false }), request.initialBody);
     return;
   }
 
@@ -117,73 +118,6 @@ async function* readRequestBody(socket: net.Socket | tls.TLSSocket, request: Htt
       .error();
   }
 }
-
-async function* readChunkedRequestBody(socket: net.Socket | tls.TLSSocket, initialBody: Buffer): AsyncGenerator<Buffer> {
-  let buffer = initialBody;
-  const bodyIterator = socket.iterator({ destroyOnReturn: false });
-  let chunkSize: number | undefined;
-
-  while (true) {
-    if (chunkSize === undefined) {
-      const chunkLength = readChunkLength(buffer);
-      if (chunkLength === undefined) {
-        const next = await bodyIterator.next();
-        if (next.done) {
-          throw new Error('Socket closed before receiving complete chunked HTTP request body.');
-        }
-        buffer = Buffer.concat([buffer, Buffer.isBuffer(next.value) ? next.value : Buffer.from(next.value)]);
-        continue;
-      }
-      chunkSize = chunkLength.size;
-      buffer = buffer.subarray(chunkLength.headerLength);
-    }
-
-    if (chunkSize === 0) {
-      while (!hasCompleteChunkedTrailers(buffer)) {
-        const next = await bodyIterator.next();
-        if (next.done) {
-          throw new Error('Socket closed before receiving complete chunked HTTP request trailers.');
-        }
-        buffer = Buffer.concat([buffer, Buffer.isBuffer(next.value) ? next.value : Buffer.from(next.value)]);
-      }
-      return;
-    }
-
-    if (buffer.length < chunkSize + 2) {
-      const next = await bodyIterator.next();
-      if (next.done) {
-        throw new Error('Socket closed before receiving complete chunked HTTP request body.');
-      }
-      buffer = Buffer.concat([buffer, Buffer.isBuffer(next.value) ? next.value : Buffer.from(next.value)]);
-      continue;
-    }
-
-    const data = buffer.subarray(0, chunkSize);
-    if (buffer.subarray(chunkSize, chunkSize + 2).toString() !== '\r\n') {
-      throw new Error('Malformed chunked HTTP request body: missing chunk terminator.');
-    }
-    buffer = buffer.subarray(chunkSize + 2);
-    chunkSize = undefined;
-    yield data;
-  }
-}
-
-function readChunkLength(buffer: Buffer): { size: number; headerLength: number } | undefined {
-  const lineEnd = buffer.indexOf('\r\n');
-  if (lineEnd === -1) {
-    return undefined;
-  }
-  const sizeText = buffer.subarray(0, lineEnd).toString().split(';', 1)[0];
-  if (!/^[0-9a-f]+$/i.test(sizeText)) {
-    throw new Error('Malformed chunked HTTP request body: invalid chunk size.');
-  }
-  return { size: Number.parseInt(sizeText, 16), headerLength: lineEnd + 2 };
-}
-
-function hasCompleteChunkedTrailers(buffer: Buffer): boolean {
-  return buffer.subarray(0, 2).toString() === '\r\n' || buffer.indexOf('\r\n\r\n') !== -1;
-}
-
 
 function getContentLength(headers: string): number | undefined {
   const contentLength = /^content-length:\s*(\d+)\s*$/im.exec(headers)?.[1];
