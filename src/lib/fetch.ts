@@ -1,7 +1,7 @@
-import { FetchResponse, ResultSet, SQLQueriesResponse, SQLResponse } from './types';
-import { ILogger } from './logger/logger';
-import { Connection } from './connection';
 import { CloseResultSetCommand, FetchCommand } from './commands';
+import { Connection } from './connection';
+import { ILogger } from './logger/logger';
+import { FetchResponse, ResultSet, SQLQueriesResponse, SQLResponse } from './types';
 
 export interface SqlStatementsPagedResponse {
   pageSize: number;
@@ -31,6 +31,7 @@ export const fetchData = async (
   rawData: SQLResponse<SQLQueriesResponse>,
   connection: Connection,
   logger: ILogger,
+  fetchSizeNumBytes: number,
   resultSetMaxRows?: number
 ): Promise<SQLResponse<SQLQueriesResponse>> => {
   // [impl->dsn~runtime-query-execution~1]
@@ -47,6 +48,7 @@ export const fetchData = async (
         Math.min(response.resultSet.numRows, resultSetMaxRows ?? response.resultSet.numRows),
         resultSetMaxRows ?? response.resultSet.numRows,
         connection,
+        fetchSizeNumBytes,
         logger
       );
       batchResponse.results[index].resultSet = fetched;
@@ -72,12 +74,13 @@ const fetchMoreData = async (
   expectedRows: number,
   resultSetMaxRows: number,
   connection: Connection,
+  fetchSizeNumBytes: number,
   logger: ILogger
 ): Promise<ResultSet> => {
   // [impl->dsn~runtime-query-execution~1]
   logger.debug('[WebSQL]: fetchMoreData:', fetchedRows, expectedRows);
   if (fetchedRows < expectedRows && resultSet.resultSetHandle) {
-    await sendFetchCommand(resultSet.resultSetHandle, fetchedRows, connection).then(async (fetchResponse) => {
+    await sendFetchCommand(resultSet.resultSetHandle, fetchedRows, connection, fetchSizeNumBytes).then(async (fetchResponse) => {
       resultSet.data = resultSet.data ?? [];
 
       if (fetchResponse.responseData.data) {
@@ -103,6 +106,7 @@ const fetchMoreData = async (
         expectedRows,
         resultSetMaxRows,
         connection,
+        fetchSizeNumBytes,
         logger
       );
       return undefined;
@@ -114,11 +118,12 @@ const fetchMoreData = async (
 const sendFetchCommand = async (
   resultSetHandle: number,
   startPosition: number,
-  connection: Connection
+  connection: Connection,
+  fetchSizeNumBytes: number
 ): Promise<SQLResponse<FetchResponse>> => {
   return connection.sendCommand<FetchResponse>(
     new FetchCommand({
-      numBytes: 10000,
+      numBytes: fetchSizeNumBytes,
       resultSetHandle,
       startPosition,
     })

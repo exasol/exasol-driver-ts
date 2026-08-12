@@ -15,8 +15,8 @@ import {
   newSqlError,
 } from './errors/errors';
 import { fetchData } from './fetch';
-import { importCsvFile } from './import/csv-file-import';
 import { exportCsvFile } from './import/csv-file-export';
+import { importCsvFile } from './import/csv-file-import';
 import { CsvExportFormatOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { ConnectionPool } from './pool/pool';
@@ -62,7 +62,7 @@ export class ExasolDriver implements IExasolDriver {
   private readonly defaultConfig: Config & InternalConfig = {
     host: 'localhost',
     port: 8563,
-    fetchSize: 128 * 1024,
+    fetchSize: 1024 * 1024,
     clientName: 'Javascript client',
     clientVersion: '1',
     autocommit: true,
@@ -262,7 +262,7 @@ export class ExasolDriver implements IExasolDriver {
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
       .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+        return this.fetchData(data, connection);
       })
       .then((data) => {
         if (connection) {
@@ -294,6 +294,12 @@ export class ExasolDriver implements IExasolDriver {
         throw err;
       });
   }
+
+  async fetchData(data: SQLResponse<SQLQueriesResponse>, connection: Connection): Promise<SQLResponse<SQLQueriesResponse>> {
+    const fetchSizeNumBytes = this.config.fetchSize || 1024 * 1024;
+    return fetchData(data, connection, this.logger, fetchSizeNumBytes, this.config.resultSetMaxRows);
+  }
+
 
   /**
    * @inheritDoc
@@ -327,7 +333,7 @@ export class ExasolDriver implements IExasolDriver {
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLSingleCommand(sqlStatement, attributes), getCancel)
       .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+        return this.fetchData(data, connection);
       })
       .then((data) => {
         if (connection) {
@@ -383,7 +389,7 @@ export class ExasolDriver implements IExasolDriver {
     return connection
       .sendCommand<SQLQueriesResponse>(new SQLBatchCommand(sqlStatements, attributes), getCancel)
       .then((data) => {
-        return fetchData(data, connection, this.logger, this.config.resultSetMaxRows);
+        return this.fetchData(data, connection);
       })
       .then((data) => {
         if (connection) {

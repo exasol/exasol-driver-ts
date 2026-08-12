@@ -60,6 +60,38 @@ describe('sqlClient', () => {
       });
     });
 
+    it('should use the configured fetch size in fetch commands', async () => {
+      driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', fetchSize: 42 });
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const result = await driver.query('select with multiple rows');
+
+      expect(result.getRows()).toStrictEqual([{ A: 1 }, { A: 2 }]);
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'fetch',
+        resultSetHandle: 17,
+        startPosition: 1,
+        numBytes: 42,
+      });
+    });
+
+    it('should use the default fetch size in fetch commands', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      await driver.query('select with multiple rows');
+
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'fetch',
+        resultSetHandle: 17,
+        startPosition: 1,
+        numBytes: 1024 * 1024,
+      });
+    });
+
     it('should return result set for default response type', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
@@ -147,6 +179,22 @@ describe('sqlClient', () => {
       });
     });
 
+    it('should use the configured fetch size in fetch commands', async () => {
+      driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', fetchSize: 42 });
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      await driver.execute('select with multiple rows', undefined, undefined, 'raw');
+
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'fetch',
+        resultSetHandle: 17,
+        startPosition: 1,
+        numBytes: 42,
+      });
+    });
+
     it('should return row count for default response type', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
@@ -204,6 +252,24 @@ describe('sqlClient', () => {
       };
 
       await expect(driver.execute('invalid sql')).rejects.toThrow(expectedMessage);
+    });
+  });
+
+  describe('executeBatch', () => {
+    it('should use the configured fetch size in fetch commands', async () => {
+      driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', fetchSize: 42 });
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      await driver.executeBatch(['select with multiple rows']);
+
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'fetch',
+        resultSetHandle: 17,
+        startPosition: 1,
+        numBytes: 42,
+      });
     });
   });
 

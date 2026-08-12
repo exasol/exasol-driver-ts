@@ -39,8 +39,13 @@ export class MockExaWebSocket implements ExaWebsocket {
         return {};
       case 'execute':
         return this.getMockResultForSQL(command.sqlText);
+      case 'executeBatch':
+        return this.getMockResultForSQL(command.sqlTexts[0]);
+      case 'fetch':
+        return { numRows: 1, data: [[2]] };
       case 'abortQuery':
-        // No response expected for abortQuery command
+      case 'closeResultSet':
+        // No response expected
         return undefined;
       default:
         throw new Error(`MockExaWebSocket: No mock response defined for command '${command.command}'.`);
@@ -57,6 +62,21 @@ export class MockExaWebSocket implements ExaWebsocket {
             numColumns: 1, numRows: 1, numRowsInMessage: 1,
             columns: [{ name: 'A', dataType: { type: 'INTEGER' } }],
             data: [[1]]
+          },
+        }],
+      };
+    } else if (sqlText === 'select with multiple rows') {
+      return {
+        numResults: 1,
+        results: [{
+          resultType: 'resultSet',
+          resultSet: {
+            resultSetHandle: 17,
+            numColumns: 1,
+            numRows: 2,
+            numRowsInMessage: 1,
+            columns: [{ name: 'A', dataType: { type: 'INTEGER' } }],
+            data: [[1]],
           },
         }],
       };

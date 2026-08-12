@@ -14,6 +14,8 @@ await driver.connect();
 // The driver is closed automatically when this scope exits.
 ```
 
+This release also fixes fetch commands to use the configured fetch size and increases the default fetch size to 1 MiB. Thanks to [@espenhogbakk](https://github.com/espenhogbakk) for reporting this!
+
 ### Breaking Changes
 
 * TypeScript upgraded from 5.9.3 to 7.0.2
@@ -28,6 +30,10 @@ await driver.connect();
 
 * #73: Added TypeScript `await using` support for drivers, prepared statements, and connection pools.
 * #68: Added `AbortSignal` cancellation for local CSV imports.
+
+## Bugfixes
+
+* #83: Fixed fetch commands to use the configured fetch size
 
 ## Dependency Updates
 

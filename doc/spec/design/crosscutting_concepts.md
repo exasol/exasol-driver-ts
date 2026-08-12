@@ -20,7 +20,7 @@ Driver configuration is passed to constructors and merged with defaults. Importa
 
 * `host`: `localhost`
 * `port`: `8563`
-* `fetchSize`: `128 * 1024`
+* `fetchSize`: `1024 * 1024`
 * `clientName`: `Javascript client`
 * `clientVersion`: `1`
 * `autocommit`: `true`
