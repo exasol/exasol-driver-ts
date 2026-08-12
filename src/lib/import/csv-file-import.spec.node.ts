@@ -71,74 +71,75 @@ describe('csv-file-import', () => {
     });
 
     // [utest->dsn~runtime-csv-import-cancellation~1]
-    it('should cancel the query and release tunnel and file resources when the signal aborts', async () => {
-      const controller = new AbortController();
-      const unencryptedSocket = { destroy: jest.fn() };
-      const secureSocket = { destroy: jest.fn() };
-      const fileStream = new PassThrough();
-      const destroyFileStream = jest.spyOn(fileStream, 'destroy');
-      let notifyQueryStarted!: () => void;
-      const queryStarted = new Promise<void>((resolve) => {
-        notifyQueryStarted = resolve;
-      });
-      const mockExecuteSql = jest.fn(() => {
-        notifyQueryStarted();
-        return new Promise<number>(() => undefined);
-      });
-      const mockCancelSql = jest.fn().mockResolvedValue(undefined);
+    describe('cancellation', () => {
+      it('should cancel the query and release tunnel and file resources when the signal aborts', async () => {
+        const controller = new AbortController();
+        const unencryptedSocket = { destroy: jest.fn() };
+        const secureSocket = { destroy: jest.fn() };
+        const fileStream = new PassThrough();
+        const destroyFileStream = jest.spyOn(fileStream, 'destroy');
+        let notifyQueryStarted!: () => void;
+        const queryStarted = new Promise<void>((resolve) => {
+          notifyQueryStarted = resolve;
+        });
+        const mockExecuteSql = jest.fn(() => {
+          notifyQueryStarted();
+          return new Promise<number>(() => undefined);
+        });
+        const mockCancelSql = jest.fn().mockResolvedValue(undefined);
 
-      mockedCreateTunnel.mockResolvedValue({
-        socket: unencryptedSocket as never,
-        internalAddress: { host: '127.0.0.1', port: 8563 },
-      });
-      mockedGenerateAdHocCertificate.mockReturnValue({ key: {} as never, cert: {} as never, fingerprint: 'fingerprint' });
-      mockedWrapWithTls.mockReturnValue(secureSocket as never);
-      mockedReadHttpRequest.mockResolvedValue({
-        headers: 'GET /001.csv HTTP/1.1\r\n\r\n',
-        initialBody: Buffer.alloc(0),
-      });
-      mockedSendChunkedResponse.mockImplementation(() => new Promise<void>(() => undefined));
-      mockedCreateReadStream.mockReturnValue(fileStream as never);
+        mockedCreateTunnel.mockResolvedValue({
+          socket: unencryptedSocket as never,
+          internalAddress: { host: '127.0.0.1', port: 8563 },
+        });
+        mockedGenerateAdHocCertificate.mockReturnValue({ key: {} as never, cert: {} as never, fingerprint: 'fingerprint' });
+        mockedWrapWithTls.mockReturnValue(secureSocket as never);
+        mockedReadHttpRequest.mockResolvedValue({
+          headers: 'GET /001.csv HTTP/1.1\r\n\r\n',
+          initialBody: Buffer.alloc(0),
+        });
+        mockedSendChunkedResponse.mockImplementation(() => new Promise<void>(() => undefined));
+        mockedCreateReadStream.mockReturnValue(fileStream as never);
 
-      const importPromise = importCsvFile({
-        host: 'localhost',
-        port: 8563,
-        tableName: 'test_table',
-        filePath: 'README.md',
-        executeSql: mockExecuteSql,
-        options: { signal: controller.signal },
-        cancelSql: mockCancelSql,
-      });
-      await queryStarted;
+        const importPromise = importCsvFile({
+          host: 'localhost',
+          port: 8563,
+          tableName: 'test_table',
+          filePath: 'README.md',
+          executeSql: mockExecuteSql,
+          options: { signal: controller.signal },
+          cancelSql: mockCancelSql,
+        });
+        await queryStarted;
 
-      controller.abort();
+        controller.abort();
 
-      await expect(importPromise).rejects.toThrow("E-EDJS-20: The CSV import was aborted.");
-      expect(mockCancelSql).toHaveBeenCalledTimes(1);
-      expect(destroyFileStream).toHaveBeenCalled();
-      expect(secureSocket.destroy).toHaveBeenCalled();
-      expect(unencryptedSocket.destroy).toHaveBeenCalled();
-    });
-
-    // [utest->dsn~runtime-csv-import-cancellation~1]
-    it('should reject promptly when the signal aborts while establishing the tunnel', async () => {
-      const controller = new AbortController();
-      const executeSql = jest.fn();
-      mockedCreateTunnel.mockImplementation(() => new Promise(() => undefined));
-
-      const importPromise = importCsvFile({
-        host: 'localhost',
-        port: 8563,
-        tableName: 'test_table',
-        filePath: 'README.md',
-        executeSql,
-        options: { signal: controller.signal },
+        await expect(importPromise).rejects.toThrow("E-EDJS-20: The CSV import was aborted.");
+        expect(mockCancelSql).toHaveBeenCalledTimes(1);
+        expect(destroyFileStream).toHaveBeenCalled();
+        expect(secureSocket.destroy).toHaveBeenCalled();
+        expect(unencryptedSocket.destroy).toHaveBeenCalled();
       });
 
-      controller.abort();
+      it('should reject promptly when the signal aborts while establishing the tunnel', async () => {
+        const controller = new AbortController();
+        const executeSql = jest.fn();
+        mockedCreateTunnel.mockImplementation(() => new Promise(() => undefined));
 
-      await expect(importPromise).rejects.toThrow("E-EDJS-20: The CSV import was aborted.");
-      expect(executeSql).not.toHaveBeenCalled();
+        const importPromise = importCsvFile({
+          host: 'localhost',
+          port: 8563,
+          tableName: 'test_table',
+          filePath: 'README.md',
+          executeSql,
+          options: { signal: controller.signal },
+        });
+
+        controller.abort();
+
+        await expect(importPromise).rejects.toThrow("E-EDJS-20: The CSV import was aborted.");
+        expect(executeSql).not.toHaveBeenCalled();
+      });
     });
   });
 });

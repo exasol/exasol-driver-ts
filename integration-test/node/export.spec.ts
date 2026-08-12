@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
@@ -84,6 +84,18 @@ describeExportWhenSupported('Node Export', () => {
 
     await expect(driver.exportToCsvFile(tableName, filePath)).rejects.toThrow(`E-EDJS-30: CSV export destination already exists: '${filePath}'. Choose a destination path that does not exist.`);
     await expect(fileContent()).resolves.toBe('keep me');
+  });
+
+  // [itest->dsn~runtime-csv-export-cancellation~1]
+  it('cancels an in-flight export and removes its partial destination', async () => {
+    const controller = new AbortController();
+    const exportPromise = driver.exportToCsvFile('(SELECT "$SLEEP"(5))', filePath, undefined, { signal: controller.signal });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    controller.abort();
+
+    await expect(exportPromise).rejects.toMatchObject({ name: 'AbortError', message: 'E-EDJS-31: The CSV export was aborted.' });
+    await expect(access(filePath)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });
 
