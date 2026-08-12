@@ -28,6 +28,7 @@ class ChunkedHttpBodyDecoder {
       yield* this.yieldAvailablePayload();
 
       if (this.remainingPayloadLength !== undefined && this.remainingPayloadLength > 0) {
+        await this.appendNextChunk(incompleteChunkedBodyError());
         continue;
       }
 
