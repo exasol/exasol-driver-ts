@@ -3,7 +3,7 @@
  * Date: 2022-04-14 07:21:51
  */
 import { Attributes, Commands, CommandsNoResult } from './commands';
-import { CsvExportFormatOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
+import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
 import { QueryResult } from './query-result';
 import { SQLQueriesResponse, SQLResponse } from './types';
 
@@ -149,9 +149,10 @@ export interface IExasolDriver extends AsyncDisposable {
    * @param source Source table name (optionally schema-qualified) or parenthesized query
    * @param filePath Path to the new local CSV file
    * @param csvOptions Optional CSV format options
+   * @param options Optional export control options
    * @returns Number of rows exported
    */
-  exportToCsvFile(source: string, filePath: string, csvOptions?: CsvExportFormatOptions): Promise<number>;
+  exportToCsvFile(source: string, filePath: string, csvOptions?: CsvExportFormatOptions, options?: CsvExportOptions): Promise<number>;
 }
 
 export interface IStatement extends AsyncDisposable {

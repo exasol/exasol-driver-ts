@@ -17,7 +17,7 @@ import {
 import { fetchData } from './fetch';
 import { exportCsvFile } from './import/csv-file-export';
 import { importCsvFile } from './import/csv-file-import';
-import { CsvExportFormatOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
+import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { ConnectionPool } from './pool/pool';
 import { QueryResult } from './query-result';
@@ -471,7 +471,7 @@ export class ExasolDriver implements IExasolDriver {
   }
 
   /** @inheritDoc */
-  public async exportToCsvFile(source: string, filePath: string, csvOptions?: CsvExportFormatOptions): Promise<number> {
+  public async exportToCsvFile(source: string, filePath: string, csvOptions?: CsvExportFormatOptions, options?: CsvExportOptions): Promise<number> {
     if (this.closed) {
       throw ErrClosed;
     }
@@ -482,6 +482,8 @@ export class ExasolDriver implements IExasolDriver {
       filePath,
       executeSql: (sql: string) => this.execute(sql),
       csvOptions,
+      options: options || {},
+      cancelSql: () => this.cancel(),
     });
   }
 
