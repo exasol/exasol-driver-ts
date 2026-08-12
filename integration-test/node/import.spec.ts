@@ -79,7 +79,7 @@ describeImportWhenSupported("Node Import", () => {
       const tableName = 'MISSING_TABLE';
       const csvContent = '1,one\n2,two\n3,three';
       const csvFilePath = await createFile('test.csv', csvContent);
-      await expect(driver?.importFromCsvFile(tableName, csvFilePath, {})).rejects.toThrow(/E-EDJS-25: SQL error: 'IMPORT INTO MISSING_TABLE FROM CSV AT .*' code: '42000', message: 'object MISSING_TABLE not found.*/);
+      await expect(driver?.importFromCsvFile(tableName, csvFilePath, {})).rejects.toThrow(`E-EDJS-25: SQL error: code: '42000', message: 'object MISSING_TABLE not found`);
     });
 
     it('imports CSV file into table', async () => {

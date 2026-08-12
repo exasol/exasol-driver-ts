@@ -83,7 +83,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         await driver.cancel();
-        await expect(queryPromise).rejects.toThrow("E-EDJS-25: SQL error: 'select \"$SLEEP\"(5)' code: 'R0003', message: 'Client requested execution abort.");
+        await expect(queryPromise).rejects.toThrow("E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort.");
 
         expect(Date.now() - startedAt).toBeLessThan(3000);
         await driver.close();
@@ -120,7 +120,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         await driver.cancel();
-        await expect(executePromise).rejects.toThrow("E-EDJS-25: SQL error: 'select \"$SLEEP\"(5)' code: 'R0003', message: 'Client requested execution abort.");
+        await expect(executePromise).rejects.toThrow("E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort.");
 
         expect(Date.now() - startedAt).toBeLessThan(3000);
         await driver.close();

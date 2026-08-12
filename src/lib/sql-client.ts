@@ -15,8 +15,8 @@ import {
   newSqlError,
 } from './errors/errors';
 import { fetchData } from './fetch';
-import { exportCsvFile } from './import/csv-file-export';
 import { importCsvFile } from './import/csv-file-import';
+import { exportCsvFile } from './import/csv-file-export';
 import { CsvExportFormatOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { ConnectionPool } from './pool/pool';
@@ -275,7 +275,7 @@ export class ExasolDriver implements IExasolDriver {
           return data;
         }
 
-        this.verifyNoError(sqlStatement, data);
+        this.verifyNoError(data);
 
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
@@ -340,7 +340,7 @@ export class ExasolDriver implements IExasolDriver {
           return data;
         }
 
-        this.verifyNoError(sqlStatement, data);
+        this.verifyNoError(data);
 
         if (data.responseData.numResults === 0) {
           throw ErrMalformedData;
@@ -360,10 +360,10 @@ export class ExasolDriver implements IExasolDriver {
       });
   }
 
-  private verifyNoError(sqlStatement: string, data: SQLResponse<SQLQueriesResponse>) {
+  private verifyNoError(data: SQLResponse<SQLQueriesResponse>) {
     if (data.status === 'error') {
       if (data.exception) {
-        throw newSqlError(sqlStatement, data.exception);
+        throw newSqlError(data.exception);
       } else {
         throw GeneralSqlError;
       }

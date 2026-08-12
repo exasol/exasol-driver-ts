@@ -102,7 +102,7 @@ describe('sqlClient', () => {
       [
         'with sql exception details',
         { status: 'error', exception: { sqlCode: '42000', text: 'syntax error' } },
-        "E-EDJS-25: SQL error: 'invalid sql' code: '42000', message: 'syntax error'",
+        "E-EDJS-25: SQL error: code: '42000', message: 'syntax error'",
       ],
       ['with missing exception details', { status: 'error' },
         'E-EDJS-27: Received error response with missing exception details.'],
@@ -179,7 +179,7 @@ describe('sqlClient', () => {
       [
         'with sql exception details',
         { status: 'error', exception: { sqlCode: '42000', text: 'syntax error' } },
-        "E-EDJS-25: SQL error: 'invalid sql' code: '42000', message: 'syntax error'",
+        "E-EDJS-25: SQL error: code: '42000', message: 'syntax error'",
       ],
       ['with missing exception details', { status: 'error' },
         'E-EDJS-27: Received error response with missing exception details.'],
