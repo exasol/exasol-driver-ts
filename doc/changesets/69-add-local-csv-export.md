@@ -62,6 +62,14 @@ Deliver the work as five dependent pull requests. Do not release the API until a
 - [x] Add Node integration tests for table and parenthesized-query sources, format/header options, exported contents, existing-file preservation, and chunked request bodies.
 - [x] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, `npm run itest`, and `npm run trace`.
 
+### Follow-up: Chunked Body Decoder Complexity
+
+- [ ] Refactor the private implementation of `decodeChunkedHttpBody()` into a stateful decoder class that holds the input iterator, buffered bytes, and remaining payload length in fields; keep the exported async-generator signature and streamed payload behavior unchanged.
+- [ ] Extract focused private methods for reading a chunk header, yielding available payload, validating and consuming the payload terminator, and consuming final trailers so the method SonarCloud reports is at or below cognitive complexity 15.
+- [ ] Preserve chunk extensions, fragmented input handling, trailers, and existing `E-EDJS-32` through `E-EDJS-35` errors without allocating new error codes or changing traceability artifacts.
+- [ ] Keep or extend `chunked-http-body.spec.node.ts` to cover fragmented chunk headers and payloads, chunk extensions, trailers, invalid chunk sizes, a missing terminator, incomplete bodies, and incomplete trailers.
+- [ ] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, and `npm run trace`; confirm the SonarCloud cognitive-complexity finding is resolved in the subsequent analysis.
+
 ### PR 3: Export Cancellation
 
 - [ ] Add CSV export cancellation requirements, scenarios, runtime design, and trace coverage.
