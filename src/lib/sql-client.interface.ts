@@ -3,7 +3,7 @@
  * Date: 2022-04-14 07:21:51
  */
 import { Attributes, Commands, CommandsNoResult } from './commands';
-import { CsvFormatOptions, CsvImportOptions } from './import/types';
+import { CsvExportFormatOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
 import { QueryResult } from './query-result';
 import { SQLQueriesResponse, SQLResponse } from './types';
 
@@ -130,6 +130,7 @@ export interface IExasolDriver extends AsyncDisposable {
 
   /**
    * Import data from a local CSV file into an Exasol table.
+   *
    * Node.js only.
    *
    * @param tableName Target table name (optionally schema-qualified)
@@ -139,6 +140,18 @@ export interface IExasolDriver extends AsyncDisposable {
    * @returns Number of rows imported
    */
   importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions, options?: CsvImportOptions): Promise<number>;
+
+  /**
+   * Export an Exasol table or parenthesized query result to a new local CSV file.
+   *
+   * Node.js only.
+   *
+   * @param source Source table name (optionally schema-qualified) or parenthesized query
+   * @param filePath Path to the new local CSV file
+   * @param csvOptions Optional CSV format options
+   * @returns Number of rows exported
+   */
+  exportToCsvFile(source: string, filePath: string, csvOptions?: CsvExportFormatOptions): Promise<number>;
 }
 
 export interface IStatement extends AsyncDisposable {

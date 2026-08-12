@@ -5,46 +5,63 @@
 export interface CsvFormatOptions {
   /**
    * Defines the field separator for CSV files.
+   *
    * By default, comma is used.
+   *
    * You can specify any string as a separator, either as plain text (`','`), as a hexadecimal value (`'0x09'`), or as an ASCII abbreviation (`'NUL'`, `'TAB'`, `'LF'`, `'CR'`, `'ESC'`).
+   *
    * A plain text value is limited to 10 characters, which are automatically converted to the encoding set for the file with the ENCODING option.
+   *
    * A hexadecimal value is limited to 10 bytes (not characters) and will not be converted.
    */
   columnSeparator?: string;
 
   /**
    * Defines the field delimiter for CSV files.
+   *
    * By default, the double quote character `"` is used. You can specify any string as a delimiter, either as plain text (`'"'`), as a hexadecimal value (`'0x09'`), or as an ASCII abbreviation (`'NUL'`, `'TAB'`, `'LF'`, `'CR'`, `'ESC'`).
+   *
    * A plain text value is limited to 10 characters, which are automatically converted to the encoding set for the file with the ENCODING option.
+   *
    * A hexadecimal value is limited to 10 bytes (not characters) and will not be converted.
-   * If you do not want to use any field delimiter, define an empty string (`''`). 
+   *
+   * If you do not want to use any field delimiter, define an empty string (`''`).
    */
   columnDelimiter?: string;
 
   /**
    * Defines the line break character.
+   *
    * Default value: {@link RowSeparator.LF}
    */
   rowSeparator?: RowSeparator;
 
-  /** Encoding of the CSV or FBV files. Default is `UTF-8`. */
+  /**
+   * Encoding of the CSV or FBV files.
+   *
+   * Default is {@link Encoding.UTF8}.
+   */
   encoding?: Encoding;
 
   /**
    * Number of rows that will be omitted in the import.
+   *
    * This can be useful if you have to include header information within the data files.
-   * SKIP defines rows by line breaks (defined by ROW SEPARATOR) even if they occur inside data. 
+   *
+   * SKIP defines rows by line breaks (defined by ROW SEPARATOR) even if they occur inside data.
    */
   skip?: number;
 
   /**
    * Defines whether spaces are removed at the border of CSV columns.
+   *
    * Default: {@link TrimMode.NONE} (no spaces are removed)
    */
   trim?: TrimMode;
 
   /**
    * Additional representation of NULL values. This option is only supported for CSV files and only applies to fields not enclosed in field delimiters.
+   *
    * Regardless of this option, an empty string in the input data always represents a NULL value.
    */
   null?: string;
@@ -54,6 +71,61 @@ export interface CsvFormatOptions {
 export interface CsvImportOptions {
   /** Cancels the import and releases its file and network resources. */
   signal?: AbortSignal;
+}
+
+/** Options for CSV file export. See https://docs.exasol.com/db/latest/sql/export.htm */
+export interface CsvExportFormatOptions {
+  /**
+   * Defines the field separator for CSV files.
+   *
+   * By default, comma is used. You can specify any string as a separator, either as plain text (`','`), as a hexadecimal value (`'0x09'`), or as an ASCII abbreviation (`'NUL'`, `'TAB'`, `'LF'`, `'CR'`, `'ESC'`).
+   *
+   * A plain text value is limited to 10 characters, which are automatically converted to the encoding set for the file with the ENCODING option.
+   *
+   * A hexadecimal value is limited to 10 bytes (not characters) and will not be converted.
+   */
+  columnSeparator?: string;
+
+  /**
+   * Defines the field delimiter for CSV files.
+   *
+   * By default, the double quote character `"` is used. You can specify any string as a delimiter, either as plain text (`'"'`), as a hexadecimal value (`'0x09'`), or as an ASCII abbreviation (`'NUL'`, `'TAB'`, `'LF'`, `'CR'`, `'ESC'`).
+   *
+   * A plain text value is limited to 10 characters, which are automatically converted to the encoding set for the file with the ENCODING option.
+   *
+   * A hexadecimal value is limited to 10 bytes (not characters) and will not be converted.
+   *
+   * To disable field delimiters, use an empty string (`''`).
+   */
+  columnDelimiter?: string;
+
+  /**
+   * Defines the line break character between rows.
+   *
+   * Default: {@link RowSeparator.LF}.
+   */
+  rowSeparator?: RowSeparator;
+
+  /**
+   * Encoding of the CSV file.
+   *
+   * Default: {@link Encoding.UTF8}.
+   */
+  encoding?: Encoding;
+
+  /**
+   * Defines the representation of NULL values.
+   *
+   * By default, NULL values are written as an empty string.
+   */
+  null?: string;
+
+  /**
+   * Includes column names as the first row of the exported CSV file.
+   *
+   * The other format options also apply to the header row. For a query, the header can contain expressions rather than table-column names.
+   */
+  withColumnNames?: boolean;
 }
 
 /** Defines the line break character. */

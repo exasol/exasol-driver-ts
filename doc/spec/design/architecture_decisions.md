@@ -102,7 +102,7 @@ Considered alternatives:
 #### Stream CSV Through Export Tunnel
 `dsn~decision-stream-csv-through-export-tunnel~1`
 
-The system exports local CSV files by opening an Exasol export tunnel and streaming Exasol's content-length-delimited HTTP request body into a newly reserved file.
+The system exports local CSV files by opening an Exasol export tunnel and streaming Exasol's content-length-delimited or chunked HTTP request body into a newly reserved file.
 
 Rationale:
 

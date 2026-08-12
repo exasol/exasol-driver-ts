@@ -601,7 +601,7 @@ Needs: dsn
 
 **Given** a Node.js application, an authenticated driver, and a destination path that already exists
 **When** the application calls `exportToCsvFile()`
-**Then** the driver rejects before opening the export tunnel with error code `E-EDJS-31` and leaves the existing file unchanged
+**Then** the driver rejects before opening the export tunnel with error code `E-EDJS-30` and leaves the existing file unchanged
 
 Covers:
 - `req~export-local-csv-files~1`
@@ -620,12 +620,12 @@ Covers:
 
 Needs: dsn
 
-#### CSV Export Rejects Chunked Request Bodies
-`scn~csv-export-rejects-chunked-request-body~1`
+#### CSV Export Streams Chunked Request Bodies
+`scn~csv-export-streams-chunked-request-body~1`
 
 **Given** an in-flight CSV export whose tunnel sends an HTTP request with `Transfer-Encoding: chunked`
 **When** the driver receives the request body
-**Then** the driver rejects with error code `E-EDJS-30` before writing request-body data to the destination file
+**Then** the driver decodes the HTTP chunks and writes their payload data to the destination file
 
 Covers:
 - `req~export-local-csv-files~1`

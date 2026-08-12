@@ -29,7 +29,7 @@ Out of scope:
 
 ## Strategy
 
-The export flow reuses the ad-hoc Exasol tunnel and generated certificate from CSV import, in reverse: Exasol uploads CSV bytes through the pinned TLS connection and the driver streams them to a new local file. The public API uses a dedicated `CsvExportFormatOptions` type so callers cannot supply import-only clauses. The shared tunnel body reader accepts `Content-Length` request bodies and rejects unsupported chunked request bodies before writing any data.
+The export flow reuses the ad-hoc Exasol tunnel and generated certificate from CSV import, in reverse: Exasol uploads CSV bytes through the pinned TLS connection and the driver streams them to a new local file. The public API uses a dedicated `CsvExportFormatOptions` type so callers cannot supply import-only clauses. The shared tunnel body reader decodes both `Content-Length` and chunked request bodies before writing payload data.
 
 Deliver the work as four dependent pull requests. Do not release the API until all four are merged.
 
@@ -48,24 +48,24 @@ Deliver the work as four dependent pull requests. Do not release the API until a
 ### PR 2: Core Export API, Requirements, Design, and Tests
 
 - [x] Add `feat~csv-file-export~1` to the system requirements.
-- [x] Add requirements and scenarios for successful table/query export, export format options, existing-file rejection, and unsupported chunked request bodies.
-- [x] Add runtime, building-block, architecture-decision, and Node-only constraint `dsn` items for the public API, reverse TLS tunnel, SQL generation, streaming, transfer failures, existing-file protection, and unsupported chunked request bodies.
-- [ ] Add `impl`, `utest`, and `itest` tags so every new runtime design item has a clean `feat -> req -> scn -> dsn -> impl/utest/itest` trace chain.
-- [ ] Stop and ask the user for a review of the requirements and design.
-- [ ] Add and export `CsvExportFormatOptions` (`columnSeparator`, `columnDelimiter`, `rowSeparator`, `encoding`, `null`, `withColumnNames`).
-- [ ] Implement `exportToCsvFile(source, filePath, csvOptions?)` on `IExasolDriver` and `ExasolDriver`, resolving with Exasol's export row count.
-- [ ] Build `EXPORT <source> INTO CSV AT '<tunnel>' PUBLIC KEY '<fingerprint>' FILE '001.csv'` with valid export clauses and escaped SQL literals.
-- [ ] Reserve the resolved destination exclusively before opening the tunnel; reject an existing file with `E-EDJS-31`, retain successful output, and remove a newly-created partial file after SQL, transfer, or write failures.
-- [ ] Reject `Transfer-Encoding: chunked` case-insensitively in the shared HTTP request-body reader before writing body data, with `E-EDJS-30`.
-- [ ] Add Node unit tests for SQL generation, API forwarding and closed-driver behavior, existing-file protection, transfer/write failures, and chunked-request rejection.
-- [ ] Add Node integration tests for table and parenthesized-query sources, format/header options, exported contents, existing-file preservation, and rejected chunked request bodies.
-- [ ] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, `npm run itest`, and `npm run trace`.
+- [x] Add requirements and scenarios for successful table/query export, export format options, existing-file rejection, and chunked request bodies.
+- [x] Add runtime, building-block, architecture-decision, and Node-only constraint `dsn` items for the public API, reverse TLS tunnel, SQL generation, streaming, transfer failures, existing-file protection, and chunked request bodies.
+- [x] Add `impl`, `utest`, and `itest` tags so every new runtime design item has a clean `feat -> req -> scn -> dsn -> impl/utest/itest` trace chain.
+- [x] Stop and ask the user for a review of the requirements and design.
+- [x] Add and export `CsvExportFormatOptions` (`columnSeparator`, `columnDelimiter`, `rowSeparator`, `encoding`, `null`, `withColumnNames`).
+- [x] Implement `exportToCsvFile(source, filePath, csvOptions?)` on `IExasolDriver` and `ExasolDriver`, resolving with Exasol's export row count.
+- [x] Build `EXPORT <source> INTO CSV AT '<tunnel>' PUBLIC KEY '<fingerprint>' FILE '001.csv'` with valid export clauses and escaped SQL literals.
+- [x] Reserve the resolved destination exclusively before opening the tunnel; reject an existing file with `E-EDJS-30`, retain successful output, and remove a newly-created partial file after SQL, transfer, or write failures.
+- [x] Decode `Transfer-Encoding: chunked` case-insensitively in the shared HTTP request-body reader before forwarding payload data.
+- [x] Add Node unit tests for SQL generation, API forwarding and closed-driver behavior, existing-file protection, transfer/write failures, and chunked-request decoding.
+- [x] Add Node integration tests for table and parenthesized-query sources, format/header options, exported contents, existing-file preservation, and chunked request bodies.
+- [x] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, `npm run itest`, and `npm run trace`.
 
 ### PR 3: Export Cancellation
 
 - [ ] Add CSV export cancellation requirements, scenarios, runtime design, and trace coverage.
 - [ ] Add and export `CsvExportOptions` (`signal`) and extend `exportToCsvFile(source, filePath, csvOptions?, options?)` on `IExasolDriver` and `ExasolDriver`.
-- [ ] On abort, destroy file and tunnel resources, cancel the active SQL operation once started, remove the newly-created partial output file, and reject with `AbortError` using `E-EDJS-32`.
+- [ ] On abort, destroy file and tunnel resources, cancel the active SQL operation once started, remove the newly-created partial output file, and reject with `AbortError` using `E-EDJS-31`.
 - [ ] Add Node unit tests for pre-aborted and in-flight cancellation, SQL cancellation, and output-file cleanup.
 - [ ] Add Node integration tests for in-flight cancellation and partial-file removal.
 - [ ] Run `npm run lint:ci`, `npm run typecheck`, `npm run test`, `npm run itest`, and `npm run trace`.

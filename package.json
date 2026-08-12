@@ -15,6 +15,7 @@
     "lint:ci": "eslint --ext .js,.ts .",
     "format": "prettier --write .",
     "test": "jest --selectProjects unit-dom unit-node --coverage",
+    "itest:node": "jest --selectProjects itest-node --coverage",
     "itest": "jest --selectProjects itest-dom itest-node --coverage",
     "test:all": "jest --selectProjects unit-dom unit-node itest-dom itest-node --coverage"
   },
