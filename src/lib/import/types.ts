@@ -104,7 +104,7 @@ export interface CsvExportFormatOptions {
    *
    * Default: {@link RowSeparator.LF}.
    */
-  rowSeparator?: RowSeparator;
+  rowSeparator?: CsvExportRowSeparator;
 
   /**
    * Encoding of the CSV file.
@@ -139,6 +139,9 @@ export enum RowSeparator {
   /** None means no line break. This is only allowed in FBV files */
   NONE = 'NONE',
 }
+
+/** Row separators supported by CSV export. */
+export type CsvExportRowSeparator = Exclude<RowSeparator, RowSeparator.NONE>;
 
 /** Defines whether spaces are removed at the border of CSV columns. */
 export enum TrimMode {

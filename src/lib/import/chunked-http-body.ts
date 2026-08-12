@@ -7,38 +7,48 @@ export async function* decodeChunkedHttpBody(
 ): AsyncGenerator<Buffer> {
   let buffer = initialBody;
   const iterator = chunks[Symbol.asyncIterator]();
-  let chunkSize: number | undefined;
+  let remainingChunkBytes: number | undefined;
 
   while (true) {
-    if (chunkSize === undefined) {
+    if (remainingChunkBytes === undefined) {
       const chunkLength = readChunkLength(buffer);
       if (chunkLength === undefined) {
         buffer = await appendNextChunk(iterator, buffer, incompleteChunkedBodyError());
         continue;
       }
-      chunkSize = chunkLength.size;
+      remainingChunkBytes = chunkLength.size;
       buffer = buffer.subarray(chunkLength.headerLength);
     }
 
-    if (chunkSize === 0) {
+    if (remainingChunkBytes === 0) {
       while (!hasCompleteTrailers(buffer)) {
         buffer = await appendNextChunk(iterator, buffer, incompleteChunkedTrailersError());
       }
       return;
     }
 
-    if (buffer.length < chunkSize + 2) {
+    if (buffer.length === 0) {
       buffer = await appendNextChunk(iterator, buffer, incompleteChunkedBodyError());
       continue;
     }
 
-    const data = buffer.subarray(0, chunkSize);
-    if (buffer.subarray(chunkSize, chunkSize + 2).toString() !== '\r\n') {
+    const dataLength = Math.min(buffer.length, remainingChunkBytes);
+    yield buffer.subarray(0, dataLength);
+    buffer = buffer.subarray(dataLength);
+    remainingChunkBytes -= dataLength;
+
+    if (remainingChunkBytes > 0) {
+      continue;
+    }
+
+    while (buffer.length < 2) {
+      buffer = await appendNextChunk(iterator, buffer, incompleteChunkedBodyError());
+    }
+    if (buffer.subarray(0, 2).toString() !== '\r\n') {
       throw new ExaErrorBuilder('E-EDJS-32').message('Malformed chunked HTTP request body: missing chunk terminator.').error();
     }
-    buffer = buffer.subarray(chunkSize + 2);
-    chunkSize = undefined;
-    yield data;
+    buffer = buffer.subarray(2);
+    remainingChunkBytes = undefined;
   }
 }
 

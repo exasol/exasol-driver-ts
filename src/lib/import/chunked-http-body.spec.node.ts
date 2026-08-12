@@ -6,7 +6,23 @@ describe('decodeChunkedHttpBody', () => {
   it('decodes fragmented chunks and ignores chunk extensions', async () => {
     const chunks = Readable.from([Buffer.from('llo\r\n6;extension=value\r\n world\r\n0\r\n'), Buffer.from('\r\n')]);
 
-    await expect(readBody(chunks, Buffer.from('5\r\nhe'))).resolves.toEqual([Buffer.from('hello'), Buffer.from(' world')]);
+    await expect(readContent(chunks, Buffer.from('5\r\nhe'))).resolves.toEqual(Buffer.from('hello world'));
+  });
+
+  it('streams payload fragments before receiving the complete chunk', async () => {
+    const chunks = new Readable({ read() {} });
+    const body = decodeChunkedHttpBody(chunks, Buffer.from('a\r\n'));
+    const firstChunk = body.next();
+
+    chunks.push('first');
+
+    await expect(firstChunk).resolves.toEqual({ value: Buffer.from('first'), done: false });
+
+    const secondChunk = body.next();
+    chunks.push(' part\r\n0\r\n\r\n');
+
+    await expect(secondChunk).resolves.toEqual({ value: Buffer.from(' part'), done: false });
+    await expect(body.next()).resolves.toEqual({ value: undefined, done: true });
   });
 
   it('accepts trailers after the terminating chunk', async () => {
@@ -46,4 +62,8 @@ async function readBody(chunks: AsyncIterable<Buffer>, initialBody: Buffer): Pro
     body.push(chunk);
   }
   return body;
+}
+
+async function readContent(chunks: AsyncIterable<Buffer>, initialBody: Buffer): Promise<Buffer> {
+  return Buffer.concat(await readBody(chunks, initialBody));
 }

@@ -27,4 +27,11 @@ describe('export-sql-builder', () => {
       "EXPORT MYTABLE INTO CSV AT 'https://localhost:8563' PUBLIC KEY 'fingerprint' FILE '001.csv' COLUMN SEPARATOR = ';' COLUMN DELIMITER = '''' ROW SEPARATOR = 'CRLF' ENCODING = 'ASCII' NULL = 'N''ULL' WITH COLUMN NAMES",
     );
   });
+
+  it('does not allow NONE as a CSV export row separator', () => {
+    // @ts-expect-error NONE is only valid for FBV files.
+    const rowSeparator: import('./types').CsvExportRowSeparator = RowSeparator.NONE;
+
+    expect(rowSeparator).toBe(RowSeparator.NONE);
+  });
 });
