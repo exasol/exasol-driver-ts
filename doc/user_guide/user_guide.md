@@ -308,7 +308,8 @@ See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#
 | `clientVersion`    |       string       |          1          | Tell the server the version of the application.                                                                                         |
 | `encryption`       | false=off, true=on |        true         | Switch automatic encryption on or off. This property is deprecated and no longer has an effect. Encryption is always on.                |
 | `compression`      | false=off, true=on |       false        | Switch compression on or off.                                                                                                           |
-| `fetchSize`        |     number, >0     |     `128*1024`      | Amount of data in kB which should be obtained by Exasol during a fetch. The application can run out of memory if the value is too high. |
+<!-- [uman->scn~configured-fetch-size-used-during-fetch~1] -->
+| `fetchSize`        |     number, >0     |    `1024*1024`      | Amount of data in bytes which should be obtained by Exasol during a fetch. The application can run out of memory if the value is too high. |
 | `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
 | `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
 
@@ -386,21 +387,11 @@ await pool.drain();
 await pool.clear();
 ```
 
-### Supported Driver Properties
+#### Supported Driver Properties For Pool
 
-| Property           |       Value        |       Default       | Description                                                                                                                             |
-| :----------------- | :----------------: | :-----------------: | :-------------------------------------------------------------------------------------------------------------------------------------- |
-| `host`             |       string       |     'localhost'     | Host name or ip address.                                                                                                                |
-| `port`             |       number       |        8563         | Port number.                                                                                                                            |
-| `user`             |       string       |                     | Exasol username.                                                                                                                        |
-| `password`         |       string       |                     | Exasol password.                                                                                                                        |
-| `autocommit`       | false=off, true=on |        true         | Switch autocommit on or off.                                                                                                            |
-| `clientName`       |       string       | 'Javascript client' | Tell the server the application name.                                                                                                   |
-| `clientVersion`    |       string       |          1          | Tell the server the version of the application.                                                                                         |
-| `encryption`       | false=off, true=on |        true         | Switch automatic encryption on or off. This property is deprecated and no longer has an effect. Encryption is always on.                |
-| `compression`      | false=off, true=on |       false         | Switch compression on or off.                                                                                                  |
-| `fetchSize`        |     number, >0     |     `128*1024`      | Amount of data in kB which should be obtained by Exasol during a fetch. The application can run out of memory if the value is too high. |
-| `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
-| `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
-| `minimumPoolSize`  |       number       |          0          | Minimum amount of active connections.                                                                                                   |
-| `maximumPoolSize`  |       number       |          5          | Maximum amount of active connections.                                                                                                   |
+All driver properties listed [above](#supported-driver-properties) also apply to connection pools. Pools additionally support:
+
+| Property           | Value  | Default | Description                              |
+| :----------------- | :----: | :-----: | :--------------------------------------- |
+| `minimumPoolSize`  | number |    0    | Minimum number of active connections.    |
+| `maximumPoolSize`  | number |    5    | Maximum number of active connections.    |

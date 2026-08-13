@@ -41,7 +41,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
 
 
     describe('query()', () => {
-      // [itest->dsn~runtime-query-execution~1]
+      // [itest->dsn~runtime-query-execution~2]
       it('Exec and fetch', async () => {
         const driver = await openConnection();
 

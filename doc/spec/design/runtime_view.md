@@ -50,7 +50,7 @@ Needs: impl, utest
 ## SQL Execution
 
 ### Query Execution
-`dsn~runtime-query-execution~1`
+`dsn~runtime-query-execution~2`
 
 **Given** an authenticated driver and SQL text
 **When** `query()` is called
@@ -61,6 +61,18 @@ Covers:
 - `scn~result-row-limit-applied-during-fetch~1`
 
 Needs: impl, utest, itest
+
+#### Fetch Size
+`dsn~runtime-query-fetch-size~1`
+
+**Given** a configured `fetchSize` value and a query result with more rows available
+**When** the driver fetches an additional result-set page
+**Then** the driver requests the configured number of bytes from Exasol
+
+Covers:
+- `scn~configured-fetch-size-used-during-fetch~1`
+
+Needs: impl, utest
 
 ### Command Execution
 `dsn~runtime-command-execution~1`
