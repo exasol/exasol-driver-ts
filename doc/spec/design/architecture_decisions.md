@@ -130,7 +130,7 @@ Considered alternatives:
 #### Use the Destination Extension for Compression
 `dsn~decision-select-csv-export-compression~1`
 
-The system maps destination extensions `.zip`, `.gz`, and `.bz2` case-insensitively to Exasol remote filenames `001.zip`, `001.gz`, and `001.bz2`; all other destinations use `001.csv`.
+The system maps destination file extensions `.zip`, `.gz`, and `.bz2` case-insensitively to Exasol remote filenames `001.zip`, `001.gz`, and `001.bz2`; all other destinations use `001.csv`.
 
 Rationale:
 
