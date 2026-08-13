@@ -2,7 +2,7 @@
 
 ## Introduction
 
-`@exasol/exasol-driver-ts` is a TypeScript and JavaScript driver for connecting applications to an Exasol database. Applications use the driver to open WebSocket connections, authenticate, execute SQL statements, fetch query results, manage a connection pool, and import local CSV files from Node.js.
+`@exasol/exasol-driver-ts` is a TypeScript and JavaScript driver for connecting applications to an Exasol database. Applications use the driver to open WebSocket connections, authenticate, execute SQL statements, fetch query results, manage a connection pool, and import or export local CSV files from Node.js.
 
 The library is published as an npm package and is intended for both browser and Node.js runtimes. Browser applications use the runtime-provided `WebSocket` implementation. Node.js applications provide a compatible WebSocket implementation, for example the `ws` package.
 
@@ -13,7 +13,7 @@ The library is published as an npm package and is intended for both browser and 
 * APIs for connecting, querying, executing commands, and closing connections.
 * Support secure database communication by default.
 * Provide connection pooling for concurrent workloads.
-* Support Node.js CSV file imports into Exasol tables.
+* Support Node.js CSV file imports into and exports from Exasol.
 
 ## Evidence Base
 
@@ -23,7 +23,7 @@ This specification was reverse-engineered from:
 * [README](../../README.md)
 * [Developer Guide](../developer_guide/developer_guide.md)
 * Public API declarations in `src/index.ts`, `src/lib/sql-client.interface.ts`, `src/lib/sql-client.ts`, and `src/lib/sql-pool.ts`
-* CSV import implementation in `src/lib/import/`
+* CSV import and export implementation in `src/lib/import/`
 * Unit tests in `src/lib/**/*.spec.ts`, `src/lib/**/*.spec.node.ts`, and `src/lib/**/*.spec.dom.ts`
 * Integration tests in `integration-test/`
 
@@ -62,6 +62,10 @@ A user-provided function that receives the database WebSocket URL and returns an
 ### CSV Import
 
 Node.js-only functionality that imports a readable local CSV file into an Exasol table using Exasol's `IMPORT FROM CSV` mechanism.
+
+### CSV Export
+
+Node.js-only functionality that exports an Exasol table or query result into a new local CSV file using Exasol's `EXPORT INTO CSV` mechanism.
 
 ## User Roles
 
@@ -602,7 +606,7 @@ Needs: dsn, uman
 Covers:
 - `req~export-local-csv-files~1`
 
-Needs: dsn
+Needs: dsn, uman
 
 #### CSV Export Query Succeeds
 `scn~csv-export-query-succeeds~1`
@@ -614,7 +618,7 @@ Needs: dsn
 Covers:
 - `req~export-local-csv-files~1`
 
-Needs: dsn
+Needs: dsn, uman
 
 #### CSV Export Compressed File Succeeds
 `scn~csv-export-compressed-file-succeeds~1`
@@ -638,7 +642,7 @@ Needs: dsn, uman
 Covers:
 - `req~export-local-csv-files~1`
 
-Needs: dsn
+Needs: dsn, uman
 
 #### CSV Export Applies Format Options
 `scn~csv-export-applies-format-options~1`
@@ -650,7 +654,7 @@ Needs: dsn
 Covers:
 - `req~configure-csv-export-format~1`
 
-Needs: dsn
+Needs: dsn, uman
 
 #### CSV Export Streams Chunked Request Bodies
 `scn~csv-export-streams-chunked-request-body~1`
@@ -674,7 +678,7 @@ Needs: dsn
 Covers:
 - `req~cancel-csv-file-export~1`
 
-Needs: dsn
+Needs: dsn, uman
 
 ### Connection Encryption
 

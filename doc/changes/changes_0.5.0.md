@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.5.0, released 2026-??-??
+# Exasol Driver ts 0.5.0, released 2026-08-13
 
 Code name:
 
@@ -12,6 +12,12 @@ The driver now supports TypeScript's automatic resource management with `await u
 await using driver = new ExasolDriver(websocketFactory, config);
 await driver.connect();
 // The driver is closed automatically when this scope exits.
+```
+
+The release also adds Node.js local CSV export with table and query sources, CSV format options, compression, existing-file protection, and `AbortSignal` cancellation. See the [CSV Export user guide](../user_guide/user_guide.md#csv-export).
+
+```ts
+await driver.exportToCsvFile('MY_SCHEMA.MY_TABLE', '/absolute/path/to/data.csv');
 ```
 
 This release also fixes fetch commands to use the configured fetch size and increases the default fetch size to 1 MiB. Thanks to [@espenhogbakk](https://github.com/espenhogbakk) for reporting this!
@@ -30,6 +36,7 @@ This release also fixes fetch commands to use the configured fetch size and incr
 
 * #73: Added TypeScript `await using` support for drivers, prepared statements, and connection pools.
 * #68: Added `AbortSignal` cancellation for local CSV imports.
+* #69: Added Node.js local CSV export
 
 ## Bugfixes
 

@@ -297,11 +297,81 @@ See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#
 
 ### CSV Export
 
+CSV export is available in Node.js. It writes a new local file and returns the number of exported rows.
+
+<!-- [uman->scn~csv-export-table-succeeds~1] -->
+Export a table by passing its optionally schema-qualified name and a destination path that does not yet exist:
+
+```ts
+await driver.exportToCsvFile('MY_SCHEMA.MY_TABLE', '/absolute/path/to/data.csv');
+```
+
+<!-- [uman->scn~csv-export-query-succeeds~1] -->
+To export a query result, pass the `SELECT` statement enclosed in parentheses:
+
+```ts
+await driver.exportToCsvFile(
+  '(SELECT ID, NAME FROM MY_SCHEMA.MY_TABLE ORDER BY ID)',
+  '/absolute/path/to/data.csv',
+);
+```
+
+<!-- [uman->scn~csv-export-applies-format-options~1] -->
+Use the optional third argument to configure the CSV layout. Set `withColumnNames` to include a header row; `columnSeparator`, `columnDelimiter`, `rowSeparator`, `encoding`, and `null` are also supported.
+
+```ts
+await driver.exportToCsvFile('MY_SCHEMA.MY_TABLE', '/absolute/path/to/data.csv', {
+  columnSeparator: ';',
+  rowSeparator: RowSeparator.CRLF,
+  withColumnNames: true,
+});
+```
+
+<!-- [uman->scn~csv-export-rejects-existing-destination~1] -->
+The destination path must not already exist. The driver rejects the export before transferring data and leaves an existing file unchanged.
+
+#### Available CSV Export Options
+
+Pass format options as the third argument to `exportToCsvFile()`:
+
+| Option | Type | Default | Description |
+| :----- | :--- | :------ | :---------- |
+| `columnSeparator` | `string` | `','` | Field separator for the exported CSV file. |
+| `columnDelimiter` | `string` | `'"'` | Field delimiter for CSV fields. Use `''` to disable delimiters. |
+| `rowSeparator` | `RowSeparator.LF`, `RowSeparator.CR`, or `RowSeparator.CRLF` | `RowSeparator.LF` | Line break between CSV rows. |
+| `encoding` | `Encoding` | `'UTF-8'` | Character encoding of the exported CSV file. |
+| `null` | `string` | empty string | Representation written for `NULL` values. |
+| `withColumnNames` | `boolean` | `false` | Includes column names as the first row. Query headers can contain expressions. |
+
+Pass export control options as the optional fourth argument:
+
+| Option | Type | Default | Description |
+| :----- | :--- | :------ | :---------- |
+| `signal` | `AbortSignal` | not set | Cancels the export, releases its file and tunnel resources, and removes a partial destination file. |
+
+See the [Exasol EXPORT documentation](https://docs.exasol.com/db/latest/sql/export.htm) for format-option details.
+
 <!-- [uman->scn~csv-export-compressed-file-succeeds~1] -->
 Exporting to a destination ending in `.zip`, `.gz`, or `.bz2` asks Exasol to create a ZIP, GZIP, or BZIP2-compressed CSV file. The driver writes the compressed bytes directly to that new file; use a destination without one of these extensions for an uncompressed CSV export.
 
 ```ts
 await driver.exportToCsvFile('MY_SCHEMA.MY_TABLE', '/absolute/path/to/data.csv.gz');
+```
+
+<!-- [uman->scn~csv-export-is-cancelled~1] -->
+To cancel an in-flight export, pass an `AbortSignal` as the fourth argument. Aborting the signal stops the transfer, removes the partial destination file, and rejects the export promise with an `AbortError`.
+
+```ts
+const controller = new AbortController();
+const exportPromise = driver.exportToCsvFile(
+  'MY_SCHEMA.MY_TABLE',
+  '/absolute/path/to/data.csv',
+  undefined,
+  { signal: controller.signal },
+);
+
+controller.abort();
+await exportPromise;
 ```
 
 ### Supported Driver Properties
