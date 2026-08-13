@@ -115,13 +115,13 @@ const fetchMoreData = async (
   return resultSet;
 };
 
-// [impl->scn~configured-fetch-size-used-during-fetch~1]
 const sendFetchCommand = async (
   resultSetHandle: number,
   startPosition: number,
   connection: Connection,
   fetchSizeBytes: number
 ): Promise<SQLResponse<FetchResponse>> => {
+  // [impl->dsn~runtime-query-fetch-size~1]
   return connection.sendCommand<FetchResponse>(
     new FetchCommand({
       numBytes: fetchSizeBytes,

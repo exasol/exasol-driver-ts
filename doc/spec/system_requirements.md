@@ -708,7 +708,7 @@ Needs: dsn
 Covers:
 - `req~configure-session-attributes~1`
 
-Needs: dsn, uman, impl, utest
+Needs: dsn, uman
 
 ## Open Issues
 
