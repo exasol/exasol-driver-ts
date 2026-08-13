@@ -13,7 +13,9 @@ export function buildCsvExportSql(
   filePath?: string,
 ): string {
   const url = `https://${internalAddress.host}:${internalAddress.port}`;
-  let sql = `EXPORT ${source} INTO CSV AT '${url}' PUBLIC KEY '${fingerprint}' FILE '${getExportFileName(filePath)}'`;
+  // Without REPLACE, Exasol appends to ZIP files and first probes the remote file with an HTTP range request.
+  // The export tunnel serves a new local destination and only accepts the resulting upload.
+  let sql = `EXPORT ${source} INTO CSV AT '${url}' PUBLIC KEY '${fingerprint}' FILE '${getExportFileName(filePath)}' REPLACE`;
   const formatClauses = buildFormatClauses(csvOptions);
   if (formatClauses.length > 0) {
     sql += ' ' + formatClauses.join(' ');
