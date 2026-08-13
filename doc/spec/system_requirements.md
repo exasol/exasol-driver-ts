@@ -720,6 +720,18 @@ Covers:
 
 Needs: dsn
 
+#### Configured Fetch Size Used During Fetch
+`scn~configured-fetch-size-used-during-fetch~1`
+
+**Given** a configured `fetchSize` value and a query result with more rows available
+**When** the driver fetches additional result data
+**Then** each fetch command requests the configured number of bytes from Exasol
+
+Covers:
+- `req~configure-session-attributes~1`
+
+Needs: dsn, uman
+
 ## Open Issues
 
 ### CSV Import Runtime Documentation
