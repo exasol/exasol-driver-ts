@@ -311,7 +311,7 @@ Needs: impl, utest, itest
 ### CSV Export Compressed File
 `dsn~runtime-csv-export-compressed-file~1`
 
-**Given**  a new local export destination ending in `.zip`, `.gz`, or `.bz2`
+**Given** a new local export destination ending in `.zip`, `.gz`, or `.bz2`
 **When** `exportToCsvFile()` builds the Exasol export SQL
 **Then** the driver selects the matching canonical `001.zip`, `001.gz`, or `001.bz2` remote file name case-insensitively and writes Exasol's compressed bytes unchanged to the local file
 
