@@ -2,6 +2,7 @@ import { buildCsvExportSql } from './export-sql-builder';
 import { RowSeparator } from './types';
 
 // [utest->dsn~runtime-csv-export-format-options~1]
+// [utest->dsn~runtime-csv-export-compressed-file~1]
 describe('export-sql-builder', () => {
   it('builds EXPORT SQL for a table', () => {
     expect(buildCsvExportSql('MYSCHEMA.MYTABLE', { host: '192.168.1.10', port: 4362 }, 'fingerprint')).toBe(
@@ -33,5 +34,20 @@ describe('export-sql-builder', () => {
     const rowSeparator: import('./types').CsvExportRowSeparator = RowSeparator.NONE;
 
     expect(rowSeparator).toBe(RowSeparator.NONE);
+  });
+
+  it.each([
+    ['export.zip', '001.zip'],
+    ['/tmp/.zip', '001.csv'], // invalid extension, defaults to .csv
+    ['/tmp/export.zip', '001.zip'],
+    ['/tmp/export.gz', '001.gz'],
+    ['/tmp/export.bz2', '001.bz2'],
+    ['/tmp/export.ZIP', '001.zip'],
+    ['/tmp/export.csv', '001.csv'],
+    ['/tmp/export.txt', '001.csv'],
+  ])('uses %s to select remote export file %s', (filePath, fileName) => {
+    expect(buildCsvExportSql('MYTABLE', { host: 'localhost', port: 8563 }, 'fingerprint', undefined, filePath)).toContain(
+      `FILE '${fileName}'`,
+    );
   });
 });

@@ -296,6 +296,19 @@ Covers:
 
 Needs: impl, utest, itest
 
+### CSV Export Compressed File
+`dsn~runtime-csv-export-compressed-file~1`
+
+**Given** a Node.js driver and a new local export destination ending in `.zip`, `.gz`, or `.bz2`
+**When** `exportToCsvFile()` builds the Exasol export SQL
+**Then** the driver selects the matching canonical `001.zip`, `001.gz`, or `001.bz2` remote file name case-insensitively and writes Exasol's compressed bytes unchanged to the local file
+
+Covers:
+- `scn~csv-export-compressed-file-succeeds~1`
+- `constr~node-only-csv-export~1`
+
+Needs: impl, utest, itest
+
 ### CSV Export Format Options
 `dsn~runtime-csv-export-format-options~1`
 

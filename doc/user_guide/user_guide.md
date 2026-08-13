@@ -295,6 +295,15 @@ await importPromise;
 
 See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#Usagenotes) for details about these options.
 
+### CSV Export
+
+<!-- [uman->scn~csv-export-compressed-file-succeeds~1] -->
+Exporting to a destination ending in `.zip`, `.gz`, or `.bz2` asks Exasol to create a ZIP, GZIP, or BZIP2-compressed CSV file. The driver writes the compressed bytes directly to that new file; use a destination without one of these extensions for an uncompressed CSV export.
+
+```ts
+await driver.exportToCsvFile('MY_SCHEMA.MY_TABLE', '/absolute/path/to/data.csv.gz');
+```
+
 ### Supported Driver Properties
 
 | Property           |       Value        |       Default       | Description                                                                                                                             |

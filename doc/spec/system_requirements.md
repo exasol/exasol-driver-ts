@@ -288,6 +288,16 @@ Covers:
 
 Needs: scn
 
+#### Export Compressed Local CSV Files
+`req~export-compressed-local-csv-files~1`
+
+The Node.js application exports an Exasol table or query result to a new local ZIP, GZIP, or BZIP2-compressed CSV file.
+
+Covers:
+- `feat~csv-file-export~1`
+
+Needs: scn
+
 #### Cancel CSV File Export
 `req~cancel-csv-file-export~1`
 
@@ -605,6 +615,18 @@ Covers:
 - `req~export-local-csv-files~1`
 
 Needs: dsn
+
+#### CSV Export Compressed File Succeeds
+`scn~csv-export-compressed-file-succeeds~1`
+
+**Given** a Node.js application, an authenticated driver, an Exasol table or parenthesized `SELECT` query, and a new destination path ending in `.zip`, `.gz`, or `.bz2`
+**When** the application calls `exportToCsvFile()`
+**Then** the driver requests the matching compressed export file from Exasol and writes its compressed bytes unchanged to the local destination
+
+Covers:
+- `req~export-compressed-local-csv-files~1`
+
+Needs: dsn, uman
 
 #### CSV Export Rejects Existing Destination
 `scn~csv-export-rejects-existing-destination~1`
