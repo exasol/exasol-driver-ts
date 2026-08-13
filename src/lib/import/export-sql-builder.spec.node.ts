@@ -41,10 +41,15 @@ describe('export-sql-builder', () => {
     ['/tmp/.zip', '001.csv'], // invalid extension, defaults to .csv
     ['/tmp/export.zip', '001.zip'],
     ['/tmp/export.gz', '001.gz'],
+    ['/tmp/export.csv.gz', '001.gz'],
     ['/tmp/export.bz2', '001.bz2'],
     ['/tmp/export.ZIP', '001.zip'],
+    ['/tmp/.export.zip', '001.zip'],
     ['/tmp/export.csv', '001.csv'],
     ['/tmp/export.txt', '001.csv'],
+    ['/tmp/export', '001.csv'],
+    ['/tmp/export.unsupported', '001.csv'],
+    ['/tmp/.export', '001.csv'],
   ])('uses %s to select remote export file %s', (filePath, fileName) => {
     expect(buildCsvExportSql('MYTABLE', { host: 'localhost', port: 8563 }, 'fingerprint', undefined, filePath)).toContain(
       `FILE '${fileName}'`,

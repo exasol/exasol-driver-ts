@@ -118,9 +118,11 @@ Needs: impl
 
 Tags: csv-export, nodejs
 
-### Select Compression From the Destination Extension
+### How to Select the Compression Format?
 
-The CSV export implementation uses the local destination's final extension to select Exasol's export compression format.
+The CSV export implementation uses the local destination files extension to select Exasol's export compression format.
+
+Example: destination file name `export.csv.gz` selects `.gz` compression.
 
 Considered alternatives:
 
@@ -130,7 +132,7 @@ Considered alternatives:
 #### Use the Destination Extension for Compression
 `dsn~decision-select-csv-export-compression~1`
 
-The system maps destination file extensions `.zip`, `.gz`, and `.bz2` case-insensitively to Exasol remote filenames `001.zip`, `001.gz`, and `001.bz2`; all other destinations use `001.csv`.
+The CSV export maps destination file extensions `.zip`, `.gz`, and `.bz2` case-insensitively to Exasol remote filenames `001.zip`, `001.gz`, and `001.bz2`; all other destinations use `001.csv`.
 
 Rationale:
 
