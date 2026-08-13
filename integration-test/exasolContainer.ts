@@ -74,8 +74,11 @@ async function startNewDockerContainerWithImageName(imageName: string): Promise<
     })
     .withWaitStrategy(Wait.forLogMessage('All stages finished'));
   try {
-    console.log(`Starting Docker container ${imageName} with startup timeout ${startupTimeoutMillis / 1000} seconds...`);
-    return await container.start();
+    console.debug(`Starting Docker container ${imageName} with startup timeout ${startupTimeoutMillis / 1000} seconds...`);
+    const startTimestamp = Date.now();
+    const startedContainer = await container.start();
+    console.debug(`Docker container ${imageName} started with ID ${startedContainer.getId()} in ${(Date.now() - startTimestamp) / 1000} seconds.`);
+    return startedContainer;
   } catch (error) {
     console.error('Failed to start Docker container:', error);
     console.error('Container logs:\n', containerLog.join(''));

@@ -26,6 +26,7 @@ export async function exportCsvFile({
 }: ExportCsvFileParameters): Promise<number> {
   // [impl->dsn~runtime-csv-export-destination-file~1]
   // [impl->dsn~runtime-csv-export-file-stream~1]
+  // [impl->dsn~runtime-csv-export-compressed-file~1]
   // [impl->dsn~runtime-csv-export-cancellation~1]
   return new ExportOperation(filePath, parameters).run();
 }
@@ -92,7 +93,7 @@ class ExportOperation {
     const certificate = generateAdHocCertificate();
     this.secureSocket = wrapWithTls(this.unencryptedSocket, certificate.key, certificate.cert);
     const exportSql = buildCsvExportSql(
-      this.parameters.source, tunnel.internalAddress, certificate.fingerprint, this.parameters.csvOptions,
+      this.parameters.source, tunnel.internalAddress, certificate.fingerprint, this.parameters.csvOptions, this.absoluteFilePath,
     );
 
     this.queryPending = true;

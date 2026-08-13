@@ -1,6 +1,8 @@
+import { execFile } from 'node:child_process';
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { CsvExportFormatOptions, RowSeparator } from '../../src/lib/import/types';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
@@ -9,10 +11,12 @@ import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
 const describeExportWhenSupported = ExasolContainer.supportsEncryptedImportExport() ? describe : describe.skip;
+const execFileAsync = promisify(execFile);
 
 // [itest->dsn~runtime-csv-export-destination-file~1]
 // [itest->dsn~runtime-csv-export-file-stream~1]
 // [itest->dsn~runtime-csv-export-format-options~1]
+// [itest->dsn~runtime-csv-export-compressed-file~1]
 describeExportWhenSupported('Node Export', () => {
   const randomId = new RandomUuid();
   let driver: IExasolDriver;
@@ -55,6 +59,19 @@ describeExportWhenSupported('Node Export', () => {
     return readFile(filePath, 'utf8');
   }
 
+  async function decompressedFileContent(): Promise<string> {
+    const extension = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
+    // We use CLI tools to decompress the file to avoid adding dependencies to the project
+    const commandAndArguments: Record<string, [string, string[]]> = {
+      '.zip': ['unzip', ['-p', filePath]],
+      '.gz': ['gzip', ['-dc', filePath]],
+      '.bz2': ['bzip2', ['-dc', filePath]],
+    };
+    const [command, arguments_] = commandAndArguments[extension]!;
+    const { stdout } = await execFileAsync(command, arguments_, { encoding: 'utf8' });
+    return stdout;
+  }
+
   // [itest->dsn~runtime-csv-export-file-stream~1]
   it('exports a table to a local CSV file', async () => {
     await expect(driver.exportToCsvFile(tableName, filePath)).resolves.toBe(2);
@@ -76,6 +93,14 @@ describeExportWhenSupported('Node Export', () => {
     await driver.exportToCsvFile(tableName, filePath, csvOptions);
 
     await expect(fileContent()).resolves.toBe('ID;NAME\r\n1;one\r\n2;two\r\n');
+  });
+
+  // [itest->dsn~runtime-csv-export-compressed-file~1]
+  it.each(['.zip', '.gz', '.bz2'])('exports a compressed CSV file with the %s extension', async (extension) => {
+    filePath = join(tempDirectory, `export${extension}`);
+
+    await expect(driver.exportToCsvFile(tableName, filePath)).resolves.toBe(2);
+    await expect(decompressedFileContent()).resolves.toBe('1,one\n2,two\n');
   });
 
   // [itest->dsn~runtime-csv-export-destination-file~1]
