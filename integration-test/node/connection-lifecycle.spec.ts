@@ -79,7 +79,7 @@ describe('Connection lifecycle', () => {
       await commandSent;
       websocket?.terminate();
 
-      await expect(query).rejects.toThrow('E-EDJS-28: Socket closed:');
+      await expect(query).rejects.toThrow('E-EDJS-36: Socket closed:');
 
       const result = await pool.query('SELECT 1');
       expect(result.getRows()).toHaveLength(1);

@@ -27,13 +27,13 @@ describe('errors (Node)', () => {
   describe('newSocketClosedError', () => {
     it('preserves the WebSocket close code and reason', () => {
       expect(newSocketClosedError({ code: 1006, reason: 'connection lost' }).message).toBe(
-        "E-EDJS-28: Socket closed: code '1006', reason 'connection lost'.",
+        "E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.",
       );
     });
 
     it('uses safe fallback details when the close event is incomplete', () => {
       expect(newSocketClosedError({ code: 1006 }).message).toBe(
-        "E-EDJS-28: Socket closed: code 'unknown', reason 'not provided'.",
+        "E-EDJS-36: Socket closed: code 'unknown', reason 'not provided'.",
       );
     });
   });

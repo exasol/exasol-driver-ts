@@ -17,7 +17,7 @@ describe('errors (Browser)', () => {
       const closeEvent = new CloseEvent('close', { code: 1006, reason: 'connection lost' });
 
       expect(newSocketClosedError(closeEvent).message).toBe(
-        "E-EDJS-28: Socket closed: code '1006', reason 'connection lost'.",
+        "E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.",
       );
     });
   });

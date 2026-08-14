@@ -91,7 +91,7 @@ describe('connection', () => {
 
     mockSocket.callOnClose({ code: 1006, reason: 'connection lost' });
 
-    await expect(command).rejects.toThrow("E-EDJS-28: Socket closed: code '1006', reason 'connection lost'.");
+    await expect(command).rejects.toThrow("E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.");
     expect(connection.active).toBe(false);
     expect(connection.broken).toBe(true);
   });
@@ -118,6 +118,6 @@ describe('connection', () => {
 
     await expect(connection.sendCommand({ command: 'execute', sqlText: 'select 1' })).rejects.toThrow('E-EDJS-7: Another query is already running.');
     mockSocket.callOnClose({ code: 1006, reason: 'connection lost' });
-    await expect(firstCommand).rejects.toThrow("E-EDJS-28: Socket closed: code '1006', reason 'connection lost'.");
+    await expect(firstCommand).rejects.toThrow("E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.");
   });
 });

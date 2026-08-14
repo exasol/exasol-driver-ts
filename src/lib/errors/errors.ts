@@ -9,7 +9,7 @@ export const newSocketError = (cause: unknown) => {
 
 export const newSocketClosedError = (cause: unknown) => {
   const { code, reason } = getSocketCloseDetails(cause);
-  return new ExaErrorBuilder('E-EDJS-28').message('Socket closed: code {{code}}, reason {{reason}}.', code, reason).error();
+  return new ExaErrorBuilder('E-EDJS-36').message('Socket closed: code {{code}}, reason {{reason}}.', code, reason).error();
 };
 
 const getSocketErrorMessage = (cause: unknown): string => {
