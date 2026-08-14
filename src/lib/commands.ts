@@ -165,51 +165,80 @@ export class AbortQueryCommand extends Command {
   command = 'abortQuery';
 }
 
-export interface OIDCSQLCommand {
-  accessToken?: string;
-  refreshToken?: string;
+/** https://github.com/exasol/websocket-api/blob/master/docs/commands/loginV3.md?plain=1#L65 */
+export interface LoginOptions {
+  /** use compression for messages during the session (beginning after the login process is completed) */
   useCompression: boolean;
-  clientName: string;
-  driverName: string;
-  clientOs: string;
-  clientOsUsername?: string;
-  clientVersion: string;
-  clientRuntime: string;
-  attributes: Attributes;
-}
-
-export interface BasicAuthSQLCommand {
-  username: string;
-  password: string;
-  useCompression: boolean;
+  /** requested session ID */
   sessionID?: number;
+  /** client program name, (e.g., "EXAplus") */
   clientName: string;
+  /** driver name, (e.g., "EXA Python") */
   driverName: string;
-  clientOs?: string;
+  /** name and version of the client operating system */
+  clientOs: string;
+  /** client's operating system user name */
   clientOsUsername?: string;
+  /** language setting of the client system */
   clientLanguage?: string;
+  /** client version number */
   clientVersion: string;
+  /** name and version of the client runtime */
   clientRuntime: string;
+  /** array of attributes to set for the connection */
   attributes: Attributes;
 }
 
+/** See https://github.com/exasol/websocket-api/blob/master/docs/commands/loginTokenV3.md?plain=1#L49 */
+export interface OIDCSQLCommand extends LoginOptions {
+  /** OpenID access token to use for the login process */
+  accessToken?: string;
+  /** OpenID refresh token to use for the login process */
+  refreshToken?: string;
+}
+
+/** See https://github.com/exasol/websocket-api/blob/master/docs/commands/loginV3.md?plain=1#L65 */
+export interface BasicAuthSQLCommand extends LoginOptions {
+  /** Exasol user name to use for the login process */
+  username: string;
+  /** user's password or OpenID refresh token, which is encrypted using publicKey (see 2.) and PKCS #1 v1.5 padding, encoded in Base64 format */
+  password: string;
+}
+
+/** https://github.com/exasol/websocket-api/blob/master/docs/WebsocketAPIV5.md#attributes-session-and-database-properties */
 export interface Attributes {
+  /** If true, commit() will be executed automatically after each statement. If false, commit() and rollback() must be executed manually. */
   autocommit?: boolean;
+  /** If true, the WebSocket data frame payload data is compressed. If false, it is not compressed. */
   compressionEnabled?: boolean;
+  /** Current schema name */
   currentSchema?: string;
+  /** Date format */
   dateFormat?: string;
+  /** Language used for the day and month of dates. */
   dateLanguage?: string;
+  /** Timestamp format */
   datetimeFormat?: string;
+  /** Escape character in LIKE expressions. */
   defaultLikeEscapeCharacter?: string;
+  /** Time interval (in seconds) specifying how often heartbeat/feedback packets are sent to the client during query execution. */
   feedbackInterval?: number;
+  /** Characters specifying the group and decimal separators (`NLS_NUMERIC_CHARACTERS`). For example, `",."` would result in `"123,456,789.123"`. */
   numericCharacters?: string;
+  /** If true, a transaction is open. If false, a transaction is not open. */
   openTransaction?: boolean;
+  /** Query timeout value (in seconds). If a query runs longer than the specified time, it will be aborted. */
   queryTimeout?: number;
-  snapshotTransactionsEnabled?: boolean;
-  timestampUtcEnabled?: boolean;
-  timezone?: string;
-  timeZoneBehavior?: string;
+  /** Maximum number of result set rows returned, 0 (default) means no limit. Only applicable to execute, executeBatch and executePreparedStatement. */
   resultSetMaxRows?: number;
+  /** If true, snapshot transactions will be used. If false, they will not be used. */
+  snapshotTransactionsEnabled?: boolean;
+  /** If true, timestamps will be converted to UTC. If false, UTC will not be used. */
+  timestampUtcEnabled?: boolean;
+  /** Timezone of the session. */
+  timezone?: string;
+  /** Specifies the conversion behavior of UTC timestamps to local timestamps when the time value occurs during a time shift because of daylight saving time (`TIME_ZONE_BEHAVIOR`). */
+  timeZoneBehavior?: string;
 }
 
 export class SchemasCommand extends Command {
