@@ -10,6 +10,7 @@ export type Commands =
   | SQLBatchCommand
   | SQLSingleCommand
   | FetchCommand
+  | CloseResultSetCommand
   | CreatePreparedStatementCommand
   | ClosePreparedStatementCommand
   | ExecutePreparedStatementCommand
@@ -21,7 +22,7 @@ export type Commands =
   | ColumnsCommand
   | TablesCommand
   | DisconnectCommand;
-export type CommandsNoResult = AbortQueryCommand | CloseResultSetCommand;
+export type CommandsNoResult = AbortQueryCommand;
 
 export abstract class Command {
   abstract command: string;
@@ -103,6 +104,7 @@ export class CreatePreparedStatementCommand extends Command {
   }
 }
 
+/** https://github.com/exasol/websocket-api/blob/master/docs/commands/closeResultSetV1.md */
 export class CloseResultSetCommand extends Command {
   command = 'closeResultSet';
   resultSetHandles: number[];
@@ -158,6 +160,7 @@ export class DisconnectCommand extends Command {
   command = 'disconnect';
 }
 
+/** https://github.com/exasol/websocket-api/blob/master/docs/commands/abortQueryV1.md */
 export class AbortQueryCommand extends Command {
   command = 'abortQuery';
 }
