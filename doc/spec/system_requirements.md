@@ -195,7 +195,7 @@ Needs: scn
 #### Handle Unexpected WebSocket Termination
 `req~handle-unexpected-websocket-termination~1`
 
-The application developer receives a rejected command promise when the WebSocket closes or errors during database work. A connection pool discards that broken driver so later requests can use a replacement connection.
+The application receives a rejected command promise when the WebSocket closes or errors during database work. A connection pool discards that broken driver so later requests can use a replacement connection.
 
 Covers:
 - `feat~sql-connectivity~1`
