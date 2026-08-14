@@ -10,7 +10,6 @@ This chapter documents known architectural risks, limitations, and technical deb
 
 ## Technical Debt
 
-* Login metadata currently hard-codes `clientOs` and `clientRuntime` as `Browser`. This will be fixed in [#46](https://github.com/exasol/exasol-driver-ts/issues/46)
 * Some public API comments still contain older wording and typos.
 * No coverage threshold is configured in Jest.
 

@@ -348,9 +348,9 @@ Covers:
 Needs: impl
 
 ### Configure Session Attributes
-`req~configure-session-attributes~1`
+`req~configure-session-attributes~2`
 
-The application developer configures session attributes including autocommit, schema, compression, fetch size, result row limit, client name, and client version.
+The application developer configures session attributes including autocommit, schema, compression, fetch size, and result row limit, plus login metadata including client name, client version, operating system, operating-system username, and runtime.
 
 Covers:
 - `feat~secure-configurable-sessions~1`
@@ -739,9 +739,21 @@ Needs: dsn
 **Then** the driver sends supported attributes such as autocommit, schema, and compression during login
 
 Covers:
-- `req~configure-session-attributes~1`
+- `req~configure-session-attributes~2`
 
 Needs: dsn
+
+#### Login Metadata Sent During Login
+`scn~login-metadata-sent-during-login~1`
+
+**Given** a driver configuration with explicit client operating-system, operating-system username, and runtime metadata
+**When** the application connects with basic or token authentication
+**Then** the driver sends that metadata in the login command; when a value is not configured, it reports best-effort values from the active Node.js or browser platform without adding a runtime dependency
+
+Covers:
+- `req~configure-session-attributes~2`
+
+Needs: dsn, uman
 
 #### Result Row Limit Applied During Fetch
 `scn~result-row-limit-applied-during-fetch~1`
@@ -755,7 +767,7 @@ Comment:
 The driver applies this limit while assembling the fetched result pages. It does not change the SQL statement or send a separate server-side row-limit command.
 
 Covers:
-- `req~configure-session-attributes~1`
+- `req~configure-session-attributes~2`
 
 Needs: dsn
 
@@ -767,7 +779,7 @@ Needs: dsn
 **Then** each fetch command requests the configured number of bytes from Exasol
 
 Covers:
-- `req~configure-session-attributes~1`
+- `req~configure-session-attributes~2`
 
 Needs: dsn, uman
 

@@ -40,6 +40,28 @@ describe('sqlClient', () => {
       expect(mockSocketFactory.mockSocket.closed).toBe(true);
     });
 
+    // [utest->dsn~runtime-login-metadata~1]
+    it('sends configured metadata during token authentication', async () => {
+      driver = new ExasolDriver(mockSocketFactory.factory, {
+        accessToken: 'access-token',
+        clientOs: 'configured-os',
+        clientOsUsername: 'configured-user',
+        clientRuntime: 'configured-runtime',
+      });
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual(
+        expect.objectContaining({
+          accessToken: 'access-token',
+          clientOs: 'configured-os',
+          clientOsUsername: 'configured-user',
+          clientRuntime: 'configured-runtime',
+        }),
+      );
+    });
+
     // [utest->dsn~runtime-inflight-websocket-failure~1]
     it('calls onClose and rejects an in-flight command when the WebSocket closes', async () => {
       const onClose = jest.fn();

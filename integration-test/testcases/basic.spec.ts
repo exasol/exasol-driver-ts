@@ -40,6 +40,32 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
       await driver.close();
     });
 
+    // [itest->dsn~runtime-login-metadata~1]
+    it('stores configured login metadata in the session table', async () => {
+      const driver = new ExasolDriver(factory, {
+        host: container.getHost(),
+        port: container.getPort(),
+        user: 'sys',
+        password: 'exasol',
+        clientName: 'exasol-driver-ts-integration-test',
+        clientOs: 'configured operating system',
+        clientOsUsername: 'configured user',
+        clientRuntime: 'configured runtime',
+      });
+      await driver.connect();
+      tmpDriver = driver;
+
+      const session = await driver.query('SELECT CLIENT, OS_NAME, OS_USER FROM EXA_DBA_SESSIONS WHERE SESSION_ID = CURRENT_SESSION');
+
+      expect(session.getRows()).toEqual([
+        {
+          CLIENT: 'exasol-driver-ts-integration-test 1',
+          OS_NAME: 'configured operating system',
+          OS_USER: 'configured user',
+        },
+      ]);
+    });
+
 
     describe('query()', () => {
       // [itest->dsn~runtime-query-execution~3]
