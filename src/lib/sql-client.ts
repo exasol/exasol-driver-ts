@@ -119,8 +119,15 @@ export class ExasolDriver implements IExasolDriver {
     }
 
     const webSocket = this.config.websocketFactory(url);
-    const connection = new Connection(webSocket, this.logger, Date.now() + '');
     return new Promise<void>((resolve, reject) => {
+      const connection = new Connection(webSocket, this.logger, Date.now() + '', (): void => {
+        this.logger.debug('[SQLClient] Got close event');
+        if (this.config.onClose) {
+          this.config.onClose();
+        }
+        void connection.close();
+        reject(ErrClosed);
+      });
       webSocket.onerror = (err) => {
         this.logger.debug('[SQLClient] OnError', err);
         if (this.config.onError) {
@@ -128,14 +135,6 @@ export class ExasolDriver implements IExasolDriver {
         }
         this.close();
         reject(newSocketError(err));
-      };
-      webSocket.onclose = () => {
-        this.logger.debug('[SQLClient] Got close event');
-        if (this.config.onClose) {
-          this.config.onClose();
-        }
-        connection.close();
-        reject(ErrClosed);
       };
       webSocket.onopen = () => {
         this.logger.debug('[SQLClient] Login');

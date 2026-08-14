@@ -41,6 +41,7 @@ export class Connection implements PoolItem {
   private isInUse = false;
   private isBroken = false;
   private useCompression = false;
+  private rejectPendingCommand: ((error: Error) => void) | undefined;
 
   public setCompression(compression: boolean) {
     this.useCompression = compression;
@@ -64,10 +65,27 @@ export class Connection implements PoolItem {
     private readonly websocket: ExaWebsocket,
     private readonly logger: ILogger,
     public name: string,
+    private readonly onClose?: (event: unknown) => void,
   ) {
     this.websocket = websocket;
     this.logger = logger;
     this.name = name;
+    if (this.websocket) {
+      this.websocket.onclose = (event: unknown) => {
+        this.handleSocketClose(event);
+      };
+    }
+  }
+
+  private handleSocketClose(event: unknown) {
+    this.logger.debug('WebSocket close:', event);
+    this.onClose?.(event);
+    if (this.rejectPendingCommand) {
+      this.rejectPendingCommand(newSocketClosedError(event));
+      return;
+    }
+    this.isBroken = true;
+    this.active = false;
   }
 
   async close() {
@@ -143,14 +161,17 @@ export class Connection implements PoolItem {
         const rejectForSocketFailure = (error: Error) => {
           this.isBroken = true;
           this.active = false;
+          this.rejectPendingCommand = undefined;
           reject(error);
         };
+        this.rejectPendingCommand = rejectForSocketFailure;
         this.connection.onmessage = (event) => {
           try {
             this.logger.trace(`[Entered OnMessage for :${this.name}]`);
             this.logger.trace(`[Compression enabled: ${this.useCompression}]`);
 
             this.active = false;
+            this.rejectPendingCommand = undefined;
             let data: SQLResponse<T>;
             if (this.useCompression) {
               this.logger.trace('inflate');
@@ -191,11 +212,6 @@ export class Connection implements PoolItem {
         this.connection.onerror = (event: unknown) => {
           this.logger.error('WebSocket error:', event);
           rejectForSocketFailure(newSocketError(event));
-        };
-
-        this.connection.onclose = (event: unknown) => {
-          this.logger.debug('WebSocket close:', event);
-          rejectForSocketFailure(newSocketClosedError(event));
         };
 
         this.active = true;

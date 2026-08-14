@@ -14,6 +14,7 @@ describe('Connection lifecycle', () => {
   let websocket: WebSocket | undefined;
   let commandSent: Promise<void>;
   let resolveCommandSent: (() => void) | undefined;
+  let onClose: jest.Mock;
   let host: string;
   let port: number;
 
@@ -40,7 +41,8 @@ describe('Connection lifecycle', () => {
     commandSent = new Promise<void>((resolve) => {
       resolveCommandSent = resolve;
     });
-    driver = new ExasolDriver(factory, { host, port, user: 'sys', password: 'exasol' });
+    onClose = jest.fn();
+    driver = new ExasolDriver(factory, { host, port, user: 'sys', password: 'exasol', onClose });
     await driver.connect();
   });
 
@@ -62,6 +64,7 @@ describe('Connection lifecycle', () => {
     ]);
 
     expect(outcome).toBe('rejected');
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('replaces a pooled driver whose WebSocket closes during a command', async () => {
