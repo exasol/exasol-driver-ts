@@ -134,6 +134,18 @@ Covers:
 
 Needs: impl, utest, itest
 
+### In-Flight WebSocket Failure
+`dsn~runtime-inflight-websocket-failure~1`
+
+**Given** a `Connection` with a command awaiting a WebSocket response
+**When** the WebSocket emits an error or close event
+**Then** `Connection` marks itself broken and inactive, rejects the pending command with the available event details, and `ExasolPool` destroys the broken borrowed driver rather than returning it to the pool
+
+Covers:
+- `scn~reject-command-on-unexpected-websocket-termination~1`
+
+Needs: impl, utest, itest
+
 ## Runtime Portability
 
 ### Browser WebSocket Runtime

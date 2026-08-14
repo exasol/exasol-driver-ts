@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws';
-import { ExaWebsocket } from './connection';
+import { ExaWebsocket, ReadyState } from './connection';
 import { createMockWebsocketFactory, MockWebsocketFactory } from './mock-socket';
 import { ExasolDriver } from './sql-client';
 import { IExasolDriver } from './sql-client.interface';
@@ -38,6 +38,34 @@ describe('sqlClient', () => {
       }
 
       expect(mockSocketFactory.mockSocket.closed).toBe(true);
+    });
+
+    // [utest->dsn~runtime-inflight-websocket-failure~1]
+    it('calls onClose and rejects an in-flight command when the WebSocket closes', async () => {
+      const onClose = jest.fn();
+      driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', onClose });
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      let commandSent: (() => void) | undefined;
+      const sent = new Promise<void>((resolve) => {
+        commandSent = resolve;
+      });
+      mockSocketFactory.mockSocket.send = (data: string | Uint8Array) => {
+        const command = JSON.parse(data.toString());
+        mockSocketFactory.mockSocket.sentCommands.push(command);
+        if (command.command === 'execute') {
+          commandSent?.();
+        }
+      };
+      const query = driver.query('select 1');
+      await sent;
+      mockSocketFactory.mockSocket.readyState = ReadyState.CLOSED;
+      mockSocketFactory.mockSocket.callOnClose({ code: 1006, reason: 'connection lost' });
+
+      await expect(query).rejects.toThrow("E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.");
+      expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
 

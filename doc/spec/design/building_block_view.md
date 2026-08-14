@@ -52,12 +52,13 @@ Covers:
 ### WebSocket Connection
 `dsn~websocket-connection~1`
 
-`Connection` owns a single `ExaWebsocket`, serializes protocol commands, optionally compresses command payloads, parses responses, handles cancellation, and prevents parallel work on the same active connection.
+`Connection` owns a single `ExaWebsocket`, serializes protocol commands, optionally compresses command payloads, parses responses, handles cancellation, prevents parallel work on the same active connection, and marks itself broken when an in-flight command loses its WebSocket.
 
 Covers:
 - `scn~browser-connection-uses-native-websocket~1`
 - `scn~node-connection-uses-injected-websocket~1`
 - `scn~cancel-active-work~1`
+- `scn~reject-command-on-unexpected-websocket-termination~1`
 
 ### Result Handling
 `dsn~result-handling~1`

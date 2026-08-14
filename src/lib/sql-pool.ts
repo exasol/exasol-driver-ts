@@ -136,7 +136,11 @@ export class ExasolPool implements AsyncDisposable {
       throw err;
     } finally {
       if (exasolClient) {
-        await this.internalPool.release(exasolClient);
+        if (exasolClient.broken) {
+          await this.internalPool.destroy(exasolClient);
+        } else {
+          await this.internalPool.release(exasolClient);
+        }
       }
     }
   }

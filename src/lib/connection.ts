@@ -1,6 +1,6 @@
 import { deflate, inflate } from 'pako';
 import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
-import { ErrClosed, ErrJobAlreadyRunning, ErrNotConnected, MissingExceptionError } from './errors/errors';
+import { ErrClosed, ErrJobAlreadyRunning, ErrNotConnected, MissingExceptionError, newSocketClosedError, newSocketError } from './errors/errors';
 import { ILogger } from './logger/logger';
 import { PoolItem } from './pool/pool';
 import { Cancelable } from './sql-client.interface';
@@ -8,6 +8,7 @@ import { SQLResponse } from './types';
 
 // [impl->dsn~runtime-browser-websocket~1]
 // [impl->dsn~runtime-node-websocket~1]
+// [impl->dsn~runtime-inflight-websocket-failure~1]
 export interface ExaMessageEvent {
   data: unknown;
   type: string;
@@ -40,6 +41,7 @@ export class Connection implements PoolItem {
   private isInUse = false;
   private isBroken = false;
   private useCompression = false;
+  private rejectPendingCommand: ((error: Error) => void) | undefined;
 
   public setCompression(compression: boolean) {
     this.useCompression = compression;
@@ -63,10 +65,27 @@ export class Connection implements PoolItem {
     private readonly websocket: ExaWebsocket,
     private readonly logger: ILogger,
     public name: string,
+    private readonly onClose?: (event: unknown) => void,
   ) {
     this.websocket = websocket;
     this.logger = logger;
     this.name = name;
+    if (this.websocket) {
+      this.websocket.onclose = (event: unknown) => {
+        this.handleSocketClose(event);
+      };
+    }
+  }
+
+  private handleSocketClose(event: unknown) {
+    this.logger.debug('WebSocket close:', event);
+    this.onClose?.(event);
+    if (this.rejectPendingCommand) {
+      this.rejectPendingCommand(newSocketClosedError(event));
+      return;
+    }
+    this.isBroken = true;
+    this.active = false;
   }
 
   async close() {
@@ -135,12 +154,24 @@ export class Connection implements PoolItem {
         this.isBroken = true;
         reject(ErrNotConnected);
       } else {
+        if (this.active === true) {
+          reject(ErrJobAlreadyRunning);
+          return;
+        }
+        const rejectForSocketFailure = (error: Error) => {
+          this.isBroken = true;
+          this.active = false;
+          this.rejectPendingCommand = undefined;
+          reject(error);
+        };
+        this.rejectPendingCommand = rejectForSocketFailure;
         this.connection.onmessage = (event) => {
           try {
             this.logger.trace(`[Entered OnMessage for :${this.name}]`);
             this.logger.trace(`[Compression enabled: ${this.useCompression}]`);
 
             this.active = false;
+            this.rejectPendingCommand = undefined;
             let data: SQLResponse<T>;
             if (this.useCompression) {
               this.logger.trace('inflate');
@@ -180,15 +211,16 @@ export class Connection implements PoolItem {
 
         this.connection.onerror = (event: unknown) => {
           this.logger.error('WebSocket error:', event);
+          rejectForSocketFailure(newSocketError(event));
         };
 
-        //sendCommand 'resumes'
-        if (this.active === true) {
-          reject(ErrJobAlreadyRunning);
-          return;
-        }
+        this.active = true;
         this.logger.trace(`[Connection:${this.name}] Send request:`, cmd);
-        this.sendCmd(cmd);
+        try {
+          this.sendCmd(cmd);
+        } catch (error) {
+          rejectForSocketFailure(newSocketError(error));
+        }
       }
     }); //end of return new promise
   } //end of sendCommand

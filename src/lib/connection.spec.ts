@@ -1,6 +1,7 @@
 import { DisconnectCommand } from './commands';
 import { Connection, ExaWebsocket } from './connection';
 import { Logger } from './logger/logger';
+import { MockExaWebSocket } from './mock-socket';
 
 describe('connection', () => {
   it('should work for sendCommandWithNoResult', async () => {
@@ -78,5 +79,45 @@ describe('connection', () => {
       status: 'ok',
     });
     expect(sendFunction).toHaveBeenCalledWith('{"command":"closePreparedStatement","statementHandle":2}');
+  });
+
+  // [utest->dsn~runtime-inflight-websocket-failure~1]
+  it('rejects an in-flight command when the WebSocket closes', async () => {
+    const mockSocket = new MockExaWebSocket();
+    const connection = new Connection(mockSocket, new Logger(), 'test');
+
+    const command = connection.sendCommand({ command: 'execute', sqlText: 'select 1' });
+    expect(connection.active).toBe(true);
+
+    mockSocket.callOnClose({ code: 1006, reason: 'connection lost' });
+
+    await expect(command).rejects.toThrow("E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.");
+    expect(connection.active).toBe(false);
+    expect(connection.broken).toBe(true);
+  });
+
+  // [utest->dsn~runtime-inflight-websocket-failure~1]
+  it('rejects an in-flight command when the WebSocket errors', async () => {
+    const mockSocket = new MockExaWebSocket();
+    const connection = new Connection(mockSocket, new Logger(), 'test');
+
+    const command = connection.sendCommand({ command: 'execute', sqlText: 'select 1' });
+    mockSocket.callOnError(new Error('connection reset'));
+
+    await expect(command).rejects.toThrow("E-EDJS-16: Socket error: 'connection reset'");
+    expect(connection.active).toBe(false);
+    expect(connection.broken).toBe(true);
+  });
+
+  // [utest->dsn~runtime-inflight-websocket-failure~1]
+  it('rejects a parallel command while another command is active', async () => {
+    const mockSocket = new MockExaWebSocket();
+    const connection = new Connection(mockSocket, new Logger(), 'test');
+
+    const firstCommand = connection.sendCommand({ command: 'execute', sqlText: 'select 1' });
+
+    await expect(connection.sendCommand({ command: 'execute', sqlText: 'select 1' })).rejects.toThrow('E-EDJS-7: Another query is already running.');
+    mockSocket.callOnClose({ code: 1006, reason: 'connection lost' });
+    await expect(firstCommand).rejects.toThrow("E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.");
   });
 });

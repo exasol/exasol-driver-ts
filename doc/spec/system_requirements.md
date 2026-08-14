@@ -192,6 +192,17 @@ Covers:
 
 Needs: scn
 
+#### Handle Unexpected WebSocket Termination
+`req~handle-unexpected-websocket-termination~1`
+
+The application receives a rejected command promise when the WebSocket closes or errors during database work. A connection pool discards that broken driver so later requests can use a replacement connection.
+
+Covers:
+- `feat~sql-connectivity~1`
+- `feat~connection-pooling~1`
+
+Needs: scn
+
 #### Automatically Dispose Driver Resources
 `req~automatically-dispose-driver-resources~1`
 
@@ -433,6 +444,18 @@ Needs: dsn
 
 Covers:
 - `req~cancel-running-work~1`
+
+Needs: dsn
+
+### Reject a Command on Unexpected WebSocket Termination
+`scn~reject-command-on-unexpected-websocket-termination~1`
+
+**Given** an authenticated driver or pooled driver executing a database command
+**When** its WebSocket emits an error or closes before a response arrives
+**Then** the command rejects with available socket failure details, the connection is no longer active, and a pool discards the broken driver before later requests
+
+Covers:
+- `req~handle-unexpected-websocket-termination~1`
 
 Needs: dsn
 

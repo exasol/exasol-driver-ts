@@ -7,6 +7,11 @@ export const newSocketError = (cause: unknown) => {
   return new ExaErrorBuilder('E-EDJS-16').message('Socket error: {{cause}}', getSocketErrorMessage(cause)).error();
 };
 
+export const newSocketClosedError = (cause: unknown) => {
+  const { code, reason } = getSocketCloseDetails(cause);
+  return new ExaErrorBuilder('E-EDJS-36').message('Socket closed: code {{code}}, reason {{reason}}.', code, reason).error();
+};
+
 const getSocketErrorMessage = (cause: unknown): string => {
   if (cause instanceof Error) {
     return cause.message;
@@ -22,6 +27,16 @@ const getSocketErrorMessage = (cause: unknown): string => {
   } catch {
     return String(cause);
   }
+};
+
+const getSocketCloseDetails = (cause: unknown): { code: string | number; reason: string } => {
+  if (typeof cause === 'object' && cause !== null && 'code' in cause && 'reason' in cause) {
+    const { code, reason } = cause;
+    if ((typeof code === 'number' || typeof code === 'string') && (typeof reason === 'string' || reason instanceof Uint8Array)) {
+      return { code, reason: typeof reason === 'string' ? reason : new TextDecoder().decode(reason) };
+    }
+  }
+  return { code: 'unknown', reason: 'not provided' };
 };
 export const ErrClosed = new ExaErrorBuilder('E-EDJS-2').message('Connection was closed.').error();
 export const ErrMalformedData = new ExaErrorBuilder('E-EDJS-3').message('Malformed result.').error();
