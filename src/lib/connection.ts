@@ -1,6 +1,6 @@
 import { deflate, inflate } from 'pako';
 import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
-import { ErrClosed, ErrJobAlreadyRunning, ErrNotConnected, MissingExceptionError } from './errors/errors';
+import { ErrClosed, ErrJobAlreadyRunning, ErrNotConnected, MissingExceptionError, newSocketClosedError, newSocketError } from './errors/errors';
 import { ILogger } from './logger/logger';
 import { PoolItem } from './pool/pool';
 import { Cancelable } from './sql-client.interface';
@@ -8,6 +8,7 @@ import { SQLResponse } from './types';
 
 // [impl->dsn~runtime-browser-websocket~1]
 // [impl->dsn~runtime-node-websocket~1]
+// [impl->dsn~runtime-inflight-websocket-failure~1]
 export interface ExaMessageEvent {
   data: unknown;
   type: string;
@@ -135,6 +136,15 @@ export class Connection implements PoolItem {
         this.isBroken = true;
         reject(ErrNotConnected);
       } else {
+        if (this.active === true) {
+          reject(ErrJobAlreadyRunning);
+          return;
+        }
+        const rejectForSocketFailure = (error: Error) => {
+          this.isBroken = true;
+          this.active = false;
+          reject(error);
+        };
         this.connection.onmessage = (event) => {
           try {
             this.logger.trace(`[Entered OnMessage for :${this.name}]`);
@@ -180,15 +190,21 @@ export class Connection implements PoolItem {
 
         this.connection.onerror = (event: unknown) => {
           this.logger.error('WebSocket error:', event);
+          rejectForSocketFailure(newSocketError(event));
         };
 
-        //sendCommand 'resumes'
-        if (this.active === true) {
-          reject(ErrJobAlreadyRunning);
-          return;
-        }
+        this.connection.onclose = (event: unknown) => {
+          this.logger.debug('WebSocket close:', event);
+          rejectForSocketFailure(newSocketClosedError(event));
+        };
+
+        this.active = true;
         this.logger.trace(`[Connection:${this.name}] Send request:`, cmd);
-        this.sendCmd(cmd);
+        try {
+          this.sendCmd(cmd);
+        } catch (error) {
+          rejectForSocketFailure(newSocketError(error));
+        }
       }
     }); //end of return new promise
   } //end of sendCommand

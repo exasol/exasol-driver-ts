@@ -8,3 +8,6 @@ Code name:
 
 * ISSUE_NUMBER: description
 
+## Bugfixes
+
+* #90: Reject in-flight commands on WebSocket errors or closures and replace broken pooled drivers.

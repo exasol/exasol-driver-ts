@@ -125,6 +125,14 @@ export class MockExaWebSocket implements ExaWebsocket {
       throw new Error('onclose handler is not set in MockExaWebSocket.');
     }
   }
+
+  public callOnError(event: any) {
+    if (this.onerror) {
+      this.onerror(event);
+    } else {
+      throw new Error('onerror handler is not set in MockExaWebSocket.');
+    }
+  }
 }
 
 export class MockWebsocketFactory {

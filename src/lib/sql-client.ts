@@ -202,6 +202,10 @@ export class ExasolDriver implements IExasolDriver {
     return this.close();
   }
 
+  public get broken(): boolean {
+    return this.pool.getAll().some((connection) => connection.broken);
+  }
+
   /**
    * @inheritDoc
    */
