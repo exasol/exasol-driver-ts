@@ -44,9 +44,10 @@ export class MockExaWebSocket implements ExaWebsocket {
       case 'fetch':
         return { numRows: 1, data: [[2]] };
       case 'abortQuery':
-      case 'closeResultSet':
         // No response expected
         return undefined;
+      case 'closeResultSet':
+        return { "status": "ok" };
       default:
         throw new Error(`MockExaWebSocket: No mock response defined for command '${command.command}'.`);
     }

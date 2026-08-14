@@ -50,11 +50,11 @@ Needs: impl, utest
 ## SQL Execution
 
 ### Query Execution
-`dsn~runtime-query-execution~2`
+`dsn~runtime-query-execution~3`
 
 **Given** an authenticated driver and SQL text
 **When** `query()` is called
-**Then** the driver sends an `execute` command, fetches additional result-set pages until the result is complete or `resultSetMaxRows` is reached, closes remote result sets, validates that the result is a result set, and returns `QueryResult`
+**Then** the driver sends an `execute` command, fetches additional result-set pages until the result is complete or `resultSetMaxRows` is reached, closes remote result sets and consumes their acknowledgements before reusing the connection, validates that the result is a result set, and returns `QueryResult`
 
 Covers:
 - `scn~query-returns-rows~1`
