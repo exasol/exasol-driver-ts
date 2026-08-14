@@ -47,7 +47,6 @@ function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & P
  * ExasolPool is a connection pool.
  * Use this class to manage a high volume of queries using a specified number of database connections.
  *
- * @export
  * @class ExasolPool
  */
 export class ExasolPool implements AsyncDisposable {
@@ -59,7 +58,6 @@ export class ExasolPool implements AsyncDisposable {
    * @param {WebsocketFactory} websocketFactory
    * @param {(Partial<Config> & Partial<ClientPoolConfig>)} config
    * @param {ILogger} [logger=new Logger(LogLevel.Debug)]
-   * @memberof ExasolPool
    */
   constructor(
     websocketFactory: WebsocketFactory,
@@ -76,7 +74,6 @@ export class ExasolPool implements AsyncDisposable {
    * @param {(Partial<Attributes> | undefined)} [attributes]
    * @param {(CetCancelFunction | undefined)} [getCancel]
    * @return {*}  {Promise<QueryResult>}
-   * @memberof ExasolPool
    */
   public async query(
     sqlStatement: string,
@@ -91,7 +88,6 @@ export class ExasolPool implements AsyncDisposable {
    * @param {(CetCancelFunction | undefined)} [getCancel]
    * @param {('default' | undefined)} [responseType]
    * @return {*}  {Promise<QueryResult>}
-   * @memberof ExasolPool
    */
   public async query(
     sqlStatement: string,
@@ -107,7 +103,6 @@ export class ExasolPool implements AsyncDisposable {
    * @param {(CetCancelFunction | undefined)} [getCancel]
    * @param {('raw' | undefined)} [responseType]
    * @return {*}  {Promise<SQLResponse<SQLQueriesResponse>>}
-   * @memberof ExasolPool
    */
   public async query(
     sqlStatement: string,
@@ -123,7 +118,6 @@ export class ExasolPool implements AsyncDisposable {
    * @param {(CetCancelFunction | undefined)} [getCancel]
    * @param {('default' | 'raw')} [responseType]
    * @return {*}  {(Promise<QueryResult | SQLResponse<SQLQueriesResponse>>)}
-   * @memberof ExasolPool
    */
   public async query(
     sqlStatement: string,
@@ -152,7 +146,6 @@ export class ExasolPool implements AsyncDisposable {
   /**
    * This sets the pool into a "draining" state.
    *
-   * @memberof ExasolPool
    */
   public async drain() {
     // [impl->dsn~runtime-pool-shutdown~1]
@@ -161,7 +154,6 @@ export class ExasolPool implements AsyncDisposable {
   /**
    * Clears the connections in the pool.
    *
-   * @memberof ExasolPool
    */
   public async clear() {
     // [impl->dsn~runtime-pool-shutdown~1]

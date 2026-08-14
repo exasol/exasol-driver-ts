@@ -2,5 +2,6 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src/index.ts"],
   "excludeInternal": true,
+  "treatWarningsAsErrors": true,
   "out": "dist/docs/api"
 }
