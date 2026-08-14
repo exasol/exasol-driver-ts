@@ -11,6 +11,11 @@ This release fixes intermittent failures when pooled queries fetch large result 
 * #82: Consume `closeResultSet` responses before reusing a pooled connection.
 * #90: Reject in-flight commands on WebSocket errors or closures and replace broken pooled drivers.
 * #91: Validate pooled drivers on borrow and replace drivers whose WebSockets closed while idle.
+
+## Documentation
+
+* #60: Publish API documentation to GitHub pages
+
 ## Dependency Updates
 
 ### Development Dependency Updates

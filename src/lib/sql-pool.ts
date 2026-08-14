@@ -145,7 +145,6 @@ export class ExasolPool implements AsyncDisposable {
   }
   /**
    * This sets the pool into a "draining" state.
-   *
    */
   public async drain() {
     // [impl->dsn~runtime-pool-shutdown~1]
@@ -153,7 +152,6 @@ export class ExasolPool implements AsyncDisposable {
   }
   /**
    * Clears the connections in the pool.
-   *
    */
   public async clear() {
     // [impl->dsn~runtime-pool-shutdown~1]
