@@ -55,7 +55,11 @@ export const fetchData = async (
 
       logger.debug('[WebSQL]: Closing ResultSet', response.resultSet.resultSetHandle);
       if (response.resultSet.resultSetHandle) {
-        await connection.sendCommand(new CloseResultSetCommand([response.resultSet.resultSetHandle]));
+        try {
+          await connection.sendCommand(new CloseResultSetCommand([response.resultSet.resultSetHandle]));
+        } catch (error) {
+          logger.warn('[WebSQL]: Closing ResultSet failed', error);
+        }
       }
 
       logger.debug('[WebSQL]: Loaded all data');

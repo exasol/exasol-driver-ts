@@ -75,6 +75,31 @@ describe('sqlClient', () => {
       });
     });
 
+    it('should return fetched rows when closing the result set fails', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const originalSend = mockSocketFactory.mockSocket.send.bind(mockSocketFactory.mockSocket);
+      mockSocketFactory.mockSocket.send = (data: string | Uint8Array) => {
+        const command = JSON.parse(data.toString());
+        if (command.command === 'closeResultSet') {
+          mockSocketFactory.mockSocket.sentCommands.push(command);
+          setTimeout(() => {
+            mockSocketFactory.mockSocket.callOnMessage({
+              data: JSON.stringify({ status: 'error' }),
+            });
+          }, 0);
+          return;
+        }
+        originalSend(data);
+      };
+
+      const result = await driver.query('select with multiple rows');
+
+      expect(result.getRows()).toStrictEqual([{ A: 1 }, { A: 2 }]);
+    });
+
     // [utest->dsn~runtime-query-fetch-size~1]
     it('should use the configured fetch size in fetch commands', async () => {
       driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', fetchSize: 42 });
