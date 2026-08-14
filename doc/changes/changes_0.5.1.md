@@ -4,6 +4,8 @@ Code name:
 
 ## Summary
 
+This release fixes intermittent failures when pooled queries fetch large result sets and improves handling of network errors.
+
 ## Bugfixes
 
 * #82: Consume `closeResultSet` responses before reusing a pooled connection.
