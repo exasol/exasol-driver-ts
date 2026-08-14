@@ -39,7 +39,7 @@ export interface CsvFormatOptions {
   /**
    * Encoding of the CSV or FBV files.
    *
-   * Default is {@link Encoding.UTF8}.
+   * Default is `UTF-8`, an {@link Encoding} value.
    */
   encoding?: Encoding;
 
@@ -109,7 +109,7 @@ export interface CsvExportFormatOptions {
   /**
    * Encoding of the CSV file.
    *
-   * Default: {@link Encoding.UTF8}.
+   * Default is `UTF-8`, an {@link Encoding} value.
    */
   encoding?: Encoding;
 
