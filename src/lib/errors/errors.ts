@@ -33,7 +33,7 @@ const getSocketCloseDetails = (cause: unknown): { code: string | number; reason:
   if (typeof cause === 'object' && cause !== null && 'code' in cause && 'reason' in cause) {
     const { code, reason } = cause;
     if ((typeof code === 'number' || typeof code === 'string') && (typeof reason === 'string' || reason instanceof Uint8Array)) {
-      return { code, reason: reason.toString() };
+      return { code, reason: typeof reason === 'string' ? reason : new TextDecoder().decode(reason) };
     }
   }
   return { code: 'unknown', reason: 'not provided' };

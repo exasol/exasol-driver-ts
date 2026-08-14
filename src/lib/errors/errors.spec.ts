@@ -1,6 +1,13 @@
+import { TextDecoder as NodeTextDecoder } from 'util';
 import { newSocketClosedError, newSocketError } from './errors';
 
 describe('errors (Node)', () => {
+  beforeAll(() => {
+    if (!globalThis.TextDecoder) {
+      Object.defineProperty(globalThis, 'TextDecoder', { value: NodeTextDecoder });
+    }
+  });
+
   describe('newSocketError', () => {
     it('preserves the message from a Node WebSocket Error', () => {
       expect(newSocketError(new Error('certificate has expired')).message).toBe(
@@ -28,6 +35,12 @@ describe('errors (Node)', () => {
     it('preserves the WebSocket close code and reason', () => {
       expect(newSocketClosedError({ code: 1006, reason: 'connection lost' }).message).toBe(
         "E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.",
+      );
+    });
+
+    it('decodes a Uint8Array close reason as UTF-8 text', () => {
+      expect(newSocketClosedError({ code: 1006, reason: new Uint8Array([99, 108, 111, 115, 101, 100]) }).message).toBe(
+        "E-EDJS-36: Socket closed: code '1006', reason 'closed'.",
       );
     });
 
