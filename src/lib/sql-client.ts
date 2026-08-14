@@ -257,7 +257,7 @@ export class ExasolDriver implements IExasolDriver {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw' | undefined,
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
-    // [impl->dsn~runtime-query-execution~2]
+    // [impl->dsn~runtime-query-execution~3]
     // [impl->dsn~runtime-raw-response-execution~1]
     const connection = await this.acquire();
     return connection

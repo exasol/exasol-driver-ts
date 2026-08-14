@@ -1,5 +1,6 @@
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
+import { ExasolPool } from '../../src/lib/sql-pool';
 import { TestEnvironment, TestWebsocketFactory } from '../common';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 
@@ -41,7 +42,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
 
 
     describe('query()', () => {
-      // [itest->dsn~runtime-query-execution~2]
+      // [itest->dsn~runtime-query-execution~3]
       it('Exec and fetch', async () => {
         const driver = await openConnection();
 
@@ -72,6 +73,36 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
 
         expect(data.getRows()).toHaveLength(10000);
         await driver.close();
+      });
+
+      it('reuses a pooled connection after fetching a multi-block result set', async () => {
+        // See https://github.com/exasol/exasol-driver-ts/issues/82
+        const driver = await openConnection();
+        const pool = new ExasolPool(factory, {
+          host: container.getHost(),
+          port: container.getPort(),
+          user: 'sys',
+          password: 'exasol',
+          minimumPoolSize: 1,
+          maximumPoolSize: 1,
+        });
+
+        try {
+          await driver.execute('CREATE SCHEMA ' + schemaName);
+          await driver.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
+          const values = Array.from({ length: 2000 }, (_, index) => `(${index})`);
+          await driver.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES ' + values.join(','));
+
+          const firstResult = await pool.query('SELECT x FROM ' + schemaName + '.TEST_TABLE ORDER BY x');
+          const secondResult = await pool.query('SELECT x FROM ' + schemaName + '.TEST_TABLE ORDER BY x');
+
+          expect(firstResult.getRows()).toHaveLength(2000);
+          expect(secondResult.getRows()).toHaveLength(2000);
+        } finally {
+          await pool.drain();
+          await pool.clear();
+          await driver.close();
+        }
       });
 
       it('Cancel long running query', async () => {

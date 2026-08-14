@@ -42,7 +42,7 @@ describe('sqlClient', () => {
   });
 
   describe('query', () => {
-    // [utest->dsn~runtime-query-execution~2]
+    // [utest->dsn~runtime-query-execution~3]
     it('should result set', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
@@ -57,6 +57,21 @@ describe('sqlClient', () => {
       expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
         command: 'execute',
         sqlText: 'select 1',
+      });
+    });
+
+    it('should consume the result set close response before reusing the connection', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      await driver.query('select with multiple rows');
+      const result = await driver.query('select 1');
+
+      expect(result.getRows()).toStrictEqual([{ A: 1 }]);
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'closeResultSet',
+        resultSetHandles: [17],
       });
     });
 
