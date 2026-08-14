@@ -193,9 +193,9 @@ Covers:
 Needs: scn
 
 #### Handle Unexpected WebSocket Termination
-`req~handle-unexpected-websocket-termination~1`
+`req~handle-unexpected-websocket-termination~2`
 
-The application receives a rejected command promise when the WebSocket closes or errors during database work. A connection pool discards that broken driver so later requests can use a replacement connection.
+The application receives a rejected command promise when the WebSocket closes or errors during database work. A connection pool discards that broken driver and validates idle drivers before handing them out, replacing a driver whose WebSocket closed while idle.
 
 Covers:
 - `feat~sql-connectivity~1`
@@ -455,7 +455,19 @@ Needs: dsn
 **Then** the command rejects with available socket failure details, the connection is no longer active, and a pool discards the broken driver before later requests
 
 Covers:
-- `req~handle-unexpected-websocket-termination~1`
+- `req~handle-unexpected-websocket-termination~2`
+
+Needs: dsn
+
+### Replace an Idle-Closed Pooled Driver
+`scn~replace-idle-closed-pooled-driver~1`
+
+**Given** a released driver in an `ExasolPool` whose WebSocket closes while idle
+**When** the application submits a later query
+**Then** the pool validates the driver, destroys it when invalid, creates a replacement, and executes the query with the replacement
+
+Covers:
+- `req~handle-unexpected-websocket-termination~2`
 
 Needs: dsn
 

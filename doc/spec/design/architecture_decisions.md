@@ -53,6 +53,7 @@ Covers:
 - `scn~pool-reuses-drivers-for-queries~1`
 - `scn~pool-enforces-configured-size-limits~1`
 - `scn~pool-shutdown~1`
+- `scn~replace-idle-closed-pooled-driver~1`
 
 Needs: impl
 

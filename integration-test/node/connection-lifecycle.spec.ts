@@ -1,4 +1,5 @@
 import { WebSocket } from 'ws';
+import { Pool } from 'generic-pool';
 import { ExaWebsocket } from '../../src/lib/connection';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
@@ -90,5 +91,36 @@ describe('Connection lifecycle', () => {
       await pool.drain();
       await pool.clear();
     }
+  });
+
+  // [itest->dsn~runtime-pool-borrow-validation~1]
+  it('replaces a pooled driver whose WebSocket closes while idle', async () => {
+    await using pool = new ExasolPool(factory, {
+      host,
+      port,
+      user: 'sys',
+      password: 'exasol',
+      minimumPoolSize: 0,
+      maximumPoolSize: 1,
+    });
+
+    await pool.query('SELECT 1');
+
+    const internalPool = (pool as unknown as { internalPool: Pool<ExasolDriver> }).internalPool;
+    const originalDriver = await internalPool.acquire();
+
+    const idleWebsocket = websocket;
+    expect(idleWebsocket).toBeDefined();
+    const closed = new Promise<void>((resolve) => idleWebsocket?.once('close', () => resolve()));
+    idleWebsocket?.terminate();
+    await closed;
+    await internalPool.release(originalDriver);
+
+    const result = await pool.query('SELECT 1');
+    expect(result.getRows()).toHaveLength(1);
+
+    const replacementDriver = await internalPool.acquire();
+    await internalPool.release(replacementDriver);
+    expect(replacementDriver).not.toBe(originalDriver);
   });
 });

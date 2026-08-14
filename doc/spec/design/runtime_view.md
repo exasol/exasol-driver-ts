@@ -202,6 +202,18 @@ Covers:
 
 Needs: impl, itest
 
+### Pool Borrow Validation
+`dsn~runtime-pool-borrow-validation~1`
+
+**Given** an idle driver in an `ExasolPool`
+**When** `generic-pool` borrows the driver for a query
+**Then** it validates that the driver has no broken connection, destroys an invalid driver, and creates a replacement before delegating the query
+
+Covers:
+- `scn~replace-idle-closed-pooled-driver~1`
+
+Needs: impl, itest
+
 ### Pool Shutdown
 `dsn~runtime-pool-shutdown~1`
 

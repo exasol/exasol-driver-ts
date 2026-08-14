@@ -30,10 +30,15 @@ function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & P
     destroy: function (client: ExasolDriver) {
       return destroyClient(client);
     },
+    validate: function (client: ExasolDriver) {
+      // [impl->dsn~runtime-pool-borrow-validation~1]
+      return Promise.resolve(!client.broken);
+    },
   };
   const poolOpts: Options = {
     max: config.maximumPoolSize ?? 5, // maximum size of the pool
     min: config.minimumPoolSize ?? 0, // minimum size of the pool
+    testOnBorrow: true,
   };
   const tempPool = createPool(poolFactory, poolOpts);
   return tempPool;
