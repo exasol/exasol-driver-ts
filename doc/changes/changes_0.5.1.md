@@ -4,10 +4,10 @@ Code name:
 
 ## Summary
 
-This release fixes intermittent failures when pooled queries fetch large result sets and improves handling of network errors.
+This release fixes intermittent failures when pooled queries fetch large result sets, improves handling of network errors, and replaces idle connections that close unexpectedly.
 
 ## Bugfixes
 
 * #82: Consume `closeResultSet` responses before reusing a pooled connection.
 * #90: Reject in-flight commands on WebSocket errors or closures and replace broken pooled drivers.
-This release fixes intermittent failures when pooled queries fetch large result sets.
+* #91: Validate pooled drivers on borrow and replace drivers whose WebSockets closed while idle.

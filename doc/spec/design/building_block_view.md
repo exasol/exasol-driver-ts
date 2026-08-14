@@ -70,15 +70,16 @@ Covers:
 - `scn~result-row-limit-applied-during-fetch~1`
 
 ### Pool API
-`dsn~pool-api~2`
+`dsn~pool-api~3`
 
-`ExasolPool` wraps `generic-pool` and manages reusable `ExasolDriver` instances according to configured minimum and maximum pool size. It supports asynchronous disposal by draining and then clearing the pool.
+`ExasolPool` wraps `generic-pool` and manages reusable `ExasolDriver` instances according to configured minimum and maximum pool size. It validates idle drivers before borrowing them and supports asynchronous disposal by draining and then clearing the pool.
 
 Covers:
 - `scn~pool-reuses-drivers-for-queries~1`
 - `scn~pool-enforces-configured-size-limits~1`
 - `scn~pool-shutdown~1`
 - `scn~async-dispose-connection-pool~1`
+- `scn~replace-idle-closed-pooled-driver~1`
 
 ### CSV Import Components
 `dsn~csv-import-components~1`
