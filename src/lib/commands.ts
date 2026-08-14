@@ -22,7 +22,7 @@ export type Commands =
   | ColumnsCommand
   | TablesCommand
   | DisconnectCommand;
-export type CommandsNoResult = AbortQueryCommand | CloseResultSetCommand;
+export type CommandsNoResult = AbortQueryCommand;
 
 export abstract class Command {
   abstract command: string;
