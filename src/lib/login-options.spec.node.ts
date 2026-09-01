@@ -3,7 +3,7 @@ import { createLoginOptions } from './login-options';
 describe('createLoginOptions in Node.js', () => {
   // [utest->dsn~runtime-login-metadata~1]
   it('uses operating-system and runtime defaults', async () => {
-    const options = await createLoginOptions(
+    const options = createLoginOptions(
       {
         autocommit: true,
         clientName: 'client-name',
@@ -22,7 +22,7 @@ describe('createLoginOptions in Node.js', () => {
 
   // [utest->dsn~runtime-login-metadata~1]
   it('preserves configured empty metadata values', async () => {
-    const options = await createLoginOptions(
+    const options = createLoginOptions(
       {
         autocommit: true,
         clientName: 'client-name',

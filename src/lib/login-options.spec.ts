@@ -3,7 +3,7 @@ import { createLoginOptions } from './login-options';
 describe('createLoginOptions', () => {
   // [utest->dsn~runtime-login-metadata~1]
   it('uses configured login metadata instead of platform defaults', async () => {
-    const options = await createLoginOptions(
+    const options = createLoginOptions(
       {
         autocommit: true,
         clientName: 'client-name',
@@ -27,7 +27,7 @@ describe('createLoginOptions', () => {
 
   // [utest->dsn~runtime-login-metadata~1]
   it('uses browser metadata when no configured metadata is provided', async () => {
-    const options = await createLoginOptions(
+    const options = createLoginOptions(
       {
         autocommit: true,
         clientName: 'client-name',
