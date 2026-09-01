@@ -1,6 +1,6 @@
 import { createHash, X509Certificate } from 'crypto';
-import { StartedTestContainer } from 'testcontainers';
 import * as tar from "tar-stream";
+import { StartedTestContainer } from 'testcontainers';
 export class CertificateProvider {
   constructor(container: StartedTestContainer) {
     this.container = container;
@@ -63,12 +63,12 @@ export class CertificateProvider {
   }
 
   /**
- * Reads a file from the container using copyArchiveFromContainer.
- *
- * @param container - The StartedTestContainer instance
- * @param containerFilePath - The absolute path of the file inside the container
- * @return The contents of the file as a string
- */
+   * Reads a file from the container using copyArchiveFromContainer.
+   *
+   * @param container - The StartedTestContainer instance
+   * @param containerFilePath - The absolute path of the file inside the container
+   * @return The contents of the file as a string
+   */
   private async readFileFromContainer(
     container: StartedTestContainer,
     containerFilePath: string
@@ -81,7 +81,13 @@ export class CertificateProvider {
 
       extract.on("entry", (header, stream, next) => {
         const chunks: Buffer[] = [];
-        stream.on("data", (chunk) => chunks.push(chunk));
+        stream.on("data", (chunk) => {
+          if (Buffer.isBuffer(chunk)) {
+            chunks.push(chunk);
+          } else {
+            reject(new TypeError("Expected certificate archive entry data to be a Buffer"));
+          }
+        });
         stream.on("end", () => {
           fileContent = Buffer.concat(chunks).toString("utf-8");
           next();
