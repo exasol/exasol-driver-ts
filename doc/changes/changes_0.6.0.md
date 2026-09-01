@@ -19,3 +19,10 @@ The driver now also reports the package version automatically in session driver 
 * #82: Consume `closeResultSet` responses before reusing a pooled connection.
 * #90: Reject in-flight commands on WebSocket errors or closures and replace broken pooled drivers.
 * #91: Validate pooled drivers on borrow and replace drivers whose WebSockets closed while idle.
+
+## Dependency Updates
+
+### Development Dependency Updates
+
+* Added `typedoc:^0.28.20`
+* Added `@rollup/plugin-json:^6.1.0`
