@@ -18,6 +18,7 @@
     "experimentalDecorators": true,
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
     "declaration": true,
     "rootDir": "./src/",
     "outDir": "./dist/"

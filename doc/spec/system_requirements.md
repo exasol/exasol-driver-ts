@@ -748,7 +748,7 @@ Needs: dsn
 
 **Given** a driver configuration with explicit client operating-system, operating-system username, and runtime metadata
 **When** the application connects with basic or token authentication
-**Then** the driver sends that metadata in the login command; when a value is not configured, it reports best-effort values from the active Node.js or browser platform without adding a runtime dependency
+**Then** the driver sends that metadata and identifies itself with the package version in the login command; when a value is not configured, it reports best-effort values from the active Node.js or browser platform without adding a runtime dependency
 
 Covers:
 - `req~configure-session-attributes~2`

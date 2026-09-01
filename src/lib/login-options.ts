@@ -1,6 +1,7 @@
 import { Attributes, LoginOptions } from './commands';
+import packageMetadata from '../../package.json';
 
-export const driverVersion = 'v1.0.0';
+export const driverVersion = `v${packageMetadata.version}`;
 
 interface LoginOptionsConfig {
   autocommit: boolean;

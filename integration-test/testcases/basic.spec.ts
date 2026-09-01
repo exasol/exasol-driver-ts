@@ -1,4 +1,5 @@
 import { RandomUuid } from 'testcontainers/build/common/uuid';
+import packageMetadata from '../../package.json';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
 import { TestEnvironment, TestWebsocketFactory } from '../common';
@@ -16,6 +17,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
     let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
+    const expectedDriverName = new RegExp(`^exasol-driver-ts v${packageMetadata.version.replace(/\./g, '\\.')}\\s*$`);
 
     beforeAll(async () => {
       container = await startNewDockerContainer();
@@ -60,7 +62,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
       expect(session.getRows()).toEqual([
         {
           CLIENT: 'exasol-driver-ts-integration-test 1',
-          DRIVER: expect.stringMatching(/^exasol-driver-ts v1\.0\.0\s*$/),
+          DRIVER: expect.stringMatching(expectedDriverName),
           OS_NAME: 'configured operating system',
           OS_USER: 'configured user',
         },
@@ -86,7 +88,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
       expect(session.getRows()).toEqual([
         {
           CLIENT: 'Javascript client 1',
-          DRIVER: expect.stringMatching(/^exasol-driver-ts v1\.0\.0\s*$/),
+          DRIVER: expect.stringMatching(expectedDriverName),
           OS_NAME: expect.stringMatching(expectedOsName),
         },
       ]);
