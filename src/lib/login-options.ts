@@ -50,10 +50,10 @@ export function createLoginOptions(config: LoginOptionsConfig, environment: Logi
     useCompression: config.compression,
     clientName: config.clientName,
     driverName: `exasol-driver-ts ${driverVersion}`,
-    clientOs: config.clientOs || metadata.clientOs,
-    clientOsUsername: config.clientOsUsername || metadata.clientOsUsername,
+    clientOs: config.clientOs ?? metadata.clientOs,
+    clientOsUsername: config.clientOsUsername ?? metadata.clientOsUsername,
     clientVersion: config.clientVersion,
-    clientRuntime: config.clientRuntime || metadata.clientRuntime,
+    clientRuntime: config.clientRuntime ?? metadata.clientRuntime,
     attributes: getSessionAttributes(config),
   };
 }
