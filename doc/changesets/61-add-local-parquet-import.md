@@ -35,7 +35,7 @@ Deliver the work in two independently green pull requests. PR 1 is an internal, 
 - [x] Extract the CSV file-read, tunnel, TLS, chunked-response, cleanup, and cancellation lifecycle into a format-neutral internal helper.
 - [x] Preserve `importFromCsvFile()` behavior, public API, SQL, documentation, and error messages.
 - [x] Adapt the existing CSV unit tests to cover the shared helper through the CSV API.
-- [ ] Run `npm run trace`, `npm run lint:ci`, `npm run typecheck`, `npm run test`, `env -u NODE_OPTIONS npm run itest`, `npm run audit`, and `npm run build`.
+- [x] Run `npm run trace`, `npm run lint:ci`, `npm run typecheck`, `npm run test`, `env -u NODE_OPTIONS npm run itest`, `npm run audit`, and `npm run build`.
 
 ### PR 2: Native Parquet Import
 
