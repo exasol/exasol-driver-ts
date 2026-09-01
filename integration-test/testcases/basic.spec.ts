@@ -55,13 +55,39 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
       await driver.connect();
       tmpDriver = driver;
 
-      const session = await driver.query('SELECT CLIENT, OS_NAME, OS_USER FROM EXA_DBA_SESSIONS WHERE SESSION_ID = CURRENT_SESSION');
+      const session = await driver.query('SELECT CLIENT, DRIVER, OS_NAME, OS_USER FROM EXA_DBA_SESSIONS WHERE SESSION_ID = CURRENT_SESSION');
 
       expect(session.getRows()).toEqual([
         {
           CLIENT: 'exasol-driver-ts-integration-test 1',
+          DRIVER: expect.stringMatching(/^exasol-driver-ts v1\.0\.0\s*$/),
           OS_NAME: 'configured operating system',
           OS_USER: 'configured user',
+        },
+      ]);
+    });
+
+    // [itest->dsn~runtime-login-metadata~1]
+    it('stores default login metadata in the session table', async () => {
+      const driver = new ExasolDriver(factory, {
+        host: container.getHost(),
+        port: container.getPort(),
+        user: 'sys',
+        password: 'exasol',
+      });
+      await driver.connect();
+      tmpDriver = driver;
+
+      const session = await driver.query('SELECT CLIENT, DRIVER, OS_NAME FROM EXA_DBA_SESSIONS WHERE SESSION_ID = CURRENT_SESSION');
+      const expectedOsName = name === 'Node'
+        ? new RegExp(`^${process.platform} ${process.arch}$`)
+        : /.+/;
+
+      expect(session.getRows()).toEqual([
+        {
+          CLIENT: 'Javascript client 1',
+          DRIVER: expect.stringMatching(/^exasol-driver-ts v1\.0\.0\s*$/),
+          OS_NAME: expect.stringMatching(expectedOsName),
         },
       ]);
     });
