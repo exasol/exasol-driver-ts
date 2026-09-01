@@ -1,4 +1,5 @@
 import { RandomUuid } from 'testcontainers/build/common/uuid';
+import packageMetadata from '../../package.json';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/sql-pool';
 import { TestEnvironment, TestWebsocketFactory } from '../common';
@@ -16,6 +17,7 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
     let factory: WebsocketFactory;
     jest.setTimeout(7000000);
     let schemaName = '';
+    const expectedDriverName = new RegExp(`^exasol-driver-ts v${packageMetadata.version.replace(/\./g, '\\.')}\\s*$`);
 
     beforeAll(async () => {
       container = await startNewDockerContainer();
@@ -38,6 +40,58 @@ export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocket
       const driver = await openConnection(url, 'invalidHost', 1);
       expect(driver).toBeDefined();
       await driver.close();
+    });
+
+    // [itest->dsn~runtime-login-metadata~1]
+    it('stores configured login metadata in the session table', async () => {
+      const driver = new ExasolDriver(factory, {
+        host: container.getHost(),
+        port: container.getPort(),
+        user: 'sys',
+        password: 'exasol',
+        clientName: 'exasol-driver-ts-integration-test',
+        clientOs: 'configured operating system',
+        clientOsUsername: 'configured user',
+        clientRuntime: 'configured runtime',
+      });
+      await driver.connect();
+      tmpDriver = driver;
+
+      const session = await driver.query('SELECT CLIENT, DRIVER, OS_NAME, OS_USER FROM EXA_DBA_SESSIONS WHERE SESSION_ID = CURRENT_SESSION');
+
+      expect(session.getRows()).toEqual([
+        {
+          CLIENT: 'exasol-driver-ts-integration-test 1',
+          DRIVER: expect.stringMatching(expectedDriverName),
+          OS_NAME: 'configured operating system',
+          OS_USER: 'configured user',
+        },
+      ]);
+    });
+
+    // [itest->dsn~runtime-login-metadata~1]
+    it('stores default login metadata in the session table', async () => {
+      const driver = new ExasolDriver(factory, {
+        host: container.getHost(),
+        port: container.getPort(),
+        user: 'sys',
+        password: 'exasol',
+      });
+      await driver.connect();
+      tmpDriver = driver;
+
+      const session = await driver.query('SELECT CLIENT, DRIVER, OS_NAME FROM EXA_DBA_SESSIONS WHERE SESSION_ID = CURRENT_SESSION');
+      const expectedOsName = name === 'Node'
+        ? new RegExp(`^${process.platform} ${process.arch}$`)
+        : /.+/;
+
+      expect(session.getRows()).toEqual([
+        {
+          CLIENT: 'Javascript client 1',
+          DRIVER: expect.stringMatching(expectedDriverName),
+          OS_NAME: expect.stringMatching(expectedOsName),
+        },
+      ]);
     });
 
 

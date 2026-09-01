@@ -23,6 +23,18 @@ Covers:
 
 Needs: impl, itest
 
+### Login Metadata
+`dsn~runtime-login-metadata~1`
+
+**Given** a driver starting either basic or token authentication
+**When** the driver builds the authenticated login command
+**Then** it uses one shared browser-compatible login-options builder for common protocol fields, derives the driver version from build-time package metadata without a runtime filesystem or Node.js dependency, caller-configured metadata takes precedence, and missing metadata is derived best-effort from Node.js built-ins or browser navigator data without a static Node.js import in the browser-compatible entry point
+
+Covers:
+- `scn~login-metadata-sent-during-login~1`
+
+Needs: impl, utest, itest
+
 ### Reject Missing Credentials
 `dsn~runtime-reject-missing-credentials~1`
 

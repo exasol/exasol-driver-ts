@@ -387,6 +387,10 @@ await exportPromise;
 | `autocommit`       | false=off, true=on |        true         | Switch autocommit on or off.                                                                                                            |
 | `clientName`       |       string       | 'Javascript client' | Tell the server the application name.                                                                                                   |
 | `clientVersion`    |       string       |          1          | Tell the server the version of the application.                                                                                         |
+<!-- [uman->scn~login-metadata-sent-during-login~1] -->
+| `clientOs`         |       string       | platform dependent  | Tell the server the client operating system. Defaults to platform and architecture in Node.js, or available browser platform data. |
+| `clientOsUsername` |       string       | platform dependent  | Tell the server the operating-system username. Defaults to the available Node.js environment username; browsers do not provide a value. |
+| `clientRuntime`    |       string       | platform dependent  | Tell the server the client runtime. Defaults to the Node.js version or the browser user-agent string.                                  |
 | `encryption`       | false=off, true=on |        true         | Switch automatic encryption on or off. This property is deprecated and no longer has an effect. Encryption is always on.                |
 | `compression`      | false=off, true=on |       false        | Switch compression on or off.                                                                                                           |
 <!-- [uman->scn~configured-fetch-size-used-during-fetch~1] -->

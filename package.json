@@ -1,6 +1,6 @@
 {
   "name": "@exasol/exasol-driver-ts",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Exasol SQL Driver",
   "scripts": {
     "audit": "npm run audit:prod && npm run audit:full",
@@ -13,7 +13,7 @@
     "watch": "rollup --failAfterWarnings --watch --config rollup.config.mjs",
     "typecheck": "tsc --noEmit --project tsconfig.json && tsc --noEmit --project tsconfig.spec.dom.json && tsc --noEmit --project tsconfig.spec.json",
     "lint": "eslint --ext .js,.ts --fix .",
-    "lint:ci": "eslint --ext .js,.ts .",
+    "lint:ci": "eslint --max-warnings 0 --ext .js,.ts .",
     "format": "prettier --write .",
     "test": "jest --selectProjects unit-dom unit-node --coverage",
     "itest:node": "jest --selectProjects itest-node --coverage",
@@ -31,6 +31,7 @@
     "@babel/preset-typescript": "^7.29.7",
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.2.0",
