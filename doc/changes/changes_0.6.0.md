@@ -1,6 +1,6 @@
-# Exasol Driver ts 0.6.0, released 2026-??-??
+# Exasol Driver ts 0.6.0, released 2026-09-01
 
-Code name:
+Code name: Client Metadata
 
 ## Summary
 
