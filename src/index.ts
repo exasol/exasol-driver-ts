@@ -6,5 +6,7 @@ export * from './lib/commands';
 export * from './lib/sql-client.interface';
 export * from './lib/statement';
 export * from './lib/connection';
+export * from './lib/pool/pool';
+export * from './lib/query-result';
 export * from './lib/logger/logger';
 export * from './lib/import/types';

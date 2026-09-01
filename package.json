@@ -7,7 +7,8 @@
     "audit:prod": "npm audit --omit=dev",
     "audit:full": "audit-ci --config ./audit-ci.jsonc",
     "trace": "./.github/workflows/oftw.sh trace --output-format plain --report-verbosity failure_details --color-scheme color --log-level WARNING doc src integration-test rollup.config.mjs",
-    "trace:report": "./.github/workflows/oftw.sh trace --output-format html --report-verbosity all --log-level WARNING --output-file dist/trace-report.html doc src integration-test rollup.config.mjs",
+    "trace:report": "mkdir -p dist/docs/trace && ./.github/workflows/oftw.sh trace --output-format html --report-verbosity all --log-level WARNING --output-file dist/docs/trace/index.html doc src integration-test rollup.config.mjs",
+    "docs:api": "typedoc",
     "build": "rollup --failAfterWarnings --config rollup.config.mjs",
     "watch": "rollup --failAfterWarnings --watch --config rollup.config.mjs",
     "typecheck": "tsc --noEmit --project tsconfig.json && tsc --noEmit --project tsconfig.spec.dom.json && tsc --noEmit --project tsconfig.spec.json",
@@ -52,6 +53,7 @@
     "ts-node": "^10.9.2",
     "tslib": "^2.8.1",
     "@typescript/native": "npm:typescript@^7.0.2",
+    "typedoc": "^0.28.20",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.66.0",
     "ws": "^8.21.3"

@@ -15,8 +15,7 @@ export interface IExasolDriver extends AsyncDisposable {
   /**
    * Connect to database
    *
-   * @async
-   * @reject {Error}
+   * @throws {Error}
    * @returns {Promise.<void>}
    */
   connect(): Promise<void>;
@@ -32,10 +31,9 @@ export interface IExasolDriver extends AsyncDisposable {
   /**
    * Query single SQL statement
    *
-   * @async
    * @param {string} sqlStatement
    * @param {Partial<Attributes>} attributes
-   * @reject {Error}
+   * @throws {Error}
    * @returns {Promise.<SQLResponse<SQLQueriesResponse>>}
    */
   query(sqlStatement: string, attributes?: Partial<Attributes>, getCancel?: CetCancelFunction): Promise<QueryResult>;
@@ -49,10 +47,9 @@ export interface IExasolDriver extends AsyncDisposable {
   /**
    * Query single SQL statement and get raw result
    *
-   * @async
    * @param {string} sqlStatement
    * @param {Partial<Attributes>} attributes
-   * @reject {Error}
+   * @throws {Error}
    * @returns {Promise.<SQLResponse<SQLQueriesResponse>>}
    */
   query(
@@ -65,10 +62,9 @@ export interface IExasolDriver extends AsyncDisposable {
   /**
    * Execute single SQL statement
    *
-   * @async
    * @param {string} sqlStatement
    * @param {Partial<Attributes>} attributes
-   * @reject {Error}
+   * @throws {Error}
    * @returns {Promise.<number>}
    */
   execute(sqlStatement: string, attributes?: Partial<Attributes>, getCancel?: CetCancelFunction): Promise<number>;
@@ -77,10 +73,9 @@ export interface IExasolDriver extends AsyncDisposable {
   /**
    * Execute single SQL statement and get raw result back
    *
-   * @async
    * @param {string} sqlStatement
    * @param {Partial<Attributes>} attributes
-   * @reject {Error}
+   * @throws {Error}
    * @returns {Promise.<SQLResponse<SQLQueriesResponse>>}
    */
   execute(
@@ -93,10 +88,9 @@ export interface IExasolDriver extends AsyncDisposable {
   /**
    * Executes multiple SQL statements sequentially as a batch.
    *
-   * @async
    * @param {string[]} sqlStatements - Array of sql statements
    * @param {Partial<Attributes>} attributes
-   * @reject {Error}
+   * @throws {Error}
    * @returns {Promise.<SQLResponse<SQLQueriesResponse>>}
    */
   executeBatch(
@@ -107,9 +101,8 @@ export interface IExasolDriver extends AsyncDisposable {
   /**
    * Prepare statement
    *
-   * @async
    * @param  {string} sqlStatement
-   * @reject {Error}
+   * @throws {Error}
    * @returns {Promise.<IStatement>}
    */
   prepare(sqlStatement: string): Promise<IStatement>;
@@ -120,9 +113,8 @@ export interface IExasolDriver extends AsyncDisposable {
   sendCommandWithNoResult(cmd: CommandsNoResult): Promise<void>;
   /**
    * Send commands and wait for result, while a command is executed all other commands will be rejected till the current command finished.
-   * @async
    * @param  {Commands} cmd
-   * @reject {Error}
+   * @throws {Error}
    * @template T
    * @returns {Promise.<SQLResponse<T>>}
    */
@@ -163,9 +155,8 @@ export interface IStatement extends AsyncDisposable {
   /**
    *  Execute prepared statement with given args
    *
-   * @async
    * @param {...any} args
-   * @reject {Error}
+   * @throws {Error}
    * @returns {Promise.<SQLResponse<SQLQueriesResponse>>}
    */
   execute(...args: Array<unknown>): Promise<SQLResponse<SQLQueriesResponse>>;

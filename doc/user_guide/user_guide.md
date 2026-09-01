@@ -4,6 +4,8 @@
 
 `@exasol/exasol-driver-ts` supports both browser and Node.js runtimes.
 
+For the complete public API, see the [API reference](https://exasol.github.io/exasol-driver-ts/api/).
+
 In a browser, the library uses the native `WebSocket` implementation that is available in the runtime. In Node.js, you need to provide a WebSocket implementation such as the `ws` package when creating the driver or connection pool.
 
 The following sections show the runtime-specific setup for both environments.
