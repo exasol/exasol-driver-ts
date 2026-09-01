@@ -19,6 +19,7 @@ import { exportCsvFile } from './import/csv-file-export';
 import { importCsvFile } from './import/csv-file-import';
 import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
 import { ILogger, Logger, LogLevel } from './logger/logger';
+import { createLoginOptions } from './login-options';
 import { ConnectionPool } from './pool/pool';
 import { QueryResult } from './query-result';
 import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
@@ -41,6 +42,12 @@ export interface Config {
   encryption?: boolean;
   clientName: string;
   clientVersion: string;
+  /** Name and version of the client operating system. Defaults to the active platform. */
+  clientOs?: string;
+  /** Operating-system username of the client. Defaults to the active Node.js user when available. */
+  clientOsUsername?: string;
+  /** Name and version of the client runtime. Defaults to the active platform. */
+  clientRuntime?: string;
   /** Number of bytes to fetch per request. Default: 1024 * 1024 (1 MB) */
   fetchSize: number;
   schema?: string;
@@ -55,7 +62,7 @@ interface InternalConfig {
   apiVersion: number;
 }
 
-export const driverVersion = 'v1.0.0';
+export { driverVersion } from './login-options';
 
 export type WebsocketFactory = (url: string) => ExaWebsocket;
 
@@ -527,17 +534,7 @@ export class ExasolDriver implements IExasolDriver {
       return this.sendCommand({
         username: this.config.user ?? '',
         password: forge.util.encode64(password),
-        useCompression: this.config.compression,
-        clientName: this.config.clientName,
-        driverName: `exasol-driver-js ${driverVersion}`,
-        clientOs: 'Browser',
-        clientVersion: this.config.clientVersion,
-        clientRuntime: 'Browser',
-        attributes: {
-          autocommit: this.config.autocommit,
-          currentSchema: this.config.schema,
-          compressionEnabled: this.config.compression,
-        },
+        ...createLoginOptions(this.config),
       });
     });
   }
@@ -556,19 +553,7 @@ export class ExasolDriver implements IExasolDriver {
       command: 'loginToken',
       protocolVersion: this.config.apiVersion,
     }).then(() => {
-      const command: OIDCSQLCommand = {
-        useCompression: this.config.compression,
-        clientName: this.config.clientName,
-        driverName: `exasol-driver-js ${driverVersion}`,
-        clientOs: 'Browser',
-        clientVersion: this.config.clientVersion,
-        clientRuntime: 'Browser',
-        attributes: {
-          autocommit: this.config.autocommit,
-          currentSchema: this.config.schema,
-          compressionEnabled: this.config.compression,
-        },
-      };
+      const command: OIDCSQLCommand = createLoginOptions(this.config);
 
       if (this.config.refreshToken) {
         command.refreshToken = this.config.refreshToken;

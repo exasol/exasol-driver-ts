@@ -1,3 +1,4 @@
+import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
 
 import { readFileSync } from 'node:fs';
@@ -22,6 +23,6 @@ export default [
       ...Object.keys(pkg.peerDependencies || {}),
       'node:fs', 'node:net', 'node:tls', 'node:path', 'node:stream',
     ],
-    plugins: [typescript()],
+    plugins: [json(), typescript()],
   },
 ];

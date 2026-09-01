@@ -23,6 +23,10 @@ Driver configuration is passed to constructors and merged with defaults. Importa
 * `fetchSize`: `1024 * 1024` in bytes
 * `clientName`: `Javascript client`
 * `clientVersion`: `1`
+* Login metadata defaults to the active platform:
+  * Node.js reports its platform, architecture, available environment username, and runtime version
+  * Browsers report available navigator platform and user-agent data without an operating-system username.
+  * Applications can override `clientOs`, `clientOsUsername`, and `clientRuntime`.
 * `autocommit`: `true`
 * `compression`: `false`
 
