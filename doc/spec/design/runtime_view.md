@@ -348,7 +348,7 @@ Needs: impl, utest, itest
 
 **Given** an Exasol version before 2026.1 and a request to import a local Parquet file
 **When** the driver executes the `IMPORT FROM PARQUET` statement
-**Then** Exasol rejects the statement with its version-support message, which the driver returns to the application unchanged
+**Then** Exasol rejects the statement with its version-support message, which the driver includes in its standardized SQL error returned to the application
 
 Covers:
 - `scn~parquet-import-rejects-unsupported-server~1`

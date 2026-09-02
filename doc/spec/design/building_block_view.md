@@ -25,7 +25,7 @@ Driver --> Results
 Driver --> FileImport
 FileImport --> LocalFile
 Connection --> Exasol
-CsvImport --> Exasol
+FileImport --> Exasol
 @enduml
 ```
 
@@ -97,7 +97,7 @@ Covers:
 ### Parquet Import Components
 `dsn~parquet-import-components~1`
 
-The Parquet import module builds `IMPORT FROM PARQUET` SQL and delegates local-file readability checks, encrypted tunnel creation, TLS, chunked streaming, cleanup, and cancellation to the format-neutral local-file import helper.
+The Parquet import module builds `IMPORT FROM PARQUET` SQL and delegates local-file readability checks, encrypted tunnel creation, TLS, range-aware HTTP file serving, cleanup, and cancellation to the format-neutral local-file import helper.
 
 Covers:
 - `scn~parquet-import-succeeds~1`

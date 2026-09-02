@@ -61,7 +61,7 @@ A user-provided function that receives the database WebSocket URL and returns an
 
 ### Local File Import
 
-Node.js-only functionality that imports a readable local CSV file into an Exasol table using Exasol's `IMPORT FROM CSV` mechanism.
+Node.js-only functionality that imports a readable local CSV or Parquet file into an Exasol table using Exasol's corresponding `IMPORT FROM CSV` or `IMPORT FROM PARQUET` mechanism.
 
 ### Parquet Import
 
