@@ -333,9 +333,11 @@ Needs: impl, utest
 ### Parquet Import File Stream
 `dsn~runtime-parquet-import-file-stream~1`
 
-**Given** a Node.js driver connected to Exasol 2026.1 or later, a readable local Parquet file, and a target table
+**Given** a Node.js driver connected to Exasol 2025.1.9 or later, a readable local Parquet file, and a target table
 **When** `importFromParquetFile()` is called
 **Then** the driver creates an Exasol tunnel, wraps it with TLS, executes `IMPORT INTO ... FROM PARQUET` with `MaxConcurrentReads=1`, serves Exasol's sequential HTTP `HEAD` and byte-range `GET` requests with file-size and range-aware responses, destroys the secure socket, and returns the import row count
+
+Evidence: [Exasol changelog 28781](https://docs.exasol.com/db/latest/changelogs/28781.htm) introduced HTTP/HTTPS Parquet imports in Exasol 2025.1.9, which the local-file tunnel requires.
 
 Covers:
 - `scn~parquet-import-succeeds~1`
@@ -346,7 +348,7 @@ Needs: impl, utest, itest
 ### Parquet Import Version Support
 `dsn~runtime-parquet-import-version-support~1`
 
-**Given** an Exasol version before 2026.1 and a request to import a local Parquet file
+**Given** an Exasol version before 2025.1.9 and a request to import a local Parquet file
 **When** the driver executes the `IMPORT FROM PARQUET` statement
 **Then** Exasol rejects the statement with its version-support message, which the driver includes in its standardized SQL error returned to the application
 

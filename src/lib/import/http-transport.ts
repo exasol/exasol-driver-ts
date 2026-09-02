@@ -32,11 +32,7 @@ export function parseResponse(data: Buffer): InternalAddress {
   return { host, port };
 }
 
-export function createTunnel(
-  host: string,
-  port: number,
-  signal?: AbortSignal,
-): Promise<{ socket: net.Socket; internalAddress: InternalAddress }> {
+export function createTunnel(host: string, port: number, signal?: AbortSignal): Promise<{ socket: net.Socket; internalAddress: InternalAddress }> {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ host, port }, () => {
       socket.write(buildMagicPacket());

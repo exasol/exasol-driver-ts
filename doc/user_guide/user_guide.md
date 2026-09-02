@@ -300,7 +300,7 @@ See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#
 ### Parquet Import
 <!-- [uman->scn~parquet-import-succeeds~1] -->
 
-Parquet import with `importFromParquetFile()` is only available in Node.js and requires Exasol 2026.1 or later. The driver streams the original local Parquet file to the database.
+Parquet import with `importFromParquetFile()` is only available in Node.js and requires Exasol 2025.1.9 or later. The driver streams the original local Parquet file to the database.
 
 The optional third argument is reserved for Parquet import options and is currently empty. Pass `undefined` when supplying import control options as the fourth argument.
 

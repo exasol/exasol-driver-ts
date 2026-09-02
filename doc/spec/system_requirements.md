@@ -65,7 +65,7 @@ Node.js-only functionality that imports a readable local CSV or Parquet file int
 
 ### Parquet Import
 
-Node.js-only functionality that imports a readable local Parquet file into an Exasol table using Exasol's `IMPORT FROM PARQUET` mechanism. It requires Exasol 2026.1 or later.
+Node.js-only functionality that imports a readable local Parquet file into an Exasol table using Exasol's `IMPORT FROM PARQUET` mechanism. It requires Exasol 2025.1.9 or later.
 
 ### CSV Export
 
@@ -121,7 +121,7 @@ Needs: req
 ### Parquet File Import
 `feat~parquet-file-import~1`
 
-The driver lets Node.js applications import local Parquet files into Exasol tables on Exasol 2026.1 or later.
+The driver lets Node.js applications import local Parquet files into Exasol tables on Exasol 2025.1.9 or later.
 
 Needs: req
 
@@ -297,7 +297,7 @@ Needs: scn
 #### Import Local Parquet Files
 `req~import-local-parquet-files~1`
 
-The Node.js application imports a readable local Parquet file into a target Exasol table and receives the imported row count when connected to Exasol 2026.1 or later.
+The Node.js application imports a readable local Parquet file into a target Exasol table and receives the imported row count when connected to Exasol 2025.1.9 or later.
 
 Covers:
 - `feat~parquet-file-import~1`
@@ -667,7 +667,7 @@ Needs: dsn, uman
 #### Parquet Import Succeeds
 `scn~parquet-import-succeeds~1`
 
-**Given** a Node.js application, an authenticated driver connected to Exasol 2026.1 or later, a readable local Parquet file, and an existing target table
+**Given** a Node.js application, an authenticated driver connected to Exasol 2025.1.9 or later, a readable local Parquet file, and an existing target table
 **When** the application calls `importFromParquetFile()`
 **Then** the driver streams the original file bytes through Exasol's import tunnel and resolves with the imported row count
 
@@ -691,9 +691,9 @@ Needs: dsn
 #### Parquet Import Rejects Unsupported Exasol Versions
 `scn~parquet-import-rejects-unsupported-server~1`
 
-**Given** a Node.js application, an authenticated driver connected to an Exasol version before 2026.1, a readable local Parquet file, and an existing target table
+**Given** a Node.js application, an authenticated driver connected to an Exasol version before 2025.1.9, a readable local Parquet file, and an existing target table
 **When** the application calls `importFromParquetFile()`
-**Then** the driver rejects with Exasol's message that explains Parquet import requires Exasol 2026.1 or later
+**Then** the driver rejects with Exasol's message that explains Parquet import is unavailable
 
 Covers:
 - `req~import-local-parquet-files~1`

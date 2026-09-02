@@ -136,7 +136,7 @@ export interface IExasolDriver extends AsyncDisposable {
   /**
    * Import data from a local Parquet file into an Exasol table.
    *
-   * Node.js only. Requires Exasol 2026.1 or later.
+   * Node.js only. Requires Exasol 2025.1.9 or later.
    *
    * @param tableName Target table name (optionally schema-qualified)
    * @param filePath Path to the local Parquet file

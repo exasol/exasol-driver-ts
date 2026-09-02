@@ -18,13 +18,14 @@ export class ExasolContainer {
   }
 
   public static supportsParquetImport(): boolean {
-    const version = DOCKER_CONTAINER_VERSION.match(/(\d+)\.(\d+)/);
+    const version = DOCKER_CONTAINER_VERSION.match(/(\d+)\.(\d+)(?:\.(\d+))?/);
     if (!version) {
       return false;
     }
     const major = Number(version[1]);
     const minor = Number(version[2]);
-    return major > 2026 || (major === 2026 && minor >= 1);
+    const patch = Number(version[3] ?? 0);
+    return major > 2025 || (major === 2025 && (minor > 1 || (minor === 1 && patch >= 9)));
   }
 
   getPort(): number {

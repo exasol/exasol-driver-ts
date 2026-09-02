@@ -4,7 +4,7 @@ Code name: Local Parquet import
 
 ## Summary
 
-This release allows importing local Parquet files into an existing Exasol table with `importFromParquetFile()`. This Node.js-only API requires Exasol 2026.1 or later and supports cancellation through `AbortSignal`.
+This release allows importing local Parquet files into an existing Exasol table with `importFromParquetFile()`. This Node.js-only API requires Exasol 2025.1.9 or later and supports cancellation through `AbortSignal`.
 
 ## Features
 
