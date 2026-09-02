@@ -3,8 +3,8 @@ import { execFile } from 'child_process';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { promisify } from 'util';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
+import { promisify } from 'util';
 import { CsvFormatOptions, RowSeparator, TrimMode } from '../../src/lib/import/types';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { IExasolDriver } from '../../src/lib/sql-client.interface';
@@ -230,7 +230,7 @@ describeImportWhenSupported("Node Import", () => {
       const parquetFilePath = join(tempDirectory, 'test.parquet');
       await createMinimalParquetFile(parquetFilePath);
 
-      await expect(driver.importFromParquetFile(tableName, parquetFilePath)).rejects.toThrow(/parquet.*2026\.1|2026\.1.*parquet/i);
+      await expect(driver.importFromParquetFile(tableName, parquetFilePath)).rejects.toThrow("E-EDJS-25: SQL error: code: '42636', message: 'ETL-2238: Remote File");
     });
   });
 
