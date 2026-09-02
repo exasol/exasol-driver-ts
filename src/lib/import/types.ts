@@ -76,6 +76,9 @@ export interface FileImportOptions {
 /** @deprecated Use {@link FileImportOptions}. */
 export type CsvImportOptions = FileImportOptions;
 
+/** Format options for Parquet file import. Reserved for future Parquet import options. */
+export type ParquetImportOptions = Record<string, never>;
+
 /** Options for CSV file export. See https://docs.exasol.com/db/latest/sql/export.htm */
 export interface CsvExportFormatOptions {
   /**

@@ -3,7 +3,7 @@
  * Date: 2022-04-14 07:21:51
  */
 import { Attributes, Commands, CommandsNoResult } from './commands';
-import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions, FileImportOptions } from './import/types';
+import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions, FileImportOptions, ParquetImportOptions } from './import/types';
 import { QueryResult } from './query-result';
 import { SQLQueriesResponse, SQLResponse } from './types';
 
@@ -137,8 +137,19 @@ export interface IExasolDriver extends AsyncDisposable {
    * Import data from a local Parquet file into an Exasol table.
    *
    * Node.js only. Requires Exasol 2026.1 or later.
+   *
+   * @param tableName Target table name (optionally schema-qualified)
+   * @param filePath Path to the local Parquet file
+   * @param parquetOptions Optional Parquet import options
+   * @param options Optional import control options
+   * @returns Number of rows imported
    */
-  importFromParquetFile(tableName: string, filePath: string, options?: FileImportOptions): Promise<number>;
+  importFromParquetFile(
+    tableName: string,
+    filePath: string,
+    parquetOptions?: ParquetImportOptions,
+    options?: FileImportOptions,
+  ): Promise<number>;
 
   /**
    * Export an Exasol table or parenthesized query result to a new local CSV file.

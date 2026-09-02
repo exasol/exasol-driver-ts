@@ -34,7 +34,7 @@ FileImport --> Exasol
 ### Driver API
 `dsn~driver-api~4`
 
-`ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV and Parquet imports. It supports asynchronous disposal by delegating `Symbol.asyncDispose` to `close()`.
+`ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV and Parquet imports. Parquet import reserves a dedicated options argument for future format-specific settings, separate from import control options. It supports asynchronous disposal by delegating `Symbol.asyncDispose` to `close()`.
 
 Covers:
 - `scn~connect-with-basic-authentication~1`

@@ -200,7 +200,7 @@ describeImportWhenSupported("Node Import", () => {
       await driver.execute(`CREATE TABLE ${tableName} (X VARCHAR(2000000))`);
 
       const controller = new AbortController();
-      const importPromise = driver.importFromParquetFile(tableName, '/dev/zero', { signal: controller.signal });
+      const importPromise = driver.importFromParquetFile(tableName, '/dev/zero', undefined, { signal: controller.signal });
       await new Promise((resolve) => setTimeout(resolve, 500));
       controller.abort();
 

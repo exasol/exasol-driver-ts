@@ -302,6 +302,8 @@ See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#
 
 Parquet import with `importFromParquetFile()` is only available in Node.js and requires Exasol 2026.1 or later. The driver streams the original local Parquet file to the database.
 
+The optional third argument is reserved for Parquet import options and is currently empty. Pass `undefined` when supplying import control options as the fourth argument.
+
 ```ts
 const importedRows = await driver.importFromParquetFile(
   'MY_SCHEMA.MY_TABLE',
@@ -312,13 +314,14 @@ const importedRows = await driver.importFromParquetFile(
 #### Cancelling a Running Parquet Import
 <!-- [uman->scn~parquet-import-is-cancelled~1] -->
 
-Pass an `AbortSignal` as the optional third argument to stop an in-flight Parquet import. The promise rejects with an `AbortError` and releases its file and tunnel resources.
+Pass an `AbortSignal` as the optional fourth argument to stop an in-flight Parquet import. The promise rejects with an `AbortError` and releases its file and tunnel resources.
 
 ```ts
 const controller = new AbortController();
 const importPromise = driver.importFromParquetFile(
   'MY_SCHEMA.MY_TABLE',
   '/absolute/path/to/data.parquet',
+  undefined,
   { signal: controller.signal },
 );
 
