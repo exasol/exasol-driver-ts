@@ -32,7 +32,11 @@ export function parseResponse(data: Buffer): InternalAddress {
   return { host, port };
 }
 
-export function createTunnel(host: string, port: number, signal?: AbortSignal): Promise<{ socket: net.Socket; internalAddress: InternalAddress }> {
+export function createTunnel(
+  host: string,
+  port: number,
+  signal?: AbortSignal,
+): Promise<{ socket: net.Socket; internalAddress: InternalAddress }> {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ host, port }, () => {
       socket.write(buildMagicPacket());
@@ -40,8 +44,7 @@ export function createTunnel(host: string, port: number, signal?: AbortSignal): 
 
     const abortTunnel = () => {
       socket.destroy();
-      const message = new ExaErrorBuilder('E-EDJS-21').message('The CSV import was aborted.').toString();
-      reject(new DOMException(message, 'AbortError'));
+      reject(newLocalFileImportAbortedError());
     };
 
     if (signal?.aborted) {
@@ -75,4 +78,9 @@ export function createTunnel(host: string, port: number, signal?: AbortSignal): 
       );
     });
   });
+}
+
+function newLocalFileImportAbortedError(): DOMException {
+  const message = new ExaErrorBuilder('E-EDJS-21').message('The local file import was aborted.').toString();
+  return new DOMException(message, 'AbortError');
 }

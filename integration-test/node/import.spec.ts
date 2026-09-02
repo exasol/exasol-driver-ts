@@ -1,7 +1,9 @@
 
+import { execFile } from 'child_process';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { promisify } from 'util';
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { CsvFormatOptions, RowSeparator, TrimMode } from '../../src/lib/import/types';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
@@ -10,6 +12,10 @@ import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
 
 const describeImportWhenSupported = ExasolContainer.supportsEncryptedImportExport() ? describe : describe.skip;
+const describeParquetImportWhenSupported = ExasolContainer.supportsParquetImport() ? describe : describe.skip;
+const describeParquetImportWhenUnsupported = ExasolContainer.supportsEncryptedImportExport() && !ExasolContainer.supportsParquetImport()
+  ? describe
+  : describe.skip;
 
 // [itest->dsn~runtime-csv-import-missing-target-table~1]
 // [itest->dsn~runtime-csv-import-file-stream~1]
@@ -54,7 +60,7 @@ describeImportWhenSupported("Node Import", () => {
     }
   });
 
-  async function createFile(fileName: string, fileContent: string): Promise<string> {
+  async function createFile(fileName: string, fileContent: string | Uint8Array): Promise<string> {
     const path = join(tempDirectory, fileName);
     await writeFile(path, fileContent, { encoding: 'utf-8' });
     return path;
@@ -185,6 +191,49 @@ describeImportWhenSupported("Node Import", () => {
     });
   });
 
+  // [itest->dsn~runtime-parquet-import-file-stream~1]
+  describeParquetImportWhenSupported('importFromParquetFile', () => {
+    // [itest->dsn~runtime-parquet-import-cancellation~1]
+    it('cancels an in-flight Parquet import', async () => {
+      await driver.execute(`CREATE SCHEMA ${schemaName}`);
+      const tableName = `${schemaName}.TEST_TABLE`;
+      await driver.execute(`CREATE TABLE ${tableName} (X VARCHAR(2000000))`);
+
+      const controller = new AbortController();
+      const importPromise = driver.importFromParquetFile(tableName, '/dev/zero', { signal: controller.signal });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      controller.abort();
+
+      await expect(importPromise).rejects.toThrow('E-EDJS-37: The Parquet import was aborted.');
+    });
+
+    it('imports a Parquet file into a table', async () => {
+      await driver.execute(`CREATE SCHEMA ${schemaName}`);
+      const tableName = `${schemaName}.TEST_TABLE`;
+      await driver.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0))`);
+      const parquetFilePath = join(tempDirectory, 'test.parquet');
+      await createMinimalParquetFile(parquetFilePath);
+
+      await driver.importFromParquetFile(tableName, parquetFilePath);
+
+      const data = await driver.query(`SELECT * FROM ${tableName}`);
+      expect(data.getRows()).toStrictEqual([{ ID: 1 }, { ID: 2 }, { ID: 3 }]);
+    });
+  });
+
+  // [itest->dsn~runtime-parquet-import-version-support~1]
+  describeParquetImportWhenUnsupported('importFromParquetFile on an unsupported Exasol version', () => {
+    it('rejects with the database message explaining that Parquet import is unavailable', async () => {
+      await driver.execute(`CREATE SCHEMA ${schemaName}`);
+      const tableName = `${schemaName}.TEST_TABLE`;
+      await driver.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0))`);
+      const parquetFilePath = join(tempDirectory, 'test.parquet');
+      await createMinimalParquetFile(parquetFilePath);
+
+      await expect(driver.importFromParquetFile(tableName, parquetFilePath)).rejects.toThrow(/parquet.*2026\.1|2026\.1.*parquet/i);
+    });
+  });
+
   const openConnection = async (factory: WebsocketFactory, container: ExasolContainer) => {
     const driver = new ExasolDriver(factory, {
       host: container.getHost(),
@@ -196,3 +245,8 @@ describeImportWhenSupported("Node Import", () => {
     return driver;
   };
 });
+
+/** Creates a Parquet file with an INT32 ID column containing 1, 2, and 3. */
+async function createMinimalParquetFile(filePath: string): Promise<void> {
+  await promisify(execFile)(process.execPath, [join(__dirname, 'write-parquet.mjs'), filePath]);
+}

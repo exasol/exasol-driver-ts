@@ -17,6 +17,16 @@ export class ExasolContainer {
     return !DOCKER_CONTAINER_VERSION.match(/(?:^|:)8(?:\.|$)/);
   }
 
+  public static supportsParquetImport(): boolean {
+    const version = DOCKER_CONTAINER_VERSION.match(/(\d+)\.(\d+)/);
+    if (!version) {
+      return false;
+    }
+    const major = Number(version[1]);
+    const minor = Number(version[2]);
+    return major > 2026 || (major === 2026 && minor >= 1);
+  }
+
   getPort(): number {
     const port = this.container.getMappedPort(8563);
     if (port === undefined) {

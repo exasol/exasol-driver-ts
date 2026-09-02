@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as stream from 'node:stream';
 import * as tls from 'node:tls';
@@ -179,6 +180,122 @@ export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStre
       dataStream.removeListener('error', onError);
     }
 
+    dataStream.on('data', onData);
+    dataStream.on('end', onEnd);
+    dataStream.on('error', onError);
+  });
+}
+
+export interface FileServingOptions {
+  rangeRequests?: boolean;
+  onFileStream?: (fileStream: fs.ReadStream) => void;
+}
+
+/** Serves a local file until Exasol completes the import query. */
+export async function serveFileRequests(
+  socket: net.Socket | tls.TLSSocket,
+  filePath: string,
+  sqlPromise: Promise<number>,
+  options: FileServingOptions = {},
+): Promise<number> {
+  const fileSize = options.rangeRequests ? (await fs.promises.stat(filePath)).size : undefined;
+  const sqlResult = sqlPromise.then((rowCount) => ({ rowCount }));
+  let servedRequest = false;
+
+  while (true) {
+    let result: { rowCount: number } | { request: HttpRequest };
+    try {
+      result = await Promise.race([
+        sqlResult,
+        readHttpRequest(socket).then((request) => ({ request })),
+      ]);
+    } catch (error) {
+      if (servedRequest && error instanceof Error && error.message.startsWith('E-EDJS-13:')) {
+        return sqlPromise;
+      }
+      throw error;
+    }
+    if ('rowCount' in result) {
+      return result.rowCount;
+    }
+    await sendFileResponse(socket, filePath, result.request, fileSize, options);
+    servedRequest = true;
+    socket.resume();
+  }
+}
+
+async function sendFileResponse(
+  socket: net.Socket | tls.TLSSocket,
+  filePath: string,
+  request: HttpRequest,
+  fileSize: number | undefined,
+  options: FileServingOptions,
+): Promise<void> {
+  if (!options.rangeRequests) {
+    const fileStream = fs.createReadStream(filePath);
+    options.onFileStream?.(fileStream);
+    await sendChunkedResponse(socket, fileStream);
+    return;
+  }
+  if (fileSize === undefined) {
+    throw new Error('File size is required for range requests.');
+  }
+  const method = request.headers.split('\r\n', 1)[0]?.split(' ', 1)[0];
+  const range = parseByteRange(request.headers, fileSize);
+  if (range === null) {
+    socket.write(`HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */${fileSize}\r\nContent-Length: 0\r\n\r\n`);
+    return;
+  }
+
+  const { start, end } = range ?? { start: 0, end: fileSize - 1 };
+  const contentLength = end - start + 1;
+  const status = range === undefined ? '200 OK' : '206 Partial Content';
+  const contentRange = range === undefined ? '' : `Content-Range: bytes ${start}-${end}/${fileSize}\r\n`;
+  socket.write(`HTTP/1.1 ${status}\r\nAccept-Ranges: bytes\r\n${contentRange}Content-Length: ${contentLength}\r\n\r\n`);
+
+  if (method === 'HEAD') {
+    return;
+  }
+  const fileStream = fs.createReadStream(filePath, { start, end });
+  options.onFileStream?.(fileStream);
+  await writeReadable(socket, fileStream);
+}
+
+function parseByteRange(headers: string, fileSize: number): { start: number; end: number } | undefined | null {
+  const value = /^range:\s*bytes=(\d*)-(\d*)\s*$/im.exec(headers);
+  if (!value) {
+    return undefined;
+  }
+  const [, startText, endText] = value;
+  if (startText === '' && endText === '') {
+    return null;
+  }
+  const start = startText === '' ? Math.max(0, fileSize - Number(endText)) : Number(startText);
+  const end = endText === '' ? fileSize - 1 : Math.min(Number(endText), fileSize - 1);
+  return start >= fileSize || start > end ? null : { start, end };
+}
+
+function writeReadable(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable): Promise<void> {
+  return new Promise((resolve, reject) => {
+    function onData(chunk: Buffer) {
+      if (!socket.write(chunk)) {
+        dataStream.pause();
+        socket.once('drain', dataStream.resume.bind(dataStream));
+      }
+    }
+    function onEnd() {
+      cleanup();
+      resolve();
+    }
+    function onError(error: Error) {
+      cleanup();
+      reject(error);
+    }
+    function cleanup() {
+      dataStream.removeListener('data', onData);
+      dataStream.removeListener('end', onEnd);
+      dataStream.removeListener('error', onError);
+    }
     dataStream.on('data', onData);
     dataStream.on('end', onEnd);
     dataStream.on('error', onError);

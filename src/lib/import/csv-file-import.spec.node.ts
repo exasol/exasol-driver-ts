@@ -1,21 +1,17 @@
-import * as fs from 'node:fs';
 import { PassThrough } from 'node:stream';
 import { importCsvFile } from './csv-file-import';
-import { readHttpRequest, sendChunkedResponse } from './http-protocol';
+import { serveFileRequests } from './http-protocol';
 import { createTunnel } from './http-transport';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
 
-jest.mock('node:fs', () => ({ ...jest.requireActual('node:fs'), createReadStream: jest.fn() }));
 jest.mock('./http-transport');
 jest.mock('./http-protocol');
 jest.mock('./tls-transport');
 
 const mockedCreateTunnel = createTunnel as jest.MockedFunction<typeof createTunnel>;
-const mockedReadHttpRequest = readHttpRequest as jest.MockedFunction<typeof readHttpRequest>;
-const mockedSendChunkedResponse = sendChunkedResponse as jest.MockedFunction<typeof sendChunkedResponse>;
+const mockedServeFileRequests = serveFileRequests as jest.MockedFunction<typeof serveFileRequests>;
 const mockedGenerateAdHocCertificate = generateAdHocCertificate as jest.MockedFunction<typeof generateAdHocCertificate>;
 const mockedWrapWithTls = wrapWithTls as jest.MockedFunction<typeof wrapWithTls>;
-const mockedCreateReadStream = fs.createReadStream as jest.MockedFunction<typeof fs.createReadStream>;
 
 // [utest->dsn~runtime-csv-import-file-readability-check~1]
 describe('csv-file-import', () => {
@@ -94,12 +90,10 @@ describe('csv-file-import', () => {
         });
         mockedGenerateAdHocCertificate.mockReturnValue({ key: {} as never, cert: {} as never, fingerprint: 'fingerprint' });
         mockedWrapWithTls.mockReturnValue(secureSocket as never);
-        mockedReadHttpRequest.mockResolvedValue({
-          headers: 'GET /001.csv HTTP/1.1\r\n\r\n',
-          initialBody: Buffer.alloc(0),
+        mockedServeFileRequests.mockImplementation((_socket, _filePath, _sqlPromise, options) => {
+          options?.onFileStream?.(fileStream as never);
+          return new Promise<number>(() => undefined);
         });
-        mockedSendChunkedResponse.mockImplementation(() => new Promise<void>(() => undefined));
-        mockedCreateReadStream.mockReturnValue(fileStream as never);
 
         const importPromise = importCsvFile({
           host: 'localhost',

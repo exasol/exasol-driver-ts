@@ -3,10 +3,10 @@ import * as net from 'node:net';
 import * as path from 'node:path';
 import * as tls from 'node:tls';
 import { ExaErrorBuilder } from '../errors/error-reporting';
-import { readHttpRequest, sendChunkedResponse } from './http-protocol';
+import { FileServingOptions, serveFileRequests } from './http-protocol';
 import { createTunnel, InternalAddress } from './http-transport';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
-import { CsvImportOptions } from './types';
+import { FileImportOptions } from './types';
 
 /** Parameters for streaming a local file through an Exasol import tunnel. */
 export interface ImportLocalFileParameters {
@@ -15,9 +15,10 @@ export interface ImportLocalFileParameters {
   filePath: string;
   executeSql: (sql: string) => Promise<number>;
   buildImportSql: (internalAddress: InternalAddress, fingerprint: string) => string;
-  options?: CsvImportOptions;
+  options?: FileImportOptions;
   cancelSql?: () => Promise<void>;
   newAbortedError: () => DOMException;
+  fileServingOptions?: FileServingOptions;
 }
 
 /** Imports a local file by executing format-specific SQL and streaming its bytes through the tunnel. */
@@ -30,6 +31,7 @@ export async function importLocalFile({
   options,
   cancelSql,
   newAbortedError,
+  fileServingOptions,
 }: ImportLocalFileParameters): Promise<number> {
   const absoluteFilePath = path.resolve(filePath);
   await verifyFileExists(absoluteFilePath);
@@ -66,14 +68,14 @@ export async function importLocalFile({
     secureSocket = wrapWithTls(unencryptedSocket, cert.key, cert.cert);
     queryStarted = true;
     const sqlPromise = executeSql(buildImportSql(tunnel.internalAddress, cert.fingerprint));
-    const tunnelPromise = (async () => {
-      await readHttpRequest(secureSocket);
-      fileStream = fs.createReadStream(absoluteFilePath);
-      await sendChunkedResponse(secureSocket, fileStream);
-    })();
-
-    const [rowCount] = await Promise.race([Promise.all([sqlPromise, tunnelPromise]), abortPromise]);
-    return rowCount;
+    const servingOptions: FileServingOptions = {
+      ...fileServingOptions,
+      onFileStream: (stream) => {
+        fileStream = stream;
+        fileServingOptions?.onFileStream?.(stream);
+      },
+    };
+    return await Promise.race([serveFileRequests(secureSocket, absoluteFilePath, sqlPromise, servingOptions), abortPromise]);
   } finally {
     if (options?.signal && abortImport) {
       options.signal.removeEventListener('abort', abortImport);

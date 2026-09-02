@@ -2,7 +2,7 @@
 
 ## Goal
 
-Allow Node.js applications to import a local Parquet file into an Exasol table by streaming its original bytes through an encrypted import tunnel. The feature requires Exasol 2026.1 or later and ships in version 0.6.0.
+Allow Node.js applications to import a local Parquet file into an Exasol table by streaming its original bytes through an encrypted import tunnel. The feature requires Exasol 2026.1 or later and ships in version 0.7.0.
 
 ## Scope
 
@@ -39,11 +39,11 @@ Deliver the work in two independently green pull requests. PR 1 is an internal, 
 
 ### PR 2: Native Parquet Import
 
-- [ ] Add Parquet feature, requirements, success and cancellation scenarios, Node-only constraint, runtime and component design items, and user-manual trace coverage.
-- [ ] Add `FileImportOptions` while retaining `CsvImportOptions` as a compatible alias.
-- [ ] Add `importFromParquetFile()` to `IExasolDriver` and `ExasolDriver`.
-- [ ] Generate `IMPORT INTO <table> FROM PARQUET AT '<tunnel>' PUBLIC KEY '<fingerprint>' FILE '001.parquet'` and stream the source bytes through the shared helper.
-- [ ] Add unit coverage for Parquet SQL, API forwarding, missing files, cleanup, and cancellation using `E-EDJS-37`.
-- [ ] Generate a valid minimal Parquet file at runtime in the integration-test temporary directory; verify imported rows on Exasol 2026.1 and skip the scenario on older supported test images.
-- [ ] Update README, user guide, requirements, design, version 0.6.0, `doc/changes/changes_0.6.0.md`, and the changelog index.
+- [x] Add Parquet feature, requirements, success and cancellation scenarios, Node-only constraint, runtime and component design items, and user-manual trace coverage.
+- [x] Add `FileImportOptions` while retaining `CsvImportOptions` as a compatible alias.
+- [x] Add `importFromParquetFile()` to `IExasolDriver` and `ExasolDriver`.
+- [x] Generate `IMPORT INTO <table> FROM PARQUET AT '<tunnel>' PUBLIC KEY '<fingerprint>' FILE '001.parquet'` and stream the source bytes through the shared helper.
+- [x] Add unit coverage for Parquet SQL, API forwarding, missing files, cleanup, and cancellation using `E-EDJS-37`.
+- [x] Generate a valid minimal Parquet file at runtime in the integration-test temporary directory; verify imported rows on Exasol 2026.1 and verify Exasol's helpful version-support error on older encrypted-import test images.
+- [x] Update README, user guide, requirements, design, version 0.7.0, `doc/changes/changes_0.7.0.md`, and the changelog index.
 - [ ] Run `npm run trace`, `npm run lint:ci`, `npm run typecheck`, `npm run test`, `env -u NODE_OPTIONS npm run itest`, `npm run audit`, and `npm run build`.

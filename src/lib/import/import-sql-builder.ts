@@ -20,6 +20,14 @@ export function buildCsvImportSql(
   return sql;
 }
 
+// [impl->dsn~runtime-parquet-import-file-stream~1]
+export function buildParquetImportSql(tableName: string, internalAddress: InternalAddress, fingerprint: string): string {
+  // The tunnel serves one HTTP request at a time. Parquet readers otherwise issue
+  // concurrent range requests for the same local file.
+  const url = `https://${internalAddress.host}:${internalAddress.port};MaxConcurrentReads=1`;
+  return `IMPORT INTO ${tableName} FROM PARQUET AT '${url}' PUBLIC KEY '${fingerprint}' FILE '001.parquet'`;
+}
+
 function buildFormatClauses(csvOptions?: CsvFormatOptions): string[] {
   if (!csvOptions) {
     return [];
