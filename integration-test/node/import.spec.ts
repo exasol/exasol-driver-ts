@@ -247,6 +247,8 @@ describeImportWhenSupported("Node Import", () => {
 });
 
 /** Creates a Parquet file with an INT32 ID column containing 1, 2, and 3. */
+// Uses the ESM helper because this Jest project transpiles tests to CommonJS:
+// https://github.com/exasol/exasol-driver-ts/issues/102
 async function createMinimalParquetFile(filePath: string): Promise<void> {
   await promisify(execFile)(process.execPath, [join(__dirname, 'write-parquet.mjs'), filePath]);
 }

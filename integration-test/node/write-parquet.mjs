@@ -1,3 +1,6 @@
+// hyparquet-writer is ESM-only, while Jest currently transpiles these TypeScript
+// integration tests to CommonJS. Use this separate ESM process until Jest is migrated:
+// https://github.com/exasol/exasol-driver-ts/issues/102
 import { parquetWriteFile } from 'hyparquet-writer';
 
 const filename = process.argv[2];
