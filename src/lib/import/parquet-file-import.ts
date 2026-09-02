@@ -17,9 +17,7 @@ interface ImportParquetFileParameters {
 // [impl->dsn~runtime-parquet-import-file-readability-check~1]
 // [impl->dsn~runtime-parquet-import-file-stream~1]
 // [impl->dsn~runtime-parquet-import-cancellation~1]
-export async function importParquetFile({ tableName, parquetOptions, ...parameters }: ImportParquetFileParameters): Promise<number> {
-  // The public argument is deliberately reserved until Exasol options are supported.
-  void parquetOptions;
+export async function importParquetFile({ tableName, ...parameters }: ImportParquetFileParameters): Promise<number> {
   return importLocalFile({
     ...parameters,
     buildImportSql: (internalAddress, fingerprint) => buildParquetImportSql(tableName, internalAddress, fingerprint),

@@ -1,4 +1,5 @@
 import * as fs from 'node:fs';
+import { EventEmitter } from 'node:events';
 import * as net from 'node:net';
 import * as stream from 'node:stream';
 import * as tls from 'node:tls';
@@ -47,9 +48,7 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<Htt
     }
 
     function cleanup() {
-      socket.removeListener('data', onData);
-      socket.removeListener('end', onEnd);
-      socket.removeListener('error', onError);
+      removeListeners(socket, { data: onData, end: onEnd, error: onError });
     }
 
     socket.on('data', onData);
@@ -175,15 +174,19 @@ export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStre
     }
 
     function cleanup() {
-      dataStream.removeListener('data', onData);
-      dataStream.removeListener('end', onEnd);
-      dataStream.removeListener('error', onError);
+      removeListeners(dataStream, { data: onData, end: onEnd, error: onError });
     }
 
     dataStream.on('data', onData);
     dataStream.on('end', onEnd);
     dataStream.on('error', onError);
   });
+}
+
+function removeListeners(emitter: EventEmitter, listeners: Record<string, Parameters<EventEmitter['removeListener']>[1]>): void {
+  for (const [event, listener] of Object.entries(listeners)) {
+    emitter.removeListener(event, listener);
+  }
 }
 
 export interface FileServingOptions {
