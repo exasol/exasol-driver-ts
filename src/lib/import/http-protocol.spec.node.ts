@@ -306,11 +306,17 @@ function nextTurn(): Promise<void> {
 }
 
 async function waitFor(condition: () => boolean): Promise<void> {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  const timeoutAt = Date.now() + 1_000;
+  while (Date.now() < timeoutAt) {
     if (condition()) {
       return;
     }
-    await nextTurn();
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
+
+  if (condition()) {
+    return;
+  }
+
   throw new Error('Condition did not become true.');
 }
