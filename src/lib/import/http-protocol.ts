@@ -281,26 +281,48 @@ function parseByteRange(headers: string, fileSize: number): { start: number; end
 function writeReadable(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable): Promise<void> {
   return new Promise((resolve, reject) => {
     function onData(chunk: Buffer) {
-      if (!socket.write(chunk)) {
-        dataStream.pause();
-        socket.once('drain', dataStream.resume.bind(dataStream));
+      try {
+        if (!socket.write(chunk)) {
+          dataStream.pause();
+          socket.once('drain', onDrain);
+        }
+      } catch (error) {
+        fail(error);
       }
+    }
+    function onDrain() {
+      dataStream.resume();
     }
     function onEnd() {
       cleanup();
       resolve();
     }
     function onError(error: Error) {
+      fail(error);
+    }
+    function onSocketError(error: Error) {
+      fail(error);
+    }
+    function onSocketClose() {
+      fail(new Error('Tunnel socket closed while sending file response.'));
+    }
+    function fail(error: unknown) {
       cleanup();
+      dataStream.destroy();
       reject(error);
     }
     function cleanup() {
       dataStream.removeListener('data', onData);
       dataStream.removeListener('end', onEnd);
       dataStream.removeListener('error', onError);
+      socket.removeListener('drain', onDrain);
+      socket.removeListener('error', onSocketError);
+      socket.removeListener('close', onSocketClose);
     }
     dataStream.on('data', onData);
     dataStream.on('end', onEnd);
     dataStream.on('error', onError);
+    socket.on('error', onSocketError);
+    socket.on('close', onSocketClose);
   });
 }

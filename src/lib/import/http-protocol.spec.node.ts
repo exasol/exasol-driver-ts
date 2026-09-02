@@ -270,6 +270,32 @@ describe('http-protocol', () => {
         await rm(directory, { recursive: true, force: true });
       }
     });
+
+    it('rejects and destroys the file stream when a backpressured tunnel closes', async () => {
+      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
+      const filePath = join(directory, 'source.parquet');
+      await writeFile(filePath, 'abcdef');
+      const socket = new FakeSocket(false);
+      let fileStream: import('node:fs').ReadStream | undefined;
+
+      try {
+        const serving = serveFileRequests(socket as never, filePath, new Promise<number>(() => undefined), {
+          rangeRequests: true,
+          onFileStream: (stream) => {
+            fileStream = stream;
+          },
+        });
+        await waitFor(() => socket.listenerCount('data') > 0);
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\n\r\n'));
+        await waitFor(() => socket.written.some((write) => write === 'abcdef'));
+        socket.emit('close');
+
+        await expect(serving).rejects.toThrow('Tunnel socket closed while sending file response.');
+        expect(fileStream?.destroyed).toBe(true);
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    });
   });
 });
 
@@ -287,6 +313,10 @@ function createBodyDestination(): { destination: Writable; getReceivedBody: () =
 class FakeSocket extends EventEmitter {
   public readonly written: string[] = [];
 
+  public constructor(private readonly writeResult = true) {
+    super();
+  }
+
   public pause(): this {
     return this;
   }
@@ -297,7 +327,7 @@ class FakeSocket extends EventEmitter {
 
   public write(data: string | Buffer): boolean {
     this.written.push(data.toString());
-    return true;
+    return this.writeResult;
   }
 }
 
