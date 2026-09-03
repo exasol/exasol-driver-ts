@@ -1,5 +1,7 @@
 import { ExaWebsocket } from './connection';
+import { createMockWebsocketFactory } from './mock-socket';
 import { createBrowserWebsocketFactory, ExasolDriver } from './sql-client';
+import { ExasolPool } from './sql-pool';
 
 // [utest->dsn~runtime-reject-missing-credentials~1]
 describe('sqlClient', () => {
@@ -19,6 +21,31 @@ describe('sqlClient', () => {
     return driver.connect().catch((err: Error) => {
       expect(err.message).toEqual('E-EDJS-6: Invalid credentials.');
       expect(err.name).toEqual('ExaError');
+    });
+  });
+
+  describe('with no global WebSocket', () => {
+    let webSocketDescriptor: PropertyDescriptor | undefined;
+
+    beforeEach(() => {
+      webSocketDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'WebSocket');
+      Reflect.deleteProperty(globalThis, 'WebSocket');
+    });
+
+    afterEach(() => {
+      if (webSocketDescriptor) {
+        Object.defineProperty(globalThis, 'WebSocket', webSocketDescriptor);
+      }
+    });
+
+    it('allows an explicit WebSocket factory', () => {
+      expect(() => new ExasolDriver(createMockWebsocketFactory().factory, {})).not.toThrow();
+    });
+
+    it('allows an explicit WebSocket factory for the pool', async () => {
+      const pool = new ExasolPool(createMockWebsocketFactory().factory, {});
+      await pool.drain();
+      await pool.clear();
     });
   });
 });

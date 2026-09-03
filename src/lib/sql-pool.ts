@@ -227,6 +227,12 @@ export class ExasolPool extends BaseExasolPool<ExasolDriver> {
     configOrLogger?: (Partial<Config> & Partial<ClientPoolConfig>) | ILogger,
     logger?: ILogger,
   ) {
-    super(ExasolDriver, createBrowserWebsocketFactory(), websocketFactoryOrConfig, configOrLogger, logger);
+    super(
+      ExasolDriver,
+      typeof websocketFactoryOrConfig === 'function' ? websocketFactoryOrConfig : createBrowserWebsocketFactory(),
+      websocketFactoryOrConfig,
+      configOrLogger,
+      logger,
+    );
   }
 }

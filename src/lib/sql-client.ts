@@ -578,6 +578,11 @@ export class ExasolDriver extends BaseExasolDriver {
     configOrLogger?: Partial<Config> | ILogger,
     logger?: ILogger,
   ) {
-    super(createBrowserWebsocketFactory(), websocketFactoryOrConfig, configOrLogger, logger);
+    super(
+      typeof websocketFactoryOrConfig === 'function' ? websocketFactoryOrConfig : createBrowserWebsocketFactory(),
+      websocketFactoryOrConfig,
+      configOrLogger,
+      logger,
+    );
   }
 }
