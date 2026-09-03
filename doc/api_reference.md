@@ -6,12 +6,30 @@ The Exasol driver lets Node.js and browser applications connect to Exasol and ex
 
 ## Main API
 
-- {@link !index.ExasolDriver | ExasolDriver} — create a database connection and execute SQL.
-- {@link !index.ExasolPool | ExasolPool} — manage a pool of database connections.
+- {@link !index.ExasolDriver | ExasolDriver} — Node.js driver that creates a database connection and executes SQL.
+- {@link !index.ExasolPool | ExasolPool} — Node.js pool that manages database connections.
+- {@link !browser.ExasolDriver | Browser ExasolDriver} — browser-safe driver that creates a database connection and executes SQL.
+- {@link !browser.ExasolPool | Browser ExasolPool} — browser-safe pool that manages database connections.
 - {@link !index.Config | Config} — configure the driver connection.
 - {@link !index.IExasolDriver | IExasolDriver} — Node.js driver operations exposed by `ExasolDriver`, including CSV file operations.
 - {@link !index.IExasolClient | IExasolClient} — browser-safe driver operations.
 - {@link !index.IStatement | IStatement} — execute and close prepared statements.
+
+## Entry points
+
+Use the package root in Node.js. It uses the packaged `ws` WebSocket implementation by default and includes Node.js CSV import and export operations:
+
+```ts
+import { ExasolDriver, ExasolPool } from '@exasol/exasol-driver-ts';
+```
+
+Use the `/browser` subpath in browser applications. It uses the runtime-provided browser `WebSocket` by default and excludes Node.js CSV file operations:
+
+```ts
+import { ExasolDriver, ExasolPool } from '@exasol/exasol-driver-ts/browser';
+```
+
+Both entry points also support the factory-first constructor overload for supplying an explicit WebSocket factory.
 
 ## Quick Start
 
@@ -31,10 +49,4 @@ const driver = new ExasolDriver({ host: 'localhost', port: 8563, user: 'sys', pa
 await driver.connect();
 await driver.query('SELECT * FROM EXA_ALL_SCHEMAS');
 await driver.close();
-```
-
-For browser applications, import the browser-safe entry point. It uses the browser-native `WebSocket` by default and does not provide Node.js CSV file operations:
-
-```ts
-import { ExasolDriver } from '@exasol/exasol-driver-ts/browser';
 ```
