@@ -44,6 +44,8 @@ describe('sqlClient', () => {
 
     it('allows an explicit WebSocket factory for the pool', async () => {
       const pool = new ExasolPool(createMockWebsocketFactory().factory, {});
+      expect(pool).toBeInstanceOf(ExasolPool);
+
       await pool.drain();
       await pool.clear();
     });
