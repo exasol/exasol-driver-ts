@@ -5,6 +5,8 @@ describe('exasolPool', () => {
   it('uses the Node.js default WebSocket factory when none is supplied', async () => {
     const pool = new ExasolPool({ accessToken: 'access-token' });
 
+    expect(pool).toBeInstanceOf(ExasolPool);
+
     await pool.drain();
     await pool.clear();
   });
