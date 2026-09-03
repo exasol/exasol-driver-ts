@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
 import { ExaWebsocket, ReadyState } from './connection';
 import { createMockWebsocketFactory, MockWebsocketFactory } from './mock-socket';
-import { ExasolDriver } from './sql-client';
+import { NodeExasolDriver as ExasolDriver } from './node-sql-client';
 import { IExasolDriver } from './sql-client.interface';
 
 describe('sqlClient', () => {
@@ -11,6 +11,12 @@ describe('sqlClient', () => {
   beforeEach(() => {
     mockSocketFactory = createMockWebsocketFactory();
     driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token' });
+  });
+
+  it('uses the Node.js default WebSocket factory when none is supplied', () => {
+    const defaultDriver = new ExasolDriver({ accessToken: 'access-token' });
+
+    expect(defaultDriver).toBeInstanceOf(ExasolDriver);
   });
 
   describe('connect', () => {

@@ -23,7 +23,8 @@
   "dependencies": {
     "generic-pool": "^3.9.0",
     "node-forge": "^1.4.0",
-    "pako": "^3.0.1"
+    "pako": "^3.0.1",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
@@ -55,8 +56,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "typedoc": "^0.28.20",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.66.0",
-    "ws": "^8.21.3"
+    "typescript-eslint": "^8.66.0"
   },
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -64,6 +64,18 @@
     "dist"
   ],
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.esm.js",
+      "require": "./dist/browser.js"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/exasol/exasol-driver-ts"

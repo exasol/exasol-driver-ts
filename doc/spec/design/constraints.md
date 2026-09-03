@@ -26,14 +26,14 @@ Application developers use the library in server-side Node.js services and brows
 
 Needs: dsn
 
-### Injectable WebSocket Implementation
-`constr~injectable-websocket-implementation~1`
+### Configurable WebSocket Implementation
+`constr~injectable-websocket-implementation~2`
 
-The system must receive its WebSocket implementation from the application through a factory function.
+The system must use an entry-point-specific default WebSocket implementation and allow applications to override it through a factory function.
 
 Rationale:
 
-Browser and Node.js runtimes provide different WebSocket implementations, and the public constructors accept a `websocketFactory`.
+Browser and Node.js runtimes provide different WebSocket implementations. The browser entry uses the runtime global, the Node.js entry uses `ws`, and explicit factories support custom TLS and transport settings.
 
 Needs: dsn
 

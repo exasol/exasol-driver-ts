@@ -4,7 +4,7 @@ import typescript from '@rollup/plugin-typescript';
 import { readFileSync } from 'node:fs';
 const pkg = JSON.parse(readFileSync('package.json', { encoding: 'utf8' }));
 
-// [impl->dsn~decision-publish-cjs-and-esm~1]
+// [impl->dsn~decision-publish-cjs-and-esm~2]
 export default [
   {
     input: 'src/index.ts',
@@ -22,6 +22,24 @@ export default [
       ...Object.keys(pkg.dependencies || {}),
       ...Object.keys(pkg.peerDependencies || {}),
       'node:fs', 'node:net', 'node:tls', 'node:path', 'node:stream',
+    ],
+    plugins: [json(), typescript()],
+  },
+  {
+    input: 'src/browser.ts',
+    output: [
+      {
+        file: 'dist/browser.js',
+        format: 'cjs',
+      },
+      {
+        file: 'dist/browser.esm.js',
+        format: 'esm',
+      },
+    ],
+    external: [
+      ...Object.keys(pkg.dependencies || {}),
+      ...Object.keys(pkg.peerDependencies || {}),
     ],
     plugins: [json(), typescript()],
   },

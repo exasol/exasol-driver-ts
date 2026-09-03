@@ -216,9 +216,9 @@ Needs: scn
 ### Supported Runtimes
 
 #### Run in Browser
-`req~run-in-browser~1`
+`req~run-in-browser~2`
 
-The application developer uses the package in browser runtimes by supplying a WebSocket factory that returns the runtime-provided `WebSocket` implementation.
+The application developer imports `@exasol/exasol-driver-ts/browser` in browser runtimes. The driver and pool use the runtime-provided `WebSocket` by default, and applications can supply a factory when they need a custom transport.
 
 Covers:
 - `feat~runtime-portability~1`
@@ -226,13 +226,13 @@ Covers:
 Needs: scn
 
 #### Run in Node.js
-`req~run-in-nodejs~1`
+`req~run-in-nodejs~2`
 
-The application developer uses the package in Node.js runtimes by supplying a WebSocket factory that returns a compatible Node.js WebSocket implementation.
+The application developer imports `@exasol/exasol-driver-ts` in Node.js runtimes. The driver and pool use the packaged `ws` implementation by default, and applications can supply a compatible WebSocket factory for custom TLS, proxy, or transport settings.
 
 Rationale:
 
-This keeps server-side consumers independent from the browser runtime while preserving the same package contract.
+The browser entry excludes Node.js-only CSV file operations and their filesystem, networking, and TLS dependencies.
 
 Covers:
 - `feat~runtime-portability~1`
@@ -496,26 +496,26 @@ Covers:
 Needs: dsn, uman
 
 ### Browser Connection Uses Native WebSocket
-`scn~browser-connection-uses-native-websocket~1`
+`scn~browser-connection-uses-native-websocket~2`
 
 **Given** a browser application with native `WebSocket`
-**When** the application creates a driver with a factory returning `new WebSocket(url)`
-**Then** the driver can use the browser WebSocket implementation without a Node.js WebSocket dependency
+**When** the application creates a driver or pool from `@exasol/exasol-driver-ts/browser` without a factory
+**Then** it uses the browser WebSocket implementation without resolving Node.js CSV or TLS modules
 
 Covers:
-- `req~run-in-browser~1`
+- `req~run-in-browser~2`
 
-Needs: dsn
+Needs: dsn, uman
 
-### Node Connection Uses Injected WebSocket
-`scn~node-connection-uses-injected-websocket~1`
+### Node Connection Uses Default or Injected WebSocket
+`scn~node-connection-uses-injected-websocket~2`
 
 **Given** a Node.js application with a WebSocket implementation such as `ws`
-**When** the application creates a driver with a factory returning a compatible WebSocket
-**Then** the driver can connect with the supplied Node.js WebSocket implementation
+**When** the application creates a driver or pool without a factory
+**Then** it uses the packaged `ws` implementation; an application can still supply a compatible factory for custom transport or TLS settings
 
 Covers:
-- `req~run-in-nodejs~1`
+- `req~run-in-nodejs~2`
 
 Needs: dsn
 

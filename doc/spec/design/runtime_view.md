@@ -161,30 +161,30 @@ Needs: impl, utest, itest
 ## Runtime Portability
 
 ### Browser WebSocket Runtime
-`dsn~runtime-browser-websocket~1`
+`dsn~runtime-browser-websocket~2`
 
 **Given** a browser application
-**When** the application creates a driver with a factory returning the browser `WebSocket`
-**Then** the driver uses the supplied object through the `ExaWebsocket` interface
+**When** the application imports `@exasol/exasol-driver-ts/browser` and creates a driver or pool without a factory
+**Then** it uses the browser global `WebSocket` through the `ExaWebsocket` interface, while still accepting an explicit factory
 
 Covers:
-- `scn~browser-connection-uses-native-websocket~1`
+- `scn~browser-connection-uses-native-websocket~2`
 - `constr~browser-and-nodejs-runtime-support~1`
-- `constr~injectable-websocket-implementation~1`
+- `constr~injectable-websocket-implementation~2`
 
 Needs: impl, itest
 
 ### Node.js WebSocket Runtime
-`dsn~runtime-node-websocket~1`
+`dsn~runtime-node-websocket~2`
 
 **Given** a Node.js application
-**When** the application creates a driver with a factory returning a compatible WebSocket such as `ws`
-**Then** the driver uses the supplied object through the same `ExaWebsocket` interface
+**When** the application creates a driver or pool without a factory
+**Then** it uses the packaged `ws` implementation through the same `ExaWebsocket` interface, while still accepting an explicit factory for custom TLS or transport settings
 
 Covers:
-- `scn~node-connection-uses-injected-websocket~1`
+- `scn~node-connection-uses-injected-websocket~2`
 - `constr~browser-and-nodejs-runtime-support~1`
-- `constr~injectable-websocket-implementation~1`
+- `constr~injectable-websocket-implementation~2`
 
 Needs: impl, itest
 

@@ -39,6 +39,12 @@ npm run trace:report
 npm run test
 ```
 
+### Package entry points
+
+`npm run build` creates the Node.js package entry point and the browser-safe `@exasol/exasol-driver-ts/browser` subpath. The browser entry must not import Node.js CSV, filesystem, networking, or TLS modules.
+
+The Node.js entry defaults to `ws`; the browser entry defaults to the runtime global `WebSocket`. Keep factory-first constructors working because applications use explicit factories for custom TLS, proxy, and transport settings.
+
 ### Integration tests
 
 ```sh

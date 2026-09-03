@@ -24,7 +24,7 @@ Rationale:
 This supports the documented browser and Node.js usage model and avoids forcing one runtime's WebSocket implementation onto all consumers.
 
 Covers:
-- `constr~injectable-websocket-implementation~1`
+- `constr~injectable-websocket-implementation~2`
 - `constr~browser-and-nodejs-runtime-support~1`
 
 Tags: runtime, portability
@@ -160,9 +160,9 @@ Considered alternatives:
 3. Publish both formats.
 
 #### Publish CJS and ESM
-`dsn~decision-publish-cjs-and-esm~1`
+`dsn~decision-publish-cjs-and-esm~2`
 
-The system builds CommonJS and ES module outputs from the same TypeScript entry point.
+The system builds CommonJS and ES module outputs for separate Node.js and browser entry points.
 
 Rationale:
 
@@ -171,7 +171,7 @@ This improves compatibility with different consuming application build systems.
 Covers:
 - `constr~typescript-library-package~1`
 
-Needs: impl
+Needs: impl, utest
 
 Tags: packaging
 

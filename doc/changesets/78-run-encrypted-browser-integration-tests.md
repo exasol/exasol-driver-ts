@@ -45,14 +45,14 @@ Deliver the change as four independently reviewable pull requests, merged sequen
 
 ### PR 1: Browser-safe packaging
 
-- [ ] Refactor the driver exports so browser imports do not resolve Node-only CSV, filesystem, networking, or TLS modules.
-- [ ] Add browser CommonJS, ESM, and declaration outputs and the `@exasol/exasol-driver-ts/browser` package export.
-- [ ] Preserve the existing Node entry point and CSV APIs.
-- [ ] Add backward-compatible constructor overloads accepting either `(websocketFactory, config, logger?)` or `(config, logger?)` for `ExasolDriver` and `ExasolPool`.
-- [ ] Implement the browser default factory with the runtime-provided global `WebSocket`.
-- [ ] Implement the Node default factory with `ws`, promote `ws` to a runtime dependency, and retain explicit factories for custom CA, certificate, proxy, and TLS settings.
-- [ ] Add browser bundle smoke and type coverage.
-- [ ] Update requirements and design items for the browser entry point.
+- [x] Refactor the driver exports so browser imports do not resolve Node-only CSV, filesystem, networking, or TLS modules.
+- [x] Add browser CommonJS, ESM, and declaration outputs and the `@exasol/exasol-driver-ts/browser` package export.
+- [x] Preserve the existing Node entry point and CSV APIs.
+- [x] Add backward-compatible constructor overloads accepting either `(websocketFactory, config, logger?)` or `(config, logger?)` for `ExasolDriver` and `ExasolPool`.
+- [x] Implement the browser default factory with the runtime-provided global `WebSocket`.
+- [x] Implement the Node default factory with `ws`, promote `ws` to a runtime dependency, and retain explicit factories for custom CA, certificate, proxy, and TLS settings.
+- [x] Add browser bundle smoke and type coverage.
+- [x] Update requirements and design items for the browser entry point.
 
 ### PR 2: Playwright harness and TLS pinning
 

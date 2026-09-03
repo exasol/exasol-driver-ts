@@ -2,36 +2,33 @@
 
 ### Introduction
 
-`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes.
+`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes. Import the Node.js entry as `@exasol/exasol-driver-ts` and the browser-safe entry as `@exasol/exasol-driver-ts/browser`.
 
 For the complete public API, see the [API reference](https://exasol.github.io/exasol-driver-ts/api/).
 
-In a browser, the library uses the native `WebSocket` implementation that is available in the runtime. In Node.js, you need to provide a WebSocket implementation such as the `ws` package when creating the driver or connection pool.
+Both entry points create a WebSocket by default: the browser entry uses the runtime-native `WebSocket`, while the Node.js entry uses its packaged `ws` dependency. Supply a factory only when the application needs custom transport, proxy, or TLS settings.
 
 The following sections show the runtime-specific setup for both environments.
 
 ### Node.js
 
-Install the following dependencies from the [npm](https://www.npmjs.com/) package registry:
+Install the package from the [npm](https://www.npmjs.com/) package registry:
 
 ```sh
-npm install --save @exasol/exasol-driver-ts ws @types/ws
+npm install --save @exasol/exasol-driver-ts
 ```
 
 Connecting to the database:
 
 ```ts
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
-import { WebSocket } from 'ws';
+import { ExasolDriver } from '@exasol/exasol-driver-ts';
 
-const driver = new ExasolDriver((url) => {
-      return new WebSocket(url) as ExaWebsocket;
-    }, {
-        host: "localhost",
-        port: 8563,
-        user: 'sys',
-        password: 'exasol'
-    });
+const driver = new ExasolDriver({
+  host: 'localhost',
+  port: 8563,
+  user: 'sys',
+  password: 'exasol'
+});
 
 // Connect
 await driver.connect();
@@ -111,6 +108,8 @@ Do not use `rejectUnauthorized: false`: it accepts any server certificate. When 
 
 ### Browser
 
+<!-- [uman->scn~browser-connection-uses-native-websocket~2] -->
+
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
 
 ```sh
@@ -120,16 +119,14 @@ npm install --save @exasol/exasol-driver-ts
 Connecting to the database:
 
 ```ts
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { ExasolDriver } from '@exasol/exasol-driver-ts/browser';
 
-const driver = new ExasolDriver((url) => {
-      return new WebSocket(url) as ExaWebsocket;
-    }, {
-        host: "localhost",
-        port: 8563,
-        user: 'sys',
-        password: 'exasol'
-    });
+const driver = new ExasolDriver({
+  host: 'localhost',
+  port: 8563,
+  user: 'sys',
+  password: 'exasol'
+});
 
 await driver.connect();
 await driver.query("SELECT * FROM EXA_ALL_SCHEMAS")

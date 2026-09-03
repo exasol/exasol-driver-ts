@@ -16,6 +16,16 @@ Run OpenFastTrace verification with:
 npm run trace
 ```
 
+## API Documentation
+
+Run API documentation verification with:
+
+```sh
+npm run docs:api
+```
+
+TypeDoc warnings are treated as errors and must be resolved before completing work that changes public APIs or API documentation.
+
 ### User Guide Traceability
 
 Keep `doc/user_guide/user_guide.md` reader-focused: do not add complete OpenFastTrace specification items there. To trace user documentation to a scenario, add an inline HTML comment directly before the relevant guidance:

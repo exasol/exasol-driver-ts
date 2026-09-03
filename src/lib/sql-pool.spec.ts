@@ -1,7 +1,14 @@
-import { ExasolPool } from './sql-pool';
+import { NodeExasolPool as ExasolPool } from './node-sql-pool';
 import { createMockWebsocketFactory } from './mock-socket';
 
 describe('exasolPool', () => {
+  it('uses the Node.js default WebSocket factory when none is supplied', async () => {
+    const pool = new ExasolPool({ accessToken: 'access-token' });
+
+    await pool.drain();
+    await pool.clear();
+  });
+
   // [utest->dsn~runtime-pool-async-disposal~1]
   it('should drain and clear the pool when disposed with await using', async () => {
     const pool = new ExasolPool(createMockWebsocketFactory().factory, { accessToken: 'access-token' });
