@@ -165,14 +165,14 @@ Needs: impl, utest, itest
 
 **Given** a browser application
 **When** the application imports `@exasol/exasol-driver-ts/browser` and creates a driver or pool without a factory
-**Then** it uses the browser global `WebSocket` through the `ExaWebsocket` interface, while still accepting an explicit factory
+**Then** it uses the browser global `WebSocket` through the `ExaWebsocket` interface, configures binary messages as `ArrayBuffer`, and still accepts an explicit factory
 
 Covers:
 - `scn~browser-connection-uses-native-websocket~2`
 - `constr~browser-and-nodejs-runtime-support~1`
 - `constr~injectable-websocket-implementation~2`
 
-Needs: impl, itest
+Needs: impl, utest, itest
 
 ### Node.js WebSocket Runtime
 `dsn~runtime-node-websocket~2`

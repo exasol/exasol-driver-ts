@@ -16,6 +16,7 @@ export interface ExaMessageEvent {
 }
 
 export interface ExaWebsocket {
+  binaryType?: 'arraybuffer' | 'blob';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onmessage: ((event: any) => void) | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

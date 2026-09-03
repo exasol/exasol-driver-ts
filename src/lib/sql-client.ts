@@ -68,7 +68,11 @@ export function createBrowserWebsocketFactory(): WebsocketFactory {
   if (!BrowserWebSocket) {
     throw new Error('No global WebSocket implementation is available. Provide a WebSocket factory explicitly.');
   }
-  return (url: string) => new BrowserWebSocket(url);
+  return (url: string) => {
+    const websocket = new BrowserWebSocket(url);
+    websocket.binaryType = 'arraybuffer';
+    return websocket;
+  };
 }
 
 export class BaseExasolDriver implements IExasolClient {
