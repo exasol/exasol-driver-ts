@@ -5,6 +5,7 @@
     "src/browser.ts"
   ],
   "excludeInternal": true,
+  "excludeProtected": true,
   "readme": "doc/api_reference.md",
   "treatWarningsAsErrors": true,
   "out": "dist/docs/api"

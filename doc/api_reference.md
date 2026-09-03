@@ -6,12 +6,12 @@ The Exasol driver lets Node.js and browser applications connect to Exasol and ex
 
 ## Main API
 
-- {@link ExasolDriver} — create a database connection and execute SQL.
-- {@link ExasolPool} — manage a pool of database connections.
-- {@link Config} — configure the driver connection.
-- {@link IExasolDriver} — Node.js driver operations exposed by `ExasolDriver`, including CSV file operations.
-- {@link IExasolClient} — browser-safe driver operations.
-- {@link IStatement} — execute and close prepared statements.
+- {@link !index.ExasolDriver | ExasolDriver} — create a database connection and execute SQL.
+- {@link !index.ExasolPool | ExasolPool} — manage a pool of database connections.
+- {@link !index.Config | Config} — configure the driver connection.
+- {@link !index.IExasolDriver | IExasolDriver} — Node.js driver operations exposed by `ExasolDriver`, including CSV file operations.
+- {@link !index.IExasolClient | IExasolClient} — browser-safe driver operations.
+- {@link !index.IStatement | IStatement} — execute and close prepared statements.
 
 ## Quick Start
 
