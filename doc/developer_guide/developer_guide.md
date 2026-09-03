@@ -43,6 +43,8 @@ npm run test
 
 `npm run build` creates the Node.js package entry point and the browser-safe `@exasol/exasol-driver-ts/browser` subpath. The browser entry must not import Node.js CSV, filesystem, networking, or TLS modules.
 
+The package declares `"type": "module"`. Rollup therefore writes ES module files with the `.js` extension and CommonJS files with the `.cjs` extension. Keep the conditional exports in `package.json` aligned with these filenames: `import` must resolve to the `.js` files and `require` must resolve to the `.cjs` files. Do not rename the CommonJS outputs to `.js`, because Node.js would interpret them as ES modules.
+
 The Node.js entry defaults to `ws`; the browser entry defaults to the runtime global `WebSocket`. Keep factory-first constructors working because applications use explicit factories for custom TLS, proxy, and transport settings.
 
 ### Integration tests

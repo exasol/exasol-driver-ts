@@ -8,6 +8,15 @@ For the complete public API, see the [API reference](https://exasol.github.io/ex
 
 Both entry points create a WebSocket by default: the browser entry uses the runtime-native `WebSocket`, while the Node.js entry uses its packaged `ws` dependency. Supply a factory only when the application needs custom transport, proxy, or TLS settings.
 
+The package supports both JavaScript module systems. Use `import` in an ES module or bundler, or use `require('@exasol/exasol-driver-ts')` from CommonJS. The browser-safe subpath supports the same two forms:
+
+```js
+const { ExasolDriver } = require('@exasol/exasol-driver-ts');
+const { ExasolDriver: BrowserExasolDriver } = require('@exasol/exasol-driver-ts/browser');
+```
+
+Applications should import the package entry points rather than referencing files under `dist/` directly.
+
 The following sections show the runtime-specific setup for both environments.
 
 ### Node.js

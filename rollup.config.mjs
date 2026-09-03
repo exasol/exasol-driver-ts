@@ -29,7 +29,7 @@ export default [
     input: 'src/browser.ts',
     output: [
       {
-        file: 'dist/browser.js',
+        file: 'dist/browser.cjs',
         format: 'cjs',
       },
       {

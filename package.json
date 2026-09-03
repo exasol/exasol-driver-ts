@@ -2,6 +2,7 @@
   "name": "@exasol/exasol-driver-ts",
   "version": "1.0.0",
   "description": "Exasol SQL Driver",
+  "type": "module",
   "scripts": {
     "audit": "npm run audit:prod && npm run audit:full",
     "audit:prod": "npm audit --omit=dev",
@@ -58,7 +59,7 @@
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.66.0"
   },
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.esm.js",
   "files": [
     "dist"
@@ -68,12 +69,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.esm.js",
-      "require": "./dist/index.js"
+      "require": "./dist/index.cjs"
     },
     "./browser": {
       "types": "./dist/browser.d.ts",
       "import": "./dist/browser.esm.js",
-      "require": "./dist/browser.js"
+      "require": "./dist/browser.cjs"
     }
   },
   "repository": {

@@ -4,7 +4,7 @@ This chapter describes how the system is packaged and deployed in its execution 
 
 ## Deployment Environment
 
-The system is installed as the npm package `@exasol/exasol-driver-ts`. Application builds consume CommonJS, ES module, and TypeScript declaration artifacts from `dist/`.
+The system is installed as the npm package `@exasol/exasol-driver-ts`. Application builds consume CommonJS (`.cjs`), ES module (`.js`), and TypeScript declaration artifacts from `dist/`.
 
 At runtime, the package runs inside the consuming browser or Node.js process and connects to an external Exasol database.
 
@@ -39,7 +39,7 @@ Npm --> Driver : install package
 
 ## Deployment Strategy
 
-Users install the package from npm. Node.js users install a WebSocket implementation separately when needed. The package is built with Rollup from `src/index.ts` into CommonJS and ES module outputs. Releases are currently performed manually according to the developer guide, with GitHub release automation publishing to npm.
+Users install the package from npm. Node.js users install a WebSocket implementation separately when needed. The package is built with Rollup from `src/index.ts` into CommonJS (`.cjs`) and ES module (`.js`) outputs. The package declares `"type": "module"`, and conditional exports route `import` to ES modules and `require` to CommonJS. Releases are currently performed manually according to the developer guide, with GitHub release automation publishing to npm.
 
 ## Open Issues
 
