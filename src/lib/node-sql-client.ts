@@ -28,12 +28,7 @@ export class NodeExasolDriver extends BaseExasolDriver implements IExasolDriver 
     super(createNodeWebsocketFactory(), websocketFactoryOrConfig, configOrLogger, logger);
   }
 
-  public async importFromCsvFile(
-    tableName: string,
-    filePath: string,
-    csvOptions?: CsvFormatOptions,
-    options?: CsvImportOptions,
-  ): Promise<number> {
+  public async importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions, options?: CsvImportOptions): Promise<number> {
     if (this.closed) {
       throw ErrClosed;
     }
@@ -49,12 +44,7 @@ export class NodeExasolDriver extends BaseExasolDriver implements IExasolDriver 
     });
   }
 
-  public async exportToCsvFile(
-    source: string,
-    filePath: string,
-    csvOptions?: CsvExportFormatOptions,
-    options?: CsvExportOptions,
-  ): Promise<number> {
+  public async exportToCsvFile(source: string, filePath: string, csvOptions?: CsvExportFormatOptions, options?: CsvExportOptions): Promise<number> {
     if (this.closed) {
       throw ErrClosed;
     }

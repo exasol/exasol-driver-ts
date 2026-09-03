@@ -11,18 +11,9 @@ export interface ClientPoolConfig {
   minimumPoolSize: number;
   maximumPoolSize: number;
 }
-type DriverConstructor<Driver extends BaseExasolDriver> = new (
-  websocketFactory: WebsocketFactory,
-  config: Partial<Config>,
-  logger?: ILogger,
-) => Driver;
+type DriverConstructor<Driver extends BaseExasolDriver> = new (websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) => Driver;
 
-function getPool<Driver extends BaseExasolDriver>(
-  DriverClass: DriverConstructor<Driver>,
-  websocketFactory: WebsocketFactory,
-  config: Partial<Config> & Partial<ClientPoolConfig>,
-  logger: ILogger,
-) {
+function getPool<Driver extends BaseExasolDriver>(DriverClass: DriverConstructor<Driver>, websocketFactory: WebsocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger: ILogger) {
   // [impl->dsn~runtime-pool-capacity-management~1]
   async function createClient() {
     const exasolClient = new DriverClass(websocketFactory, config, logger);
@@ -216,11 +207,7 @@ export class BaseExasolPool<Driver extends BaseExasolDriver> implements AsyncDis
  * global `WebSocket` unless the application supplies a factory explicitly.
  */
 export class ExasolPool extends BaseExasolPool<ExasolDriver> {
-  constructor(
-    websocketFactory: WebsocketFactory,
-    config: Partial<Config> & Partial<ClientPoolConfig>,
-    logger?: ILogger,
-  );
+  constructor(websocketFactory: WebsocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger?: ILogger);
   constructor(config: Partial<Config> & Partial<ClientPoolConfig>, logger?: ILogger);
   constructor(
     websocketFactoryOrConfig: WebsocketFactory | (Partial<Config> & Partial<ClientPoolConfig>),
