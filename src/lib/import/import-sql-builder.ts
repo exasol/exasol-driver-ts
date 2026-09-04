@@ -22,8 +22,9 @@ export function buildCsvImportSql(
 
 // [impl->dsn~runtime-parquet-import-file-stream~1]
 export function buildParquetImportSql(tableName: string, internalAddress: InternalAddress, fingerprint: string): string {
-  // The tunnel serves one HTTP request at a time. Parquet readers otherwise issue
-  // concurrent range requests for the same local file.
+  // Keep this in sync with serveFileRequests(), which handles one HTTP request at a time.
+  // MaxConcurrentReads=1 prevents Parquet from issuing concurrent range requests that
+  // the sequential tunnel cannot serve correctly; update both sides if that changes.
   const url = `https://${internalAddress.host}:${internalAddress.port};MaxConcurrentReads=1`;
   return `IMPORT INTO ${tableName} FROM PARQUET AT '${url}' PUBLIC KEY '${fingerprint}' FILE '001.parquet'`;
 }
