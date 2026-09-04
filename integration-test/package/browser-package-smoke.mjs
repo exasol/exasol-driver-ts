@@ -8,6 +8,7 @@ const forbiddenModules = ['node:fs', 'node:net', 'node:tls', 'node:path', 'node:
 
 const browserEsm = await readFile(new URL('../../dist/browser.esm.js', import.meta.url), 'utf8');
 const browserCjs = await readFile(new URL('../../dist/browser.cjs', import.meta.url), 'utf8');
+const declarationFiles = ['index.d.ts', 'browser.d.ts'];
 
 for (const moduleName of forbiddenModules) {
   assert.ok(!browserEsm.includes(moduleName), `browser ESM output resolves ${moduleName}`);
@@ -15,6 +16,13 @@ for (const moduleName of forbiddenModules) {
 }
 assert.ok(!browserEsm.includes('importFromCsvFile'));
 assert.ok(!browserEsm.includes('exportToCsvFile'));
+
+for (const declarationFile of declarationFiles) {
+  const declarations = await readFile(new URL(`../../dist/${declarationFile}`, import.meta.url), 'utf8');
+  for (const match of declarations.matchAll(/(?:from\s*|import\()\s*['"](\.\.?\/[^'"]+)['"]/g)) {
+    assert.ok(match[1].endsWith('.js'), `${declarationFile} contains an extensionless relative specifier: ${match[1]}`);
+  }
+}
 
 const browserEsmExports = await import('@exasol/exasol-driver-ts/browser');
 const browserCjsExports = require('@exasol/exasol-driver-ts/browser');

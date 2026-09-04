@@ -17,7 +17,7 @@
     "lint:ci": "eslint --max-warnings 0 --ext .js,.ts .",
     "format": "prettier --write .",
     "test": "jest --selectProjects unit-dom unit-node --coverage",
-    "test:package": "npm run build && tsc --ignoreConfig --noEmit --module ESNext --moduleResolution Bundler --target ES2022 --lib ES2022,ESNext.Disposable,DOM integration-test/package/browser-package-smoke.ts && tsc --ignoreConfig --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 --lib ES2022,ESNext.Disposable,DOM integration-test/package/browser-package-smoke.ts && node integration-test/package/browser-package-smoke.mjs",
+    "test:package": "node scripts/test-package.mjs",
     "itest:node": "jest --selectProjects itest-node --coverage",
     "itest": "jest --selectProjects itest-dom itest-node --coverage",
     "test:all": "jest --selectProjects unit-dom unit-node itest-dom itest-node --coverage && npm run test:package"
