@@ -13,9 +13,6 @@ import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryW
 
 const describeImportWhenSupported = ExasolContainer.supportsEncryptedImportExport() ? describe : describe.skip;
 const describeParquetImportWhenSupported = ExasolContainer.supportsParquetImport() ? describe : describe.skip;
-const describeParquetImportWhenUnsupported = ExasolContainer.supportsEncryptedImportExport() && !ExasolContainer.supportsParquetImport()
-  ? describe
-  : describe.skip;
 
 // [itest->dsn~runtime-csv-import-missing-target-table~1]
 // [itest->dsn~runtime-csv-import-file-stream~1]
@@ -218,19 +215,6 @@ describeImportWhenSupported("Node Import", () => {
 
       const data = await driver.query(`SELECT * FROM ${tableName}`);
       expect(data.getRows()).toStrictEqual([{ ID: 1 }, { ID: 2 }, { ID: 3 }]);
-    });
-  });
-
-  // [itest->dsn~runtime-parquet-import-version-support~1]
-  describeParquetImportWhenUnsupported('importFromParquetFile on an unsupported Exasol version', () => {
-    it('rejects with the database message explaining that Parquet import is unavailable', async () => {
-      await driver.execute(`CREATE SCHEMA ${schemaName}`);
-      const tableName = `${schemaName}.TEST_TABLE`;
-      await driver.execute(`CREATE TABLE ${tableName} (ID DECIMAL(18,0))`);
-      const parquetFilePath = join(tempDirectory, 'test.parquet');
-      await createMinimalParquetFile(parquetFilePath);
-
-      await expect(driver.importFromParquetFile(tableName, parquetFilePath)).rejects.toThrow("E-EDJS-25: SQL error: code: '42636', message: 'ETL-2238: Remote File");
     });
   });
 

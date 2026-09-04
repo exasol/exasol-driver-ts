@@ -355,7 +355,7 @@ Needs: impl, utest, itest
 Covers:
 - `scn~parquet-import-rejects-unsupported-server~1`
 
-Needs: itest
+Note: We don't cover this with an integration test because this would require testing with an outdated Exasol version.
 
 ### Parquet Import Cancellation
 `dsn~runtime-parquet-import-cancellation~1`

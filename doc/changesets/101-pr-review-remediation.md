@@ -6,6 +6,8 @@ Resolve the high- and medium-severity review findings for local Parquet import w
 
 ## 1. Correct suffix byte-range responses
 
+**Status:** Fixed
+
 **Finding:** `Range: bytes=-N` treats `N` as both a suffix length and an absolute end offset. Parquet readers commonly use this form to read the footer, so valid imports can receive `416 Range Not Satisfiable`.
 
 **Implementation steps:**
@@ -23,6 +25,8 @@ Resolve the high- and medium-severity review findings for local Parquet import w
 
 ## 2. Serve zero-byte files safely
 
+**Status:** Fixed
+
 **Finding:** A GET without a Range header for a zero-byte file derives `{ start: 0, end: -1 }` and passes it to `fs.createReadStream()`, which throws `RangeError`.
 
 **Implementation steps:**
@@ -37,6 +41,8 @@ Resolve the high- and medium-severity review findings for local Parquet import w
 2. Serve the same file for `Range: bytes=0-0`; assert `416` and no read stream.
 
 ## 3. Make SQL failure authoritative across the tunnel lifecycle
+
+**Status:** Fixed
 
 **Findings:** `serveFileRequests()` races SQL completion only while waiting for the next request. If Exasol rejects the import during a backpressured file response, the stream can wait forever for `drain` instead of exposing the SQL failure. Separately, before the first request, `E-EDJS-13` from a closing tunnel can win the race against the same SQL rejection and replace the useful database message with a generic socket-closed error.
 
@@ -58,6 +64,8 @@ Resolve the high- and medium-severity review findings for local Parquet import w
 
 ## 4. Make CSV chunked responses fail on tunnel errors and closure
 
+**Status:** Fixed
+
 **Finding:** `sendChunkedResponse()` listens only to the source stream. A closed or errored tunnel can leave a paused CSV source waiting for `drain`, or cause an unhandled socket error.
 
 **Implementation steps:**
@@ -75,6 +83,8 @@ Resolve the high- and medium-severity review findings for local Parquet import w
 4. Retain the successful multi-chunk and terminating-zero-chunk tests.
 
 ## 5. Execute the unsupported-version integration scenario in CI
+
+**Status:** Outstanding
 
 **Finding:** The unsupported-Parquet integration suite requires encrypted import/export support but no Parquet support. None of the current CI images satisfies both conditions, so the suite is permanently skipped.
 
