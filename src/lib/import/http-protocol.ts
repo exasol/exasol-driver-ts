@@ -1,5 +1,5 @@
-import * as fs from 'node:fs';
 import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as stream from 'node:stream';
 import * as tls from 'node:tls';
@@ -264,7 +264,8 @@ async function sendFileResponse(
   await writeReadable(socket, fileStream);
 }
 
-function parseByteRange(headers: string, fileSize: number): { start: number; end: number } | undefined | null {
+// Exported for testing purposes.
+export function parseByteRange(headers: string, fileSize: number): { start: number; end: number } | undefined | null {
   const value = /^range:\s*bytes=(\d*)-(\d*)\s*$/im.exec(headers);
   if (!value) {
     return undefined;
@@ -273,7 +274,13 @@ function parseByteRange(headers: string, fileSize: number): { start: number; end
   if (startText === '' && endText === '') {
     return null;
   }
-  const start = startText === '' ? Math.max(0, fileSize - Number(endText)) : Number(startText);
+  if (startText === '') {
+    const suffixLength = Number(endText);
+    const start = Math.max(0, fileSize - suffixLength);
+    const end = fileSize - 1;
+    return start >= fileSize || start > end ? null : { start, end };
+  }
+  const start = Number(startText);
   const end = endText === '' ? fileSize - 1 : Math.min(Number(endText), fileSize - 1);
   return start >= fileSize || start > end ? null : { start, end };
 }

@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough, Writable } from 'node:stream';
-import { HttpRequest, readHttpRequest, receiveHttpRequestBody, sendChunkedResponse, serveFileRequests } from './http-protocol';
+import { HttpRequest, parseByteRange, readHttpRequest, receiveHttpRequestBody, sendChunkedResponse, serveFileRequests } from './http-protocol';
 
 // [utest->dsn~runtime-csv-import-file-stream~1]
 describe('http-protocol', () => {
@@ -271,6 +271,75 @@ describe('http-protocol', () => {
       }
     });
 
+    it('responds to suffix byte-range GET requests with the requested trailing bytes', async () => {
+      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
+      const filePath = join(directory, 'source.parquet');
+      await writeFile(filePath, 'abcdef');
+      const socket = new FakeSocket();
+      let resolveSql: (rowCount: number) => void;
+      const sqlPromise = new Promise<number>((resolve) => {
+        resolveSql = resolve;
+      });
+
+      try {
+        const serving = serveFileRequests(socket as never, filePath, sqlPromise, { rangeRequests: true });
+        await waitFor(() => socket.listenerCount('data') > 0);
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=-3\r\n\r\n'));
+        await waitFor(() => socket.written.length > 1);
+
+        expect(socket.written.join('')).toContain('HTTP/1.1 206 Partial Content\r\nAccept-Ranges: bytes\r\nContent-Range: bytes 3-5/6\r\nContent-Length: 3\r\n\r\ndef');
+
+        await nextTurn();
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=-6\r\n\r\n'));
+        await waitFor(() => socket.written.length > 3);
+        await nextTurn();
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=-10\r\n\r\n'));
+        await waitFor(() => socket.written.length > 5);
+        resolveSql!(3);
+
+        await expect(serving).resolves.toBe(3);
+        expect(socket.written.join('')).toContain('Content-Range: bytes 0-5/6\r\nContent-Length: 6\r\n\r\nabcdef');
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    });
+
+    it('retains explicit, open-ended, malformed, and unsatisfiable byte-range handling', async () => {
+      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
+      const filePath = join(directory, 'source.parquet');
+      await writeFile(filePath, 'abcdef');
+      const socket = new FakeSocket();
+      let resolveSql: (rowCount: number) => void;
+      const sqlPromise = new Promise<number>((resolve) => {
+        resolveSql = resolve;
+      });
+
+      try {
+        const serving = serveFileRequests(socket as never, filePath, sqlPromise, { rangeRequests: true });
+        await waitFor(() => socket.listenerCount('data') > 0);
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=2-10\r\n\r\n'));
+        await waitFor(() => socket.written.length > 1);
+        await nextTurn();
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=4-\r\n\r\n'));
+        await waitFor(() => socket.written.length > 3);
+        await nextTurn();
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=invalid\r\n\r\n'));
+        await waitFor(() => socket.written.length > 5);
+        await nextTurn();
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=6-7\r\n\r\n'));
+        await waitFor(() => socket.written.length > 6);
+        resolveSql!(3);
+
+        await expect(serving).resolves.toBe(3);
+        expect(socket.written.join('')).toContain('Content-Range: bytes 2-5/6\r\nContent-Length: 4\r\n\r\ncdef');
+        expect(socket.written.join('')).toContain('Content-Range: bytes 4-5/6\r\nContent-Length: 2\r\n\r\nef');
+        expect(socket.written.join('')).toContain('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 6\r\n\r\nabcdef');
+        expect(socket.written.join('')).toContain('HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */6\r\nContent-Length: 0\r\n\r\n');
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    });
+
     it('rejects and destroys the file stream when a backpressured tunnel closes', async () => {
       const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
       const filePath = join(directory, 'source.parquet');
@@ -295,6 +364,25 @@ describe('http-protocol', () => {
       } finally {
         await rm(directory, { recursive: true, force: true });
       }
+    });
+  });
+
+  describe('parseByteRange', () => {
+    it.each([
+      ['an explicit range', 'Range: bytes=2-4\r\n', { start: 2, end: 4 }],
+      ['an explicit range with a clamped end', 'Range: bytes=2-10\r\n', { start: 2, end: 5 }],
+      ['an open-ended range', 'Range: bytes=4-\r\n', { start: 4, end: 5 }],
+      ['a suffix range', 'Range: bytes=-3\r\n', { start: 3, end: 5 }],
+      ['a suffix range equal to the file size', 'Range: bytes=-6\r\n', { start: 0, end: 5 }],
+      ['a suffix range larger than the file size', 'Range: bytes=-10\r\n', { start: 0, end: 5 }],
+      ['a malformed range', 'Range: bytes=invalid\r\n', undefined],
+      ['an empty range', 'Range: bytes=\r\n', undefined],
+      ['an minus range', 'Range: bytes=-\r\n', null],
+      ['an missing range header', '', undefined],
+      ['an unsatisfiable explicit range', 'Range: bytes=6-7\r\n', null],
+      ['an unsatisfiable suffix range', 'Range: bytes=-0\r\n', null],
+    ])('parses %s', (_description, rangeHeader, expectedRange) => {
+      expect(parseByteRange(`GET /001.parquet HTTP/1.1\r\n${rangeHeader}\r\n`, 6)).toEqual(expectedRange);
     });
   });
 });
