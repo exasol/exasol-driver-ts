@@ -218,7 +218,7 @@ Needs: scn
 #### Run in Browser
 `req~run-in-browser~2`
 
-The application developer imports `@exasol/exasol-driver-ts/browser` in browser runtimes. The driver and pool use the runtime-provided `WebSocket` by default, and applications can supply a factory when they need a custom transport.
+The application developer imports `@exasol/exasol-driver-ts/browser` in browser runtimes. The driver and pool accept an application-provided factory wrapping the runtime `WebSocket`.
 
 Covers:
 - `feat~runtime-portability~1`
@@ -228,7 +228,7 @@ Needs: scn
 #### Run in Node.js
 `req~run-in-nodejs~2`
 
-The application developer imports `@exasol/exasol-driver-ts` in Node.js runtimes. The driver and pool use the packaged `ws` implementation by default, and applications can supply a compatible WebSocket factory for custom TLS, proxy, or transport settings.
+The application developer imports `@exasol/exasol-driver-ts` in Node.js runtimes. The driver and pool accept a compatible WebSocket factory, including factories configured for custom TLS, proxy, or transport settings.
 
 Rationale:
 
@@ -499,8 +499,8 @@ Needs: dsn, uman
 `scn~browser-connection-uses-native-websocket~2`
 
 **Given** a browser application with native `WebSocket`
-**When** the application creates a driver or pool from `@exasol/exasol-driver-ts/browser` without a factory
-**Then** it uses the browser WebSocket implementation without resolving Node.js CSV or TLS modules
+**When** the application creates a driver or pool from `@exasol/exasol-driver-ts/browser` with a factory
+**Then** it uses the supplied WebSocket implementation without resolving Node.js CSV or TLS modules
 
 Covers:
 - `req~run-in-browser~2`
@@ -511,8 +511,8 @@ Needs: dsn, uman
 `scn~node-connection-uses-injected-websocket~2`
 
 **Given** a Node.js application with a WebSocket implementation such as `ws`
-**When** the application creates a driver or pool without a factory
-**Then** it uses the packaged `ws` implementation; an application can still supply a compatible factory for custom transport or TLS settings
+**When** the application creates a driver or pool with a factory
+**Then** it uses the supplied WebSocket implementation
 
 Covers:
 - `req~run-in-nodejs~2`

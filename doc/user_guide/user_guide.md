@@ -6,7 +6,9 @@
 
 For the complete public API, see the [API reference](https://exasol.github.io/exasol-driver-ts/api/).
 
-Both entry points create a WebSocket by default: the browser entry uses the runtime-native `WebSocket`, while the Node.js entry uses its packaged `ws` dependency. Supply a factory only when the application needs custom transport, proxy, or TLS settings.
+Both entry points require an explicit WebSocket factory. Supply the factory appropriate for the runtime; this also allows custom transport, proxy, or TLS settings.
+
+The examples below assume `websocketFactory` is a compatible factory for the selected runtime.
 
 The package supports both JavaScript module systems. Use `import` in an ES module or bundler, or use `require('@exasol/exasol-driver-ts')` from CommonJS. The browser-safe subpath supports the same two forms:
 
@@ -32,7 +34,7 @@ Connecting to the database:
 ```ts
 import { ExasolDriver } from '@exasol/exasol-driver-ts';
 
-const driver = new ExasolDriver({
+const driver = new ExasolDriver(websocketFactory, {
   host: 'localhost',
   port: 8563,
   user: 'sys',
@@ -130,7 +132,7 @@ Connecting to the database:
 ```ts
 import { ExasolDriver } from '@exasol/exasol-driver-ts/browser';
 
-const driver = new ExasolDriver({
+const driver = new ExasolDriver(websocketFactory, {
   host: 'localhost',
   port: 8563,
   user: 'sys',

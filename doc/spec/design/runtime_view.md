@@ -164,8 +164,8 @@ Needs: impl, utest, itest
 `dsn~runtime-browser-websocket~2`
 
 **Given** a browser application
-**When** the application imports `@exasol/exasol-driver-ts/browser` and creates a driver or pool without a factory
-**Then** it uses the browser global `WebSocket` through the `ExaWebsocket` interface, configures binary messages as `ArrayBuffer`, and still accepts an explicit factory
+**When** the application imports `@exasol/exasol-driver-ts/browser` and creates a driver or pool with a factory
+**Then** it uses the supplied factory through the `ExaWebsocket` interface, configuring binary messages as `ArrayBuffer` where supported
 
 Covers:
 - `scn~browser-connection-uses-native-websocket~2`
@@ -178,8 +178,8 @@ Needs: impl, utest, itest
 `dsn~runtime-node-websocket~2`
 
 **Given** a Node.js application
-**When** the application creates a driver or pool without a factory
-**Then** it uses the packaged `ws` implementation through the same `ExaWebsocket` interface, while still accepting an explicit factory for custom TLS or transport settings
+**When** the application creates a driver or pool with a factory
+**Then** it uses the supplied factory through the `ExaWebsocket` interface
 
 Covers:
 - `scn~node-connection-uses-injected-websocket~2`

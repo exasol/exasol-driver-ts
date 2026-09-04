@@ -19,13 +19,12 @@ export function createNodeWebsocketFactory(): WebsocketFactory {
 export class NodeExasolDriver extends BaseExasolDriver implements IExasolDriver {
   // [impl->dsn~runtime-node-websocket~2]
   constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger);
-  constructor(config: Partial<Config>, logger?: ILogger);
   constructor(
-    websocketFactoryOrConfig: WebsocketFactory | Partial<Config>,
-    configOrLogger?: Partial<Config> | ILogger,
+    websocketFactory: WebsocketFactory,
+    config: Partial<Config>,
     logger?: ILogger,
   ) {
-    super(createNodeWebsocketFactory(), websocketFactoryOrConfig, configOrLogger, logger);
+    super(websocketFactory, config, logger);
   }
 
   public async importFromCsvFile(tableName: string, filePath: string, csvOptions?: CsvFormatOptions, options?: CsvImportOptions): Promise<number> {

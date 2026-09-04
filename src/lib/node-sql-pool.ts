@@ -1,5 +1,5 @@
 import { ILogger } from './logger/logger';
-import { createNodeWebsocketFactory, NodeExasolDriver } from './node-sql-client';
+import { NodeExasolDriver } from './node-sql-client';
 import { Config, WebsocketFactory } from './sql-client';
 import { BaseExasolPool, ClientPoolConfig } from './sql-pool';
 
@@ -9,12 +9,11 @@ import { BaseExasolPool, ClientPoolConfig } from './sql-pool';
  */
 export class NodeExasolPool extends BaseExasolPool<NodeExasolDriver> {
   constructor(websocketFactory: WebsocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger?: ILogger);
-  constructor(config: Partial<Config> & Partial<ClientPoolConfig>, logger?: ILogger);
   constructor(
-    websocketFactoryOrConfig: WebsocketFactory | (Partial<Config> & Partial<ClientPoolConfig>),
-    configOrLogger?: (Partial<Config> & Partial<ClientPoolConfig>) | ILogger,
+    websocketFactory: WebsocketFactory,
+    config: Partial<Config> & Partial<ClientPoolConfig>,
     logger?: ILogger,
   ) {
-    super(NodeExasolDriver, createNodeWebsocketFactory(), websocketFactoryOrConfig, configOrLogger, logger);
+    super(NodeExasolDriver, websocketFactory, config, logger);
   }
 }

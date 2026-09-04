@@ -94,17 +94,11 @@ export class BaseExasolDriver implements IExasolClient {
   private readonly pool: ConnectionPool<Connection>;
 
   protected constructor(
-    defaultWebsocketFactory: WebsocketFactory,
-    websocketFactoryOrConfig: WebsocketFactory | Partial<Config>,
-    configOrLogger?: Partial<Config> | ILogger,
+    websocketFactory: WebsocketFactory,
+    config: Partial<Config>,
     logger?: ILogger,
   ) {
-    const { websocketFactory, config, resolvedLogger } = this.resolveConstructorArguments(
-      defaultWebsocketFactory,
-      websocketFactoryOrConfig,
-      configOrLogger,
-      logger,
-    );
+    const resolvedLogger = logger ?? new Logger(LogLevel.Off);
     // Used internally to avoid parallel execution
     this.pool = new ConnectionPool<Connection>(1, resolvedLogger);
     this.config = {
@@ -113,26 +107,6 @@ export class BaseExasolDriver implements IExasolClient {
       websocketFactory,
     };
     this.logger = resolvedLogger;
-  }
-
-  private resolveConstructorArguments(
-    defaultWebsocketFactory: WebsocketFactory,
-    websocketFactoryOrConfig: WebsocketFactory | Partial<Config>,
-    configOrLogger?: Partial<Config> | ILogger,
-    logger?: ILogger,
-  ): { websocketFactory: WebsocketFactory; config: Partial<Config>; resolvedLogger: ILogger } {
-    if (typeof websocketFactoryOrConfig === 'function') {
-      return {
-        websocketFactory: websocketFactoryOrConfig,
-        config: (configOrLogger as Partial<Config>) ?? {},
-        resolvedLogger: logger ?? new Logger(LogLevel.Off),
-      };
-    }
-    return {
-      websocketFactory: defaultWebsocketFactory,
-      config: websocketFactoryOrConfig,
-      resolvedLogger: (configOrLogger as ILogger | undefined) ?? new Logger(LogLevel.Off),
-    };
   }
 
   /**
@@ -572,17 +546,11 @@ export class BaseExasolDriver implements IExasolClient {
 export class ExasolDriver extends BaseExasolDriver {
   // [impl->dsn~runtime-browser-websocket~2]
   constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger);
-  constructor(config: Partial<Config>, logger?: ILogger);
   constructor(
-    websocketFactoryOrConfig: WebsocketFactory | Partial<Config>,
-    configOrLogger?: Partial<Config> | ILogger,
+    websocketFactory: WebsocketFactory,
+    config: Partial<Config>,
     logger?: ILogger,
   ) {
-    super(
-      typeof websocketFactoryOrConfig === 'function' ? websocketFactoryOrConfig : createBrowserWebsocketFactory(),
-      websocketFactoryOrConfig,
-      configOrLogger,
-      logger,
-    );
+    super(websocketFactory, config, logger);
   }
 }

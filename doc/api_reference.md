@@ -17,19 +17,19 @@ The Exasol driver lets Node.js and browser applications connect to Exasol and ex
 
 ## Entry points
 
-Use the package root in Node.js. It uses the packaged `ws` WebSocket implementation by default and includes Node.js CSV import and export operations:
+Use the package root in Node.js. It includes Node.js CSV import and export operations:
 
 ```ts
 import { ExasolDriver, ExasolPool } from '@exasol/exasol-driver-ts';
 ```
 
-Use the `/browser` subpath in browser applications. It uses the runtime-provided browser `WebSocket` by default and excludes Node.js CSV file operations:
+Use the `/browser` subpath in browser applications. It excludes Node.js CSV file operations:
 
 ```ts
 import { ExasolDriver, ExasolPool } from '@exasol/exasol-driver-ts/browser';
 ```
 
-Both entry points also support the factory-first constructor overload for supplying an explicit WebSocket factory.
+Both entry points require a WebSocket factory as the first constructor argument.
 
 ## Quick Start
 
@@ -41,10 +41,12 @@ npm install @exasol/exasol-driver-ts
 
 Connect, execute a query, and close the driver when finished:
 
+The example assumes `websocketFactory` is a compatible factory for the selected runtime.
+
 ```ts
 import { ExasolDriver } from '@exasol/exasol-driver-ts';
 
-const driver = new ExasolDriver({ host: 'localhost', port: 8563, user: 'sys', password: 'exasol' });
+const driver = new ExasolDriver(websocketFactory, { host: 'localhost', port: 8563, user: 'sys', password: 'exasol' });
 
 await driver.connect();
 await driver.query('SELECT * FROM EXA_ALL_SCHEMAS');

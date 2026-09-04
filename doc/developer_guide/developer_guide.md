@@ -45,7 +45,7 @@ npm run test
 
 The package declares `"type": "module"`. Rollup therefore writes ES module files with the `.js` extension and CommonJS files with the `.cjs` extension. Keep the conditional exports in `package.json` aligned with these filenames: `import` must resolve to the `.js` files and `require` must resolve to the `.cjs` files. Do not rename the CommonJS outputs to `.js`, because Node.js would interpret them as ES modules.
 
-The Node.js entry defaults to `ws`; the browser entry defaults to the runtime global `WebSocket`. Keep factory-first constructors working because applications use explicit factories for custom TLS, proxy, and transport settings.
+Both entry points require a WebSocket factory as the first constructor argument. Applications can use explicit factories for custom TLS, proxy, and transport settings.
 
 ### Integration tests
 

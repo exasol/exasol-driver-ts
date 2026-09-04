@@ -13,12 +13,6 @@ describe('sqlClient', () => {
     driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token' });
   });
 
-  it('uses the Node.js default WebSocket factory when none is supplied', () => {
-    const defaultDriver = new ExasolDriver({ accessToken: 'access-token' });
-
-    expect(defaultDriver).toBeInstanceOf(ExasolDriver);
-  });
-
   describe('connect', () => {
     // [utest->dsn~runtime-reject-missing-credentials~1]
     it('should fail with no credentials', async () => {

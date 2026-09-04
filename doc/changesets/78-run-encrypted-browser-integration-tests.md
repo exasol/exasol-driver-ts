@@ -9,7 +9,7 @@ Run the browser basic, pool, and compression integration scenarios in a real Chr
 In scope:
 
 * Add `@exasol/exasol-driver-ts/browser` with the browser-supported driver and pool API, excluding Node-only CSV import/export and TLS modules.
-* Make the WebSocket factory optional for both driver and pool construction, with entry-point-specific defaults while retaining explicit factory injection for custom TLS and transport configuration.
+* Keep the WebSocket factory required for both driver and pool construction.
 * Build and serve the browser entry point from a local Playwright integration-test harness.
 * Keep Testcontainers orchestration and certificate extraction in Node, calculate the leaf-certificate SPKI SHA-256 pin, and launch Chromium with that exact pin.
 * Keep Playwright `ignoreHTTPSErrors` disabled and ensure the pin remains test-harness-only.
@@ -49,7 +49,7 @@ Deliver the change as four independently reviewable pull requests, merged sequen
 - [x] Add browser CommonJS, ESM, and declaration outputs and the `@exasol/exasol-driver-ts/browser` package export.
 - [x] Preserve the existing Node entry point and CSV APIs.
 - [x] Add backward-compatible constructor overloads accepting either `(websocketFactory, config, logger?)` or `(config, logger?)` for `ExasolDriver` and `ExasolPool`.
-- [x] Implement the browser default factory with the runtime-provided global `WebSocket`.
+- [x] Implement the browser WebSocket factory with the runtime-provided global `WebSocket`.
 - [x] Implement the Node default factory with `ws`, promote `ws` to a runtime dependency, and retain explicit factories for custom CA, certificate, proxy, and TLS settings.
 - [x] Add browser bundle smoke and type coverage.
 - [x] Update requirements and design items for the browser entry point.
@@ -75,15 +75,15 @@ Deliver the change as four independently reviewable pull requests, merged sequen
 - [ ] Update Jest projects and npm scripts for the real-browser integration suites.
 - [ ] Update CI to install Chromium and run browser integration tests against supported Exasol Docker versions.
 - [ ] Update the README and user guide with browser-safe imports, optional factory usage, explicit-factory examples for custom Node TLS settings, and the Node-only CSV limitation.
-- [ ] Update the developer guide with browser versus Node entry points, default WebSocket behavior, when an explicit factory is required, local browser integration prerequisites and commands, Chromium provisioning, Docker/Testcontainers requirements, certificate pinning behavior, and its test-only scope.
+- [ ] Update the developer guide with browser versus Node entry points, when an explicit factory is required, local browser integration prerequisites and commands, Chromium provisioning, Docker/Testcontainers requirements, certificate pinning behavior, and its test-only scope.
 - [ ] Complete the GH-78 OpenFastTrace requirements, design, implementation, and test coverage.
 - [ ] Update release metadata and changelog according to the target release policy.
 
 ## Verification
 
 - [ ] Verify the browser bundle loads in Chromium without resolving Node-only CSV/TLS modules.
-- [ ] Verify both entry points construct drivers and pools without an explicit factory and use their documented defaults.
-- [ ] Verify existing factory-first constructor calls remain source-compatible and custom Node TLS factories continue to work.
+- [ ] Verify both entry points construct drivers and pools with an explicit factory.
+- [ ] Verify custom Node TLS factories continue to work.
 - [ ] Verify browser tests fail when the certificate pin is absent or mismatched.
 - [ ] Verify browser integration uses native `WebSocket` and `wss`, without `ws`, `rejectUnauthorized: false`, or `ignoreHTTPSErrors`.
 - [ ] Run `npm run build`.

@@ -1,8 +1,8 @@
 import { ExasolDriver } from '../../src/browser';
+import { createWebsocketFactoryNoCert } from '../node/createWebsocketFactoryNoCert';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 
-// [itest->dsn~runtime-browser-websocket~2]
-describe('browser default WebSocket factory', () => {
+describe('browser WebSocket factory', () => {
   let container: ExasolContainer;
 
   jest.setTimeout(7000000);
@@ -12,7 +12,7 @@ describe('browser default WebSocket factory', () => {
   });
 
   it.each([false, true])('connects and queries with compression %s', async (compression) => {
-    const driver = new ExasolDriver({
+    const driver = new ExasolDriver(createWebsocketFactoryNoCert(), {
       host: container.getHost(),
       port: container.getPort(),
       user: 'sys',

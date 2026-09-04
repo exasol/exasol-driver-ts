@@ -29,7 +29,7 @@ Needs: dsn
 ### Configurable WebSocket Implementation
 `constr~injectable-websocket-implementation~2`
 
-The system must use an entry-point-specific default WebSocket implementation and allow applications to override it through a factory function.
+The system must use an application-provided WebSocket factory so that browser and Node.js runtimes can supply compatible implementations.
 
 Rationale:
 
