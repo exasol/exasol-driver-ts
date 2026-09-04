@@ -16,6 +16,14 @@ Use `@exasol/exasol-driver-ts` in Node.js for the complete API, including local 
 - {@link index.IExasolDriver | IExasolDriver} — driver operations exposed by `ExasolDriver`.
 - {@link index.IStatement | IStatement} — execute and close prepared statements.
 
+## Browser API
+
+Import from `@exasol/exasol-driver-ts/browser` for browser-compatible database access. This entry point excludes local file import/export and Node.js TLS modules.
+
+- {@link browser.ExasolDriver | ExasolDriver} — create a browser-compatible database connection and execute SQL.
+- {@link browser.ExasolPool | ExasolPool} — manage browser-compatible database connections.
+- {@link browser.IExasolClient | IExasolClient} — browser-safe driver operations.
+
 ## Quick Start
 
 Install the driver and the Node.js WebSocket implementation:
@@ -29,6 +37,29 @@ Connect, execute a query, and close the driver when finished:
 ```ts
 import { ExasolDriver, ExaWebsocket } from '@exasol/exasol-driver-ts';
 import { WebSocket } from 'ws';
+
+const driver = new ExasolDriver(
+  (url) => new WebSocket(url) as ExaWebsocket,
+  { host: 'localhost', port: 8563, user: 'sys', password: 'exasol' },
+);
+
+await driver.connect();
+await driver.query('SELECT * FROM EXA_ALL_SCHEMAS');
+await driver.close();
+```
+
+## Browser Quick Start
+
+Install the driver; browsers provide the WebSocket implementation:
+
+```sh
+npm install @exasol/exasol-driver-ts
+```
+
+Use the browser entry point and the runtime-native `WebSocket`:
+
+```ts
+import { ExasolDriver, ExaWebsocket } from '@exasol/exasol-driver-ts/browser';
 
 const driver = new ExasolDriver(
   (url) => new WebSocket(url) as ExaWebsocket,
