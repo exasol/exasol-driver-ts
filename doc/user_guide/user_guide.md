@@ -2,11 +2,11 @@
 
 ### Introduction
 
-`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes.
+`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes. Use the package root in Node.js and `@exasol/exasol-driver-ts/browser` in browser applications.
 
 For the complete public API, see the [API reference](https://exasol.github.io/exasol-driver-ts/api/).
 
-In a browser, the library uses the native `WebSocket` implementation that is available in the runtime. In Node.js, you need to provide a WebSocket implementation such as the `ws` package when creating the driver or connection pool.
+Both entry points require an explicit WebSocket factory. In a browser, use the runtime-native `WebSocket`; in Node.js, provide a compatible implementation such as `ws`. The browser entry excludes the Node.js-only CSV import and export APIs.
 
 The following sections show the runtime-specific setup for both environments.
 
@@ -111,6 +111,8 @@ Do not use `rejectUnauthorized: false`: it accepts any server certificate. When 
 
 ### Browser
 
+<!-- [uman->scn~browser-connection-uses-native-websocket~2] -->
+
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
 
 ```sh
@@ -120,7 +122,7 @@ npm install --save @exasol/exasol-driver-ts
 Connecting to the database:
 
 ```ts
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts/browser';
 
 const driver = new ExasolDriver((url) => {
       return new WebSocket(url) as ExaWebsocket;
@@ -441,7 +443,7 @@ const pool = new ExasolPool((url) => {
 Browser:
 
 ```ts
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { ExaWebsocket, ExasolPool } from '@exasol/exasol-driver-ts/browser';
 
 const pool = new ExasolPool((url) => {
   return new WebSocket(url) as ExaWebsocket;

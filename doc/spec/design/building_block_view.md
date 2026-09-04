@@ -55,8 +55,8 @@ Covers:
 `Connection` owns a single `ExaWebsocket`, serializes protocol commands, optionally compresses command payloads, parses responses, handles cancellation, prevents parallel work on the same active connection, and marks itself broken when an in-flight command loses its WebSocket.
 
 Covers:
-- `scn~browser-connection-uses-native-websocket~1`
-- `scn~node-connection-uses-injected-websocket~1`
+- `scn~browser-connection-uses-native-websocket~2`
+- `scn~node-connection-uses-injected-websocket~2`
 - `scn~cancel-active-work~1`
 - `scn~reject-command-on-unexpected-websocket-termination~1`
 
@@ -109,9 +109,9 @@ Covers:
 Needs: impl
 
 ### Runtime Packaging
-`dsn~runtime-packaging~1`
+`dsn~runtime-packaging~2`
 
-Rollup builds the package from `src/index.ts` into CommonJS and ES module artifacts while keeping runtime dependencies external.
+Rollup builds distinct Node.js and browser entry points into CommonJS, ES module, and declaration artifacts. The browser entry exports the driver and pool core without resolving Node-only CSV, filesystem, networking, or TLS modules.
 
 Covers:
 - `constr~typescript-library-package~1`
@@ -119,5 +119,3 @@ Covers:
 - `constr~github-and-npm-distribution~1`
 
 ## Open Issues
-
-* Node-only CSV import is exported from the same package entry point as browser-compatible APIs, so bundlers must handle Node built-in imports correctly for browser builds.

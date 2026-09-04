@@ -2,6 +2,10 @@
 
 The Exasol driver lets Node.js and browser applications connect to Exasol and execute SQL.
 
+## Entry Points
+
+Use `@exasol/exasol-driver-ts` in Node.js for the complete API, including local CSV import and export. Use `@exasol/exasol-driver-ts/browser` in browser applications; it exports the driver and pool core without Node.js CSV or TLS modules. Both entry points require an explicit WebSocket factory.
+
 [GitHub repository](https://github.com/exasol/exasol-driver-ts) · [User guide](https://github.com/exasol/exasol-driver-ts/blob/main/doc/user_guide/user_guide.md)
 
 ## Main API

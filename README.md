@@ -26,6 +26,8 @@ Check out the [user guide](doc/user_guide/user_guide.md) for more details.
 3. Works in Node.js and the browser
 4. Supports importing local CSV files into a table
 
+Browser applications should import the browser-safe entry point, `@exasol/exasol-driver-ts/browser`. It provides the driver and pool APIs without the Node.js-only CSV import/export modules; both entry points require an explicit WebSocket factory.
+
 ## Information for Users
 
 - [User Guide](doc/user_guide/user_guide.md)

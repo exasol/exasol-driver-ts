@@ -11,7 +11,7 @@ The system is implemented as a TypeScript npm package that publishes compiled ar
 
 Rationale:
 
-`package.json` defines `main`, `module`, `types`, build scripts, and the npm package name `@exasol/exasol-driver-ts`.
+`package.json` defines `main`, `module`, `types`, conditional package exports, build scripts, and the npm package name `@exasol/exasol-driver-ts`.
 
 Needs: dsn
 

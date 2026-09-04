@@ -47,15 +47,15 @@ PR 2–4 must be able to consume the browser entry point produced by PR 1 withou
 
 ### PR 1: Self-contained browser-safe packaging
 
-- [ ] Refactor the driver implementation into a browser-safe core and Node-specific CSV extensions so browser imports do not resolve CSV, filesystem, networking, or TLS modules.
-- [ ] Add `src/browser.ts` exporting the browser-supported driver, pool, protocol types, errors, statements, results, logging, and WebSocket types.
-- [ ] Preserve the existing Node entry point, factory-first constructor signatures, CSV APIs, and custom Node TLS behavior.
-- [ ] Add browser CommonJS, ESM, and declaration outputs and the `@exasol/exasol-driver-ts/browser` package export while preserving root package compatibility.
-- [ ] Add built-artifact browser bundle smoke tests proving the browser entry imports successfully and excludes Node-only modules and CSV APIs.
-- [ ] Add browser and Node TypeScript coverage for public exports and explicit WebSocket-factory construction of drivers and pools.
-- [ ] Update CI quality gates to run the PR 1 packaging smoke and type checks without requiring Docker or Chromium.
-- [ ] Add requirements, design, implementation, unit-test, and user-manual traceability for the browser entry point and packaging boundary.
-- [ ] Update the README, user guide, API documentation configuration/output, and developer guide with the browser subpath, factory-required examples, Node-only CSV limitation, entry-point distinction, and local packaging verification commands.
+- [x] Refactor the driver implementation into a browser-safe core and Node-specific CSV extensions so browser imports do not resolve CSV, filesystem, networking, or TLS modules.
+- [x] Add `src/browser.ts` exporting the browser-supported driver, pool, protocol types, errors, statements, results, logging, and WebSocket types.
+- [x] Preserve the existing Node entry point, factory-first constructor signatures, CSV APIs, and custom Node TLS behavior.
+- [x] Add browser CommonJS, ESM, and declaration outputs and the `@exasol/exasol-driver-ts/browser` package export while preserving root package compatibility.
+- [x] Add built-artifact browser bundle smoke tests proving the browser entry imports successfully and excludes Node-only modules and CSV APIs.
+- [x] Add browser and Node TypeScript coverage for public exports and explicit WebSocket-factory construction of drivers and pools.
+- [x] Update CI quality gates to run the PR 1 packaging smoke and type checks without requiring Docker or Chromium.
+- [x] Add requirements, design, implementation, unit-test, and user-manual traceability for the browser entry point and packaging boundary.
+- [x] Update the README, user guide, API documentation configuration/output, and developer guide with the browser subpath, factory-required examples, Node-only CSV limitation, entry-point distinction, and local packaging verification commands.
 
 ### PR 2: Playwright harness and TLS pinning
 
@@ -82,16 +82,16 @@ PR 2–4 must be able to consume the browser entry point produced by PR 1 withou
 
 ## Verification
 
-- [ ] Verify the built browser bundle loads without resolving Node-only CSV/TLS modules.
-- [ ] Verify both entry points construct drivers and pools with explicit factories.
+- [x] Verify the built browser bundle loads without resolving Node-only CSV/TLS modules.
+- [x] Verify both entry points construct drivers and pools with explicit factories.
 - [ ] Verify existing factory-first constructor calls and custom Node TLS factories continue to work.
 - [ ] Verify browser integration uses native `WebSocket` and `wss`, without `ws`, `rejectUnauthorized: false`, or `ignoreHTTPSErrors`.
-- [ ] Run `npm run build`.
-- [ ] Run `npm run typecheck`.
-- [ ] Run `npm run lint:ci`.
-- [ ] Run `npm run test`.
+- [x] Run `npm run build`.
+- [x] Run `npm run typecheck`.
+- [x] Run `npm run lint:ci`.
+- [x] Run `npm run test`.
 - [ ] Run `env -u NODE_OPTIONS npm run itest` with Docker access once the Chromium harness is introduced.
-- [ ] Run `npm run trace`.
+- [x] Run `npm run trace`.
 - [ ] Run `npm run audit`.
 
 ## Assumptions
