@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
 import { ExaWebsocket, ReadyState } from './connection';
 import { createMockWebsocketFactory, MockWebsocketFactory } from './mock-socket';
-import { ExasolDriver } from './sql-client';
+import { NodeExasolDriver as ExasolDriver } from './node-sql-client';
 import { IExasolDriver } from './sql-client.interface';
 
 describe('sqlClient', () => {

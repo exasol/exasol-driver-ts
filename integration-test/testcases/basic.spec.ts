@@ -6,8 +6,8 @@ import { TestEnvironment, TestWebsocketFactory } from '../common';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
-// [itest->dsn~runtime-browser-websocket~1]
-// [itest->dsn~runtime-node-websocket~1]
+// [itest->dsn~runtime-browser-websocket~2]
+// [itest->dsn~runtime-node-websocket~2]
 export const basicTests = (name: TestEnvironment, createWSFactory: TestWebsocketFactory) =>
   describe(name, () => {
 

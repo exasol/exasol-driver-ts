@@ -18,7 +18,7 @@ The user-facing wrapper that exposes result-set columns and row objects.
 
 ## Import Tunnel
 
-The Exasol-provided network channel used by Node.js CSV import to stream file content into the database.
+The Exasol-provided network channel used by Node.js local file import to stream file content into the database.
 
 ## Chunked Response
 

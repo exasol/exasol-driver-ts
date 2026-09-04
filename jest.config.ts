@@ -81,7 +81,7 @@ const config: Config = {
     ],
   },
   transformIgnorePatterns: ['node_modules/(?!.*.mjs$)'],
-  preset: './jest.preset.js',
+  preset: './jest.preset.cjs',
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: './coverage',
 };

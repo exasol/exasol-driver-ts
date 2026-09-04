@@ -15,15 +15,11 @@ import {
   newSqlError,
 } from './errors/errors';
 import { fetchData } from './fetch';
-import { exportCsvFile } from './import/csv-file-export';
-import { importCsvFile } from './import/csv-file-import';
-import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions, FileImportOptions, ParquetImportOptions } from './import/types';
-import { importParquetFile } from './import/parquet-file-import';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { createLoginOptions } from './login-options';
 import { ConnectionPool } from './pool/pool';
 import { QueryResult } from './query-result';
-import { CetCancelFunction, IExasolDriver, IStatement } from './sql-client.interface';
+import { CetCancelFunction, IExasolClient, IStatement } from './sql-client.interface';
 import { Statement } from './statement';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
 
@@ -67,7 +63,7 @@ export { driverVersion } from './login-options';
 
 export type WebsocketFactory = (url: string) => ExaWebsocket;
 
-export class ExasolDriver implements IExasolDriver {
+export class BaseExasolDriver implements IExasolClient {
   private readonly defaultConfig: Config & InternalConfig = {
     host: 'localhost',
     port: 8563,
@@ -79,13 +75,14 @@ export class ExasolDriver implements IExasolDriver {
     compression: false,
     apiVersion: 3,
   };
-  private readonly config: Config & InternalConfig & { websocketFactory: WebsocketFactory };
+  /** @internal Runtime configuration, including connection implementation details. */
+  protected readonly config: Config & InternalConfig & { websocketFactory: WebsocketFactory };
   private readonly logger: ILogger;
-  private closed = false;
+  protected closed = false;
 
   private readonly pool: ConnectionPool<Connection>;
 
-  constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
+  protected constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
     // Used internally to avoid parallel execution
     this.pool = new ConnectionPool<Connection>(1, logger);
     this.config = {
@@ -457,69 +454,6 @@ export class ExasolDriver implements IExasolDriver {
       });
   }
 
-  /**
-   * @inheritDoc
-   */
-  public async importFromCsvFile(
-    tableName: string,
-    filePath: string,
-    csvOptions?: CsvFormatOptions,
-    options?: CsvImportOptions,
-  ): Promise<number> {
-    if (this.closed) {
-      throw ErrClosed;
-    }
-    return importCsvFile({
-      host: this.config.host,
-      port: this.config.port,
-      tableName,
-      filePath,
-      executeSql: (sql: string) => this.execute(sql),
-      csvOptions,
-      options,
-      cancelSql: () => this.cancel(),
-    });
-  }
-
-  /** @inheritDoc */
-  public async importFromParquetFile(
-    tableName: string,
-    filePath: string,
-    parquetOptions?: ParquetImportOptions,
-    options?: FileImportOptions,
-  ): Promise<number> {
-    if (this.closed) {
-      throw ErrClosed;
-    }
-    return importParquetFile({
-      host: this.config.host,
-      port: this.config.port,
-      tableName,
-      filePath,
-      parquetOptions,
-      executeSql: (sql: string) => this.execute(sql),
-      options,
-      cancelSql: () => this.cancel(),
-    });
-  }
-
-  /** @inheritDoc */
-  public async exportToCsvFile(source: string, filePath: string, csvOptions?: CsvExportFormatOptions, options?: CsvExportOptions): Promise<number> {
-    if (this.closed) {
-      throw ErrClosed;
-    }
-    return exportCsvFile({
-      host: this.config.host,
-      port: this.config.port,
-      source,
-      filePath,
-      executeSql: (sql: string) => this.execute(sql),
-      csvOptions,
-      options: options || {},
-      cancelSql: () => this.cancel(),
-    });
-  }
-
   private async acquire() {
     if (this.closed) {
       throw ErrClosed;
@@ -586,5 +520,13 @@ export class ExasolDriver implements IExasolDriver {
 
       return this.sendCommand(command);
     });
+  }
+}
+
+/** Browser-compatible driver core without Node.js local file operations. */
+export class ExasolDriver extends BaseExasolDriver {
+  // [impl->dsn~runtime-browser-websocket~2]
+  constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) {
+    super(websocketFactory, config, logger);
   }
 }

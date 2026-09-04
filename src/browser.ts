@@ -1,15 +1,13 @@
-export { NodeExasolDriver as ExasolDriver } from './lib/node-sql-client';
-export { NodeExasolPool as ExasolPool } from './lib/node-sql-pool';
-export { driverVersion } from './lib/sql-client';
+export { ExasolDriver, driverVersion } from './lib/sql-client';
 export type { Config, WebsocketFactory } from './lib/sql-client';
+export { ExasolPool } from './lib/sql-pool';
 export type { ClientPoolConfig } from './lib/sql-pool';
 export * from './lib/errors/errors';
 export * from './lib/types';
 export * from './lib/commands';
-export * from './lib/sql-client.interface';
+export type { Cancelable, CetCancelFunction, IExasolClient, IStatement } from './lib/sql-client.interface';
 export * from './lib/statement';
 export * from './lib/connection';
 export * from './lib/pool/pool';
 export * from './lib/query-result';
 export * from './lib/logger/logger';
-export * from './lib/import/types';
