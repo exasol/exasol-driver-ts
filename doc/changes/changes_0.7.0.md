@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.7.0, released 2026-09-??
+# Exasol Driver ts 0.7.0, released 2026-09-04
 
 Code name: Local Parquet import
 
