@@ -50,6 +50,20 @@ describe('http-protocol', () => {
       });
     });
 
+    it('should parse a request from bytes already buffered by a previous request', async () => {
+      const socket = new PassThrough();
+      const request = await readHttpRequest(
+        socket as never,
+        Buffer.from('GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'),
+      );
+
+      expect(request).toEqual({
+        headers: 'GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n',
+        initialBody: Buffer.alloc(0),
+      });
+      expect(socket.isPaused()).toBe(true);
+    });
+
     it('should reject with E-EDJS-17 if socket emits error', async () => {
       const socket = new PassThrough();
       const requestPromise = readHttpRequest(socket as never);
@@ -299,6 +313,25 @@ describe('http-protocol', () => {
         await expect(fixture.serving).resolves.toBe(3);
         expect(fixture.socket.written.join('')).toContain('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 6\r\n\r\n');
         expect(fixture.socket.written.join('')).toContain('HTTP/1.1 206 Partial Content\r\nAccept-Ranges: bytes\r\nContent-Range: bytes 2-4/6\r\nContent-Length: 3\r\n\r\ncde');
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('serves a subsequent request whose headers arrived with the previous request', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        await waitFor(() => fixture.socket.listenerCount('data') > 0);
+        fixture.socket.emit(
+          'data',
+          Buffer.from('HEAD /001.parquet HTTP/1.1\r\n\r\nGET /001.parquet HTTP/1.1\r\nRange: bytes=2-4\r\n\r\n'),
+        );
+        await waitFor(() => fixture.socket.written.length >= 3);
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toContain('Content-Range: bytes 2-4/6\r\nContent-Length: 3\r\n\r\ncde');
       } finally {
         await fixture.cleanup();
       }

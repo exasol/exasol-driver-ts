@@ -19,9 +19,9 @@ export interface HttpRequest {
  * Returns when headers are fully received and retains body bytes that arrived
  * in the same socket chunk.
  */
-export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<HttpRequest> {
+export function readHttpRequest(socket: net.Socket | tls.TLSSocket, initialBuffer: Buffer = Buffer.alloc(0)): Promise<HttpRequest> {
   return new Promise((resolve, reject) => {
-    let buffer = Buffer.alloc(0);
+    let buffer = initialBuffer;
 
     function onData(chunk: Buffer) {
       buffer = Buffer.concat([buffer, chunk]);
@@ -54,6 +54,9 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<Htt
     socket.on('data', onData);
     socket.on('end', onEnd);
     socket.on('error', onError);
+    if (initialBuffer.length > 0) {
+      onData(Buffer.alloc(0));
+    }
   });
 }
 
@@ -240,13 +243,14 @@ export async function serveFileRequests(
 ): Promise<number> {
   const fileSize = options.rangeRequests ? (await fs.promises.stat(filePath)).size : undefined;
   const sqlResult = sqlPromise.then((rowCount) => ({ rowCount }));
+  let pendingRequestBytes: Buffer = Buffer.alloc(0);
 
   while (true) {
     let result: { rowCount: number } | { request: HttpRequest };
     try {
       result = await Promise.race([
         sqlResult,
-        readHttpRequest(socket).then((request) => ({ request })),
+        readHttpRequest(socket, pendingRequestBytes).then((request) => ({ request })),
       ]);
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('E-EDJS-13:')) {
@@ -257,6 +261,7 @@ export async function serveFileRequests(
     if ('rowCount' in result) {
       return result.rowCount;
     }
+    pendingRequestBytes = result.request.initialBody;
     const responseAbort = new AbortController();
     try {
       const responseResult = await Promise.race([

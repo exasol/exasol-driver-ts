@@ -8,6 +8,7 @@ interface ImportParquetFileParameters {
   port: number;
   tableName: string;
   filePath: string;
+  // Reserved for future Parquet format options; local-file serving does not consume it yet.
   parquetOptions?: ParquetImportOptions;
   executeSql: (sql: string) => Promise<number>;
   options?: FileImportOptions;
