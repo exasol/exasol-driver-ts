@@ -9,6 +9,7 @@ describe('browser entry point', () => {
 
     expect('importFromCsvFile' in driver).toBe(false);
     expect('exportToCsvFile' in driver).toBe(false);
+    expect('importFromParquetFile' in driver).toBe(false);
   });
 
   it('constructs a pool with an explicit WebSocket factory', () => {
