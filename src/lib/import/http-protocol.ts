@@ -142,7 +142,7 @@ function takeBodyBytes(bytes: Buffer, remaining: number | undefined): { bytes: B
  * Writes HTTP response headers, then pipes the readable stream as chunks,
  * then sends the terminating zero-length chunk.
  */
-export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable): Promise<void> {
+export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     socket.write('HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n');
 
@@ -153,10 +153,11 @@ export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStre
       const flushed = socket.write('\r\n');
       if (!flushed) {
         dataStream.pause();
-        socket.once('drain', () => {
-          dataStream.resume();
-        });
+        socket.once('drain', onDrain);
       }
+    }
+    function onDrain() {
+      dataStream.resume();
     }
 
     function onEnd() {
@@ -167,7 +168,14 @@ export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStre
     }
 
     function onError(err: Error) {
+      fail(err);
+    }
+    function onAbort() {
+      fail(new Error('Chunked response cancelled.'));
+    }
+    function fail(err: Error) {
       cleanup();
+      dataStream.destroy();
       reject(
         new ExaErrorBuilder('E-EDJS-18').message('Failed to send chunked HTTP response through tunnel: {{reason}}.', err.message).error(),
       );
@@ -175,11 +183,17 @@ export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStre
 
     function cleanup() {
       removeListeners(dataStream, { data: onData, end: onEnd, error: onError });
+      socket.removeListener('drain', onDrain);
+      signal?.removeEventListener('abort', onAbort);
     }
 
     dataStream.on('data', onData);
     dataStream.on('end', onEnd);
     dataStream.on('error', onError);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) {
+      onAbort();
+    }
   });
 }
 
@@ -203,7 +217,6 @@ export async function serveFileRequests(
 ): Promise<number> {
   const fileSize = options.rangeRequests ? (await fs.promises.stat(filePath)).size : undefined;
   const sqlResult = sqlPromise.then((rowCount) => ({ rowCount }));
-  let servedRequest = false;
 
   while (true) {
     let result: { rowCount: number } | { request: HttpRequest };
@@ -213,7 +226,7 @@ export async function serveFileRequests(
         readHttpRequest(socket).then((request) => ({ request })),
       ]);
     } catch (error) {
-      if (servedRequest && error instanceof Error && error.message.startsWith('E-EDJS-13:')) {
+      if (error instanceof Error && error.message.startsWith('E-EDJS-13:')) {
         return sqlPromise;
       }
       throw error;
@@ -221,8 +234,20 @@ export async function serveFileRequests(
     if ('rowCount' in result) {
       return result.rowCount;
     }
-    await sendFileResponse(socket, filePath, result.request, fileSize, options);
-    servedRequest = true;
+    const responseAbort = new AbortController();
+    try {
+      const responseResult = await Promise.race([
+        sqlResult,
+        sendFileResponse(socket, filePath, result.request, fileSize, options, responseAbort.signal).then(() => undefined),
+      ]);
+      if (responseResult !== undefined) {
+        responseAbort.abort();
+        return responseResult.rowCount;
+      }
+    } catch (error) {
+      responseAbort.abort();
+      throw error;
+    }
     socket.resume();
   }
 }
@@ -233,11 +258,12 @@ async function sendFileResponse(
   request: HttpRequest,
   fileSize: number | undefined,
   options: FileServingOptions,
+  signal: AbortSignal,
 ): Promise<void> {
   if (!options.rangeRequests) {
     const fileStream = fs.createReadStream(filePath);
     options.onFileStream?.(fileStream);
-    await sendChunkedResponse(socket, fileStream);
+    await sendChunkedResponse(socket, fileStream, signal);
     return;
   }
   if (fileSize === undefined) {
@@ -265,7 +291,7 @@ async function sendFileResponse(
   }
   const fileStream = fs.createReadStream(filePath, { start, end });
   options.onFileStream?.(fileStream);
-  await writeReadable(socket, fileStream);
+  await writeReadable(socket, fileStream, signal);
 }
 
 // Exported for testing purposes.
@@ -289,7 +315,7 @@ export function parseByteRange(headers: string, fileSize: number): { start: numb
   return start >= fileSize || start > end ? null : { start, end };
 }
 
-function writeReadable(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable): Promise<void> {
+function writeReadable(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     function onData(chunk: Buffer) {
       try {
@@ -317,6 +343,9 @@ function writeReadable(socket: net.Socket | tls.TLSSocket, dataStream: stream.Re
     function onSocketClose() {
       fail(new Error('Tunnel socket closed while sending file response.'));
     }
+    function onAbort() {
+      fail(new Error('File response cancelled.'));
+    }
     function fail(error: unknown) {
       cleanup();
       dataStream.destroy();
@@ -329,11 +358,16 @@ function writeReadable(socket: net.Socket | tls.TLSSocket, dataStream: stream.Re
       socket.removeListener('drain', onDrain);
       socket.removeListener('error', onSocketError);
       socket.removeListener('close', onSocketClose);
+      signal?.removeEventListener('abort', onAbort);
     }
     dataStream.on('data', onData);
     dataStream.on('end', onEnd);
     dataStream.on('error', onError);
     socket.on('error', onSocketError);
     socket.on('close', onSocketClose);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) {
+      onAbort();
+    }
   });
 }

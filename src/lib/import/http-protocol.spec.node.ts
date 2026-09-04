@@ -340,6 +340,82 @@ describe('http-protocol', () => {
         await fixture.cleanup();
       }
     });
+
+    it('rejects with the SQL error and destroys a backpressured file stream', async () => {
+      let fileStream: ReadStream | undefined;
+      const fixture = await createRangeServingFixture('abcdef', (stream) => {
+        fileStream = stream;
+      }, false);
+      const sqlError = new Error('import failed');
+
+      try {
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=0-\r\n\r\n', 2);
+        fixture.rejectSql(sqlError);
+
+        await expect(fixture.serving).rejects.toBe(sqlError);
+        expect(fileStream?.destroyed).toBe(true);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('returns the SQL row count and destroys a backpressured file stream', async () => {
+      let fileStream: ReadStream | undefined;
+      const fixture = await createRangeServingFixture('abcdef', (stream) => {
+        fileStream = stream;
+      }, false);
+
+      try {
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=0-\r\n\r\n', 2);
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fileStream?.destroyed).toBe(true);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('uses the SQL error when the tunnel closes before a request', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        fixture.socket.emit('end');
+        fixture.rejectSql(new Error('import failed'));
+
+        await expect(fixture.serving).rejects.toThrow('import failed');
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('uses the SQL row count when the tunnel closes before a request', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        fixture.socket.emit('end');
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('reports non-header-close request errors immediately while SQL is pending', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        const readError = new Error('connection reset');
+        await waitFor(() => fixture.socket.listenerCount('data') > 0);
+        fixture.socket.emit('error', readError);
+
+        await expect(fixture.serving).rejects.toThrow('E-EDJS-17');
+        fixture.resolveSql(3);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
   });
 
   describe('parseByteRange', () => {
@@ -400,13 +476,16 @@ async function createRangeServingFixture(content: string, onFileStream?: (stream
   await writeFile(filePath, content);
   const socket = new FakeSocket(writeResult);
   let resolveSql: (rowCount: number) => void;
-  const sqlPromise = new Promise<number>((resolve) => {
+  let rejectSql: (error: Error) => void;
+  const sqlPromise = new Promise<number>((resolve, reject) => {
     resolveSql = resolve;
+    rejectSql = reject;
   });
 
   return {
     socket,
     resolveSql: resolveSql!,
+    rejectSql: rejectSql!,
     serving: serveFileRequests(socket as never, filePath, sqlPromise, { rangeRequests: true, onFileStream }),
     cleanup: () => rm(directory, { recursive: true, force: true }),
   };
