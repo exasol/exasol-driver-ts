@@ -249,6 +249,10 @@ async function sendFileResponse(
     socket.write(`HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */${fileSize}\r\nContent-Length: 0\r\n\r\n`);
     return;
   }
+  if (range === undefined && fileSize === 0) {
+    socket.write('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n');
+    return;
+  }
 
   const { start, end } = range ?? { start: 0, end: fileSize - 1 };
   const contentLength = end - start + 1;

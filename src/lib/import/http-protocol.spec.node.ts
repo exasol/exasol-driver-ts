@@ -340,6 +340,68 @@ describe('http-protocol', () => {
       }
     });
 
+    it('responds to a zero-byte no-range GET without creating a file stream', async () => {
+      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
+      const filePath = join(directory, 'empty.parquet');
+      await writeFile(filePath, '');
+      const socket = new FakeSocket();
+      let fileStream: import('node:fs').ReadStream | undefined;
+      let resolveSql: (rowCount: number) => void;
+      const sqlPromise = new Promise<number>((resolve) => {
+        resolveSql = resolve;
+      });
+
+      try {
+        const serving = serveFileRequests(socket as never, filePath, sqlPromise, {
+          rangeRequests: true,
+          onFileStream: (stream) => {
+            fileStream = stream;
+          },
+        });
+        await waitFor(() => socket.listenerCount('data') > 0);
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\n\r\n'));
+        await waitFor(() => socket.written.length > 0);
+        resolveSql!(3);
+
+        await expect(serving).resolves.toBe(3);
+        expect(socket.written.join('')).toBe('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n');
+        expect(fileStream).toBeUndefined();
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    });
+
+    it('rejects byte-range GET requests for zero-byte files without creating a file stream', async () => {
+      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
+      const filePath = join(directory, 'empty.parquet');
+      await writeFile(filePath, '');
+      const socket = new FakeSocket();
+      let fileStream: import('node:fs').ReadStream | undefined;
+      let resolveSql: (rowCount: number) => void;
+      const sqlPromise = new Promise<number>((resolve) => {
+        resolveSql = resolve;
+      });
+
+      try {
+        const serving = serveFileRequests(socket as never, filePath, sqlPromise, {
+          rangeRequests: true,
+          onFileStream: (stream) => {
+            fileStream = stream;
+          },
+        });
+        await waitFor(() => socket.listenerCount('data') > 0);
+        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=0-0\r\n\r\n'));
+        await waitFor(() => socket.written.length > 0);
+        resolveSql!(3);
+
+        await expect(serving).resolves.toBe(3);
+        expect(socket.written.join('')).toBe('HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */0\r\nContent-Length: 0\r\n\r\n');
+        expect(fileStream).toBeUndefined();
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    });
+
     it('rejects and destroys the file stream when a backpressured tunnel closes', async () => {
       const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
       const filePath = join(directory, 'source.parquet');
