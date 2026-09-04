@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import type { ReadStream } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -244,187 +245,99 @@ describe('http-protocol', () => {
   describe('serveFileRequests', () => {
     // [utest->dsn~runtime-parquet-import-file-stream~1]
     it('responds to sequential HEAD and byte-range GET requests before returning the SQL result', async () => {
-      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
-      const filePath = join(directory, 'source.parquet');
-      await writeFile(filePath, 'abcdef');
-      const socket = new FakeSocket();
-      let resolveSql: (rowCount: number) => void;
-      const sqlPromise = new Promise<number>((resolve) => {
-        resolveSql = resolve;
-      });
+      const fixture = await createRangeServingFixture('abcdef');
 
       try {
-        const serving = serveFileRequests(socket as never, filePath, sqlPromise, { rangeRequests: true });
-        await waitFor(() => socket.listenerCount('data') > 0);
-        socket.emit('data', Buffer.from('HEAD /001.parquet HTTP/1.1\r\n\r\n'));
-        await waitFor(() => socket.written.length > 0);
-        await nextTurn();
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=2-4\r\n\r\n'));
-        await waitFor(() => socket.written.length > 1);
-        resolveSql!(3);
+        await sendHttpRequest(fixture.socket, 'HEAD /001.parquet HTTP/1.1\r\n\r\n', 1);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=2-4\r\n\r\n', 2);
+        fixture.resolveSql(3);
 
-        await expect(serving).resolves.toBe(3);
-        expect(socket.written.join('')).toContain('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 6\r\n\r\n');
-        expect(socket.written.join('')).toContain('HTTP/1.1 206 Partial Content\r\nAccept-Ranges: bytes\r\nContent-Range: bytes 2-4/6\r\nContent-Length: 3\r\n\r\ncde');
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 6\r\n\r\n');
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 206 Partial Content\r\nAccept-Ranges: bytes\r\nContent-Range: bytes 2-4/6\r\nContent-Length: 3\r\n\r\ncde');
       } finally {
-        await rm(directory, { recursive: true, force: true });
+        await fixture.cleanup();
       }
     });
 
     it('responds to suffix byte-range GET requests with the requested trailing bytes', async () => {
-      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
-      const filePath = join(directory, 'source.parquet');
-      await writeFile(filePath, 'abcdef');
-      const socket = new FakeSocket();
-      let resolveSql: (rowCount: number) => void;
-      const sqlPromise = new Promise<number>((resolve) => {
-        resolveSql = resolve;
-      });
+      const fixture = await createRangeServingFixture('abcdef');
 
       try {
-        const serving = serveFileRequests(socket as never, filePath, sqlPromise, { rangeRequests: true });
-        await waitFor(() => socket.listenerCount('data') > 0);
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=-3\r\n\r\n'));
-        await waitFor(() => socket.written.length > 1);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=-3\r\n\r\n', 2);
 
-        expect(socket.written.join('')).toContain('HTTP/1.1 206 Partial Content\r\nAccept-Ranges: bytes\r\nContent-Range: bytes 3-5/6\r\nContent-Length: 3\r\n\r\ndef');
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 206 Partial Content\r\nAccept-Ranges: bytes\r\nContent-Range: bytes 3-5/6\r\nContent-Length: 3\r\n\r\ndef');
 
-        await nextTurn();
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=-6\r\n\r\n'));
-        await waitFor(() => socket.written.length > 3);
-        await nextTurn();
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=-10\r\n\r\n'));
-        await waitFor(() => socket.written.length > 5);
-        resolveSql!(3);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=-6\r\n\r\n', 2);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=-10\r\n\r\n', 2);
+        fixture.resolveSql(3);
 
-        await expect(serving).resolves.toBe(3);
-        expect(socket.written.join('')).toContain('Content-Range: bytes 0-5/6\r\nContent-Length: 6\r\n\r\nabcdef');
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toContain('Content-Range: bytes 0-5/6\r\nContent-Length: 6\r\n\r\nabcdef');
       } finally {
-        await rm(directory, { recursive: true, force: true });
+        await fixture.cleanup();
       }
     });
 
     it('retains explicit, open-ended, malformed, and unsatisfiable byte-range handling', async () => {
-      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
-      const filePath = join(directory, 'source.parquet');
-      await writeFile(filePath, 'abcdef');
-      const socket = new FakeSocket();
-      let resolveSql: (rowCount: number) => void;
-      const sqlPromise = new Promise<number>((resolve) => {
-        resolveSql = resolve;
-      });
+      const fixture = await createRangeServingFixture('abcdef');
 
       try {
-        const serving = serveFileRequests(socket as never, filePath, sqlPromise, { rangeRequests: true });
-        await waitFor(() => socket.listenerCount('data') > 0);
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=2-10\r\n\r\n'));
-        await waitFor(() => socket.written.length > 1);
-        await nextTurn();
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=4-\r\n\r\n'));
-        await waitFor(() => socket.written.length > 3);
-        await nextTurn();
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=invalid\r\n\r\n'));
-        await waitFor(() => socket.written.length > 5);
-        await nextTurn();
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=6-7\r\n\r\n'));
-        await waitFor(() => socket.written.length > 6);
-        resolveSql!(3);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=2-10\r\n\r\n', 2);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=4-\r\n\r\n', 2);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=invalid\r\n\r\n', 2);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=6-7\r\n\r\n', 1);
+        fixture.resolveSql(3);
 
-        await expect(serving).resolves.toBe(3);
-        expect(socket.written.join('')).toContain('Content-Range: bytes 2-5/6\r\nContent-Length: 4\r\n\r\ncdef');
-        expect(socket.written.join('')).toContain('Content-Range: bytes 4-5/6\r\nContent-Length: 2\r\n\r\nef');
-        expect(socket.written.join('')).toContain('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 6\r\n\r\nabcdef');
-        expect(socket.written.join('')).toContain('HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */6\r\nContent-Length: 0\r\n\r\n');
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toContain('Content-Range: bytes 2-5/6\r\nContent-Length: 4\r\n\r\ncdef');
+        expect(fixture.socket.written.join('')).toContain('Content-Range: bytes 4-5/6\r\nContent-Length: 2\r\n\r\nef');
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 6\r\n\r\nabcdef');
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */6\r\nContent-Length: 0\r\n\r\n');
       } finally {
-        await rm(directory, { recursive: true, force: true });
+        await fixture.cleanup();
       }
     });
 
-    it('responds to a zero-byte no-range GET without creating a file stream', async () => {
-      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
-      const filePath = join(directory, 'empty.parquet');
-      await writeFile(filePath, '');
-      const socket = new FakeSocket();
-      let fileStream: import('node:fs').ReadStream | undefined;
-      let resolveSql: (rowCount: number) => void;
-      const sqlPromise = new Promise<number>((resolve) => {
-        resolveSql = resolve;
+    it.each([
+      ['a no-range GET', 'GET /001.parquet HTTP/1.1\r\n\r\n', 'HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n'],
+      ['a byte-range GET', 'GET /001.parquet HTTP/1.1\r\nRange: bytes=0-0\r\n\r\n', 'HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */0\r\nContent-Length: 0\r\n\r\n'],
+    ])('responds to a zero-byte file for %s without creating a file stream', async (_description, request, response) => {
+      let fileStream: ReadStream | undefined;
+      const fixture = await createRangeServingFixture('', (stream) => {
+        fileStream = stream;
       });
 
       try {
-        const serving = serveFileRequests(socket as never, filePath, sqlPromise, {
-          rangeRequests: true,
-          onFileStream: (stream) => {
-            fileStream = stream;
-          },
-        });
-        await waitFor(() => socket.listenerCount('data') > 0);
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\n\r\n'));
-        await waitFor(() => socket.written.length > 0);
-        resolveSql!(3);
+        await sendHttpRequest(fixture.socket, request, 1);
+        fixture.resolveSql(3);
 
-        await expect(serving).resolves.toBe(3);
-        expect(socket.written.join('')).toBe('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n');
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toBe(response);
         expect(fileStream).toBeUndefined();
       } finally {
-        await rm(directory, { recursive: true, force: true });
-      }
-    });
-
-    it('rejects byte-range GET requests for zero-byte files without creating a file stream', async () => {
-      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
-      const filePath = join(directory, 'empty.parquet');
-      await writeFile(filePath, '');
-      const socket = new FakeSocket();
-      let fileStream: import('node:fs').ReadStream | undefined;
-      let resolveSql: (rowCount: number) => void;
-      const sqlPromise = new Promise<number>((resolve) => {
-        resolveSql = resolve;
-      });
-
-      try {
-        const serving = serveFileRequests(socket as never, filePath, sqlPromise, {
-          rangeRequests: true,
-          onFileStream: (stream) => {
-            fileStream = stream;
-          },
-        });
-        await waitFor(() => socket.listenerCount('data') > 0);
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\nRange: bytes=0-0\r\n\r\n'));
-        await waitFor(() => socket.written.length > 0);
-        resolveSql!(3);
-
-        await expect(serving).resolves.toBe(3);
-        expect(socket.written.join('')).toBe('HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */0\r\nContent-Length: 0\r\n\r\n');
-        expect(fileStream).toBeUndefined();
-      } finally {
-        await rm(directory, { recursive: true, force: true });
+        await fixture.cleanup();
       }
     });
 
     it('rejects and destroys the file stream when a backpressured tunnel closes', async () => {
-      const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
-      const filePath = join(directory, 'source.parquet');
-      await writeFile(filePath, 'abcdef');
-      const socket = new FakeSocket(false);
-      let fileStream: import('node:fs').ReadStream | undefined;
+      let fileStream: ReadStream | undefined;
+      const fixture = await createRangeServingFixture(
+        'abcdef',
+        (stream) => {
+          fileStream = stream;
+        },
+        false,
+      );
 
       try {
-        const serving = serveFileRequests(socket as never, filePath, new Promise<number>(() => undefined), {
-          rangeRequests: true,
-          onFileStream: (stream) => {
-            fileStream = stream;
-          },
-        });
-        await waitFor(() => socket.listenerCount('data') > 0);
-        socket.emit('data', Buffer.from('GET /001.parquet HTTP/1.1\r\n\r\n'));
-        await waitFor(() => socket.written.some((write) => write === 'abcdef'));
-        socket.emit('close');
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\n\r\n', 2);
+        fixture.socket.emit('close');
 
-        await expect(serving).rejects.toThrow('Tunnel socket closed while sending file response.');
+        await expect(fixture.serving).rejects.toThrow('Tunnel socket closed while sending file response.');
         expect(fileStream?.destroyed).toBe(true);
       } finally {
-        await rm(directory, { recursive: true, force: true });
+        await fixture.cleanup();
       }
     });
   });
@@ -479,6 +392,32 @@ class FakeSocket extends EventEmitter {
     this.written.push(data.toString());
     return this.writeResult;
   }
+}
+
+async function createRangeServingFixture(content: string, onFileStream?: (stream: ReadStream) => void, writeResult = true) {
+  const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
+  const filePath = join(directory, 'source.parquet');
+  await writeFile(filePath, content);
+  const socket = new FakeSocket(writeResult);
+  let resolveSql: (rowCount: number) => void;
+  const sqlPromise = new Promise<number>((resolve) => {
+    resolveSql = resolve;
+  });
+
+  return {
+    socket,
+    resolveSql: resolveSql!,
+    serving: serveFileRequests(socket as never, filePath, sqlPromise, { rangeRequests: true, onFileStream }),
+    cleanup: () => rm(directory, { recursive: true, force: true }),
+  };
+}
+
+async function sendHttpRequest(socket: FakeSocket, request: string, expectedWrites: number): Promise<void> {
+  await waitFor(() => socket.listenerCount('data') > 0);
+  const writeCount = socket.written.length;
+  socket.emit('data', Buffer.from(request));
+  await waitFor(() => socket.written.length >= writeCount + expectedWrites);
+  await nextTurn();
 }
 
 function nextTurn(): Promise<void> {
