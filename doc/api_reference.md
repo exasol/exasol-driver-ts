@@ -10,11 +10,11 @@ Use `@exasol/exasol-driver-ts` in Node.js for the complete API, including local 
 
 ## Main API
 
-- {@link ExasolDriver} — create a database connection and execute SQL.
-- {@link ExasolPool} — manage a pool of database connections.
-- {@link Config} — configure the driver connection.
-- {@link IExasolDriver} — driver operations exposed by `ExasolDriver`.
-- {@link IStatement} — execute and close prepared statements.
+- {@link index.ExasolDriver | ExasolDriver} — create a database connection and execute SQL.
+- {@link index.ExasolPool | ExasolPool} — manage a pool of database connections.
+- {@link index.Config | Config} — configure the driver connection.
+- {@link index.IExasolDriver | IExasolDriver} — driver operations exposed by `ExasolDriver`.
+- {@link index.IStatement | IStatement} — execute and close prepared statements.
 
 ## Quick Start
 

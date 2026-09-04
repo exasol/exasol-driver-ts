@@ -75,6 +75,7 @@ export class BaseExasolDriver implements IExasolClient {
     compression: false,
     apiVersion: 3,
   };
+  /** @internal Runtime configuration, including connection implementation details. */
   protected readonly config: Config & InternalConfig & { websocketFactory: WebsocketFactory };
   private readonly logger: ILogger;
   protected closed = false;
