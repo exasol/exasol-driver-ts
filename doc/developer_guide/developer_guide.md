@@ -60,7 +60,7 @@ Build and verify the Node.js and browser package entry points with:
 npm run test:package
 ```
 
-The browser entry point is `@exasol/exasol-driver-ts/browser`. It intentionally excludes Node.js CSV import/export and their filesystem, networking, and TLS modules; applications still provide an explicit WebSocket factory.
+The browser entry point is `@exasol/exasol-driver-ts/browser`. It intentionally excludes Node.js local file import/export and their filesystem, networking, and TLS modules; applications still provide an explicit WebSocket factory.
 
 #### MacOS
 

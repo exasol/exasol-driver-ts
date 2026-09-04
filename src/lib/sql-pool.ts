@@ -180,7 +180,7 @@ export class BaseExasolPool<Driver extends BaseExasolDriver> implements AsyncDis
   }
 }
 
-/** Browser-compatible connection pool without Node.js CSV operations. */
+/** Browser-compatible connection pool without Node.js local file operations. */
 export class ExasolPool extends BaseExasolPool<ExasolDriver> {
   // [impl->dsn~runtime-browser-websocket~2]
   constructor(

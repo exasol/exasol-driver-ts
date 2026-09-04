@@ -53,4 +53,4 @@ Vulnerability reporting is documented in `SECURITY.md`.
 ## Open Issues
 
 * Credential lifecycle and recommended secret handling are not documented beyond constructor parameters.
-* The Node.js CSV import tunnel security model is inferred from implementation and tests, not from an architecture decision record.
+* The Node.js import tunnel security model is inferred from implementation and tests, not from an architecture decision record.

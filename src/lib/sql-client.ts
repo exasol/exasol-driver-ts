@@ -522,7 +522,7 @@ export class BaseExasolDriver implements IExasolClient {
   }
 }
 
-/** Browser-compatible driver core without Node.js CSV operations. */
+/** Browser-compatible driver core without Node.js local file operations. */
 export class ExasolDriver extends BaseExasolDriver {
   // [impl->dsn~runtime-browser-websocket~2]
   constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) {

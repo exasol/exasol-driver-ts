@@ -533,7 +533,7 @@ Needs: dsn, uman
 
 **Given** a browser application with native `WebSocket`
 **When** the application imports `@exasol/exasol-driver-ts/browser` and creates a driver or pool with a factory returning `new WebSocket(url)`
-**Then** the driver can use the browser WebSocket implementation without resolving Node.js CSV or TLS modules
+**Then** the driver can use the browser WebSocket implementation without resolving Node.js file or TLS modules
 
 Covers:
 - `req~run-in-browser~2`

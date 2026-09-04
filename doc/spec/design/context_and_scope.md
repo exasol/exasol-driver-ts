@@ -6,9 +6,9 @@ Terms use the definitions from [System Requirements](../system_requirements.md).
 
 ## System Boundary
 
-The system is the npm package `@exasol/exasol-driver-ts`. It includes the TypeScript source, compiled JavaScript library, public type declarations, connection handling, SQL command objects, result conversion, connection pooling, logging helpers, error reporting, and Node.js CSV import support.
+The system is the npm package `@exasol/exasol-driver-ts`. It includes the TypeScript source, compiled JavaScript library, public type declarations, connection handling, SQL command objects, result conversion, connection pooling, logging helpers, error reporting, and Node.js local file import and export support.
 
-Outside the system are the application using the library, the Exasol database, the runtime WebSocket implementation, the local CSV files imported by Node.js applications, npm, CI infrastructure, and the operating system.
+Outside the system are the application using the library, the Exasol database, the runtime WebSocket implementation, the local files imported by Node.js applications, npm, CI infrastructure, and the operating system.
 
 ## Users and Neighboring Systems
 
@@ -16,7 +16,7 @@ Outside the system are the application using the library, the Exasol database, t
 * Browser application running in a browser runtime that provides native `WebSocket`.
 * Node.js application running in a Node.js runtime that provides a compatible WebSocket implementation such as `ws` and access to local files for CSV import.
 * Exasol database server accepting WebSocket SQL protocol connections.
-* Local filesystem for Node.js CSV import.
+* Local filesystem for Node.js local file import and export.
 * npm package registry for distribution.
 * GitHub Actions and SonarCloud for build and quality feedback.
 

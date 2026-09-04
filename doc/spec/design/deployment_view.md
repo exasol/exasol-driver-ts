@@ -15,7 +15,7 @@ The relevant deployment nodes are:
 * Browser JavaScript runtime.
 * Node.js process.
 * Exasol database server.
-* Local filesystem for Node.js CSV import.
+* Local filesystem for Node.js loca file import and export.
 * npm package registry.
 * GitHub Actions release workflow.
 
@@ -28,11 +28,11 @@ node "Application Runtime" {
 }
 
 database "Exasol Database" as Exasol
-file "Local CSV File\n(Node.js only)" as CsvFile
+file "Local File\n(Node.js only)" as LocalFile
 cloud "npm Registry" as Npm
 
 Driver --> Exasol : WebSocket SQL protocol
-Driver --> CsvFile : read during CSV import
+Driver --> LocalFile : read during file import
 Npm --> Driver : install package
 @enduml
 ```

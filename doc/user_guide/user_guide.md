@@ -6,7 +6,7 @@
 
 For the complete public API, see the [API reference](https://exasol.github.io/exasol-driver-ts/api/).
 
-Both entry points require an explicit WebSocket factory. In a browser, use the runtime-native `WebSocket`; in Node.js, provide a compatible implementation such as `ws`. The browser entry excludes the Node.js-only CSV import and export APIs.
+Both entry points require an explicit WebSocket factory. In a browser, use the runtime-native `WebSocket`; in Node.js, provide a compatible implementation such as `ws`. The browser entry excludes the Node.js-only local file import and export APIs.
 
 The following sections show the runtime-specific setup for both environments.
 
