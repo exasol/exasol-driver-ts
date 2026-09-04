@@ -144,16 +144,18 @@ function takeBodyBytes(bytes: Buffer, remaining: number | undefined): { bytes: B
  */
 export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    socket.write('HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n');
-
     function onData(chunk: Buffer) {
-      const hexLength = chunk.length.toString(16);
-      socket.write(hexLength + '\r\n');
-      socket.write(chunk);
-      const flushed = socket.write('\r\n');
-      if (!flushed) {
-        dataStream.pause();
-        socket.once('drain', onDrain);
+      try {
+        const hexLength = chunk.length.toString(16);
+        socket.write(hexLength + '\r\n');
+        socket.write(chunk);
+        const flushed = socket.write('\r\n');
+        if (!flushed) {
+          dataStream.pause();
+          socket.once('drain', onDrain);
+        }
+      } catch (error) {
+        fail(error);
       }
     }
     function onDrain() {
@@ -161,10 +163,14 @@ export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStre
     }
 
     function onEnd() {
-      socket.write('0\r\n\r\n', () => {
-        cleanup();
-        resolve();
-      });
+      try {
+        socket.write('0\r\n\r\n', () => {
+          cleanup();
+          resolve();
+        });
+      } catch (error) {
+        fail(error);
+      }
     }
 
     function onError(err: Error) {
@@ -173,26 +179,43 @@ export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStre
     function onAbort() {
       fail(new Error('Chunked response cancelled.'));
     }
-    function fail(err: Error) {
+    function onSocketError(err: Error) {
+      fail(err);
+    }
+    function onSocketClose() {
+      fail(new Error('Tunnel socket closed while sending chunked response.'));
+    }
+    function fail(err: unknown) {
       cleanup();
       dataStream.destroy();
+      const reason = err instanceof Error ? err.message : String(err);
       reject(
-        new ExaErrorBuilder('E-EDJS-18').message('Failed to send chunked HTTP response through tunnel: {{reason}}.', err.message).error(),
+        new ExaErrorBuilder('E-EDJS-18').message('Failed to send chunked HTTP response through tunnel: {{reason}}.', reason).error(),
       );
     }
 
     function cleanup() {
       removeListeners(dataStream, { data: onData, end: onEnd, error: onError });
       socket.removeListener('drain', onDrain);
+      socket.removeListener('error', onSocketError);
+      socket.removeListener('close', onSocketClose);
       signal?.removeEventListener('abort', onAbort);
     }
 
     dataStream.on('data', onData);
     dataStream.on('end', onEnd);
     dataStream.on('error', onError);
+    socket.on('error', onSocketError);
+    socket.on('close', onSocketClose);
     signal?.addEventListener('abort', onAbort, { once: true });
     if (signal?.aborted) {
       onAbort();
+      return;
+    }
+    try {
+      socket.write('HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n');
+    } catch (error) {
+      fail(error);
     }
   });
 }

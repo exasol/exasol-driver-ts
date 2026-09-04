@@ -240,6 +240,50 @@ describe('http-protocol', () => {
 
       await expect(responsePromise).rejects.toThrow("E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'read error'.");
     });
+
+    it('should reject with E-EDJS-18 and destroy the source when the tunnel closes under backpressure', async () => {
+      const socket = new FakeSocket(false);
+      const dataStream = new PassThrough();
+      const responsePromise = sendChunkedResponse(socket as never, dataStream);
+
+      dataStream.push('hello');
+      socket.emit('close');
+
+      await expect(responsePromise).rejects.toThrow(
+        "E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'Tunnel socket closed while sending chunked response.'.",
+      );
+      expect(dataStream.destroyed).toBe(true);
+    });
+
+    it('should reject with E-EDJS-18 when the tunnel emits an error', async () => {
+      const socket = new FakeSocket();
+      const dataStream = new PassThrough();
+      const responsePromise = sendChunkedResponse(socket as never, dataStream);
+
+      socket.emit('error', new Error('connection reset'));
+
+      await expect(responsePromise).rejects.toThrow(
+        "E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'connection reset'.",
+      );
+      expect(dataStream.destroyed).toBe(true);
+    });
+
+    it.each([
+      ['the response header', 1],
+      ['a data chunk', 3],
+    ])('should reject with E-EDJS-18 when writing %s throws', async (_description, failingWrite) => {
+      const socket = new ThrowingFakeSocket(failingWrite);
+      const dataStream = new PassThrough();
+      const responsePromise = sendChunkedResponse(socket as never, dataStream);
+
+      if (failingWrite === 1) {
+        await expect(responsePromise).rejects.toThrow("E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'write failed'.");
+      } else {
+        dataStream.push('hello');
+        await expect(responsePromise).rejects.toThrow("E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'write failed'.");
+      }
+      expect(dataStream.destroyed).toBe(true);
+    });
   });
 
   describe('serveFileRequests', () => {
@@ -467,6 +511,22 @@ class FakeSocket extends EventEmitter {
   public write(data: string | Buffer): boolean {
     this.written.push(data.toString());
     return this.writeResult;
+  }
+}
+
+class ThrowingFakeSocket extends FakeSocket {
+  private writeCount = 0;
+
+  public constructor(private readonly failingWrite: number) {
+    super();
+  }
+
+  public override write(data: string | Buffer): boolean {
+    this.writeCount++;
+    if (this.writeCount === this.failingWrite) {
+      throw new Error('write failed');
+    }
+    return super.write(data);
   }
 }
 
