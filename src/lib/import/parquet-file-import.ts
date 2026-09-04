@@ -15,6 +15,17 @@ interface ImportParquetFileParameters {
   cancelSql?: () => Promise<void>;
 }
 
+// `parquetOptions` is spread into `importLocalFile()` below, which has no `parquetOptions`
+// field and never reads it. That is harmless today because `ParquetImportOptions` is
+// `Record<string, never>`, so no caller can construct a non-empty value for it.
+//
+// This assignment is a compile-time tripwire, not a runtime check: it exists purely so that
+// the day `ParquetImportOptions` gains a real field, this line stops compiling. When that
+// happens, wire the option through `importLocalFile`/`buildParquetImportSql` (or wherever it
+// needs to land) and delete this line — do not just widen its type to make it compile again.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const parquetOptionsMustStayEmptyUntilWired: Record<string, never> = {} as ParquetImportOptions;
+
 // [impl->dsn~runtime-parquet-import-file-readability-check~1]
 // [impl->dsn~runtime-parquet-import-file-stream~1]
 // [impl->dsn~runtime-parquet-import-cancellation~1]
