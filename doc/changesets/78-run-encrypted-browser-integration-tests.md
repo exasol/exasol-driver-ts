@@ -36,20 +36,26 @@ Out of scope:
 
 Deliver the change as four independently reviewable pull requests, merged sequentially to `main`:
 
-1. Introduce the browser-safe package entry point while preserving existing behavior.
+1. Introduce a complete browser-safe package entry point with implementation, tests, CI packaging checks, traceability, and user/developer documentation while preserving existing behavior.
 2. Add and validate the Playwright browser harness and certificate pinning while retaining jsdom tests.
 3. Migrate the browser integration suites to Chromium and remove the jsdom TLS bypass.
-4. Complete CI, documentation, traceability, and release metadata.
+4. Complete full browser integration CI and final release metadata.
+
+PR 2–4 must be able to consume the browser entry point produced by PR 1 without adding missing packaging, API, or documentation prerequisites.
 
 ## Task List
 
-### PR 1: Browser-safe packaging
+### PR 1: Self-contained browser-safe packaging
 
-- [ ] Refactor the driver exports so browser imports do not resolve Node-only CSV, filesystem, networking, or TLS modules.
-- [ ] Add browser CommonJS, ESM, and declaration outputs and the `@exasol/exasol-driver-ts/browser` package export.
-- [ ] Preserve the existing Node entry point and CSV APIs.
-- [ ] Add browser bundle smoke and type coverage.
-- [ ] Update requirements and design items for the browser entry point.
+- [ ] Refactor the driver implementation into a browser-safe core and Node-specific CSV extensions so browser imports do not resolve CSV, filesystem, networking, or TLS modules.
+- [ ] Add `src/browser.ts` exporting the browser-supported driver, pool, protocol types, errors, statements, results, logging, and WebSocket types.
+- [ ] Preserve the existing Node entry point, factory-first constructor signatures, CSV APIs, and custom Node TLS behavior.
+- [ ] Add browser CommonJS, ESM, and declaration outputs and the `@exasol/exasol-driver-ts/browser` package export while preserving root package compatibility.
+- [ ] Add built-artifact browser bundle smoke tests proving the browser entry imports successfully and excludes Node-only modules and CSV APIs.
+- [ ] Add browser and Node TypeScript coverage for public exports and explicit WebSocket-factory construction of drivers and pools.
+- [ ] Update CI quality gates to run the PR 1 packaging smoke and type checks without requiring Docker or Chromium.
+- [ ] Add requirements, design, implementation, unit-test, and user-manual traceability for the browser entry point and packaging boundary.
+- [ ] Update the README, user guide, API documentation configuration/output, and developer guide with the browser subpath, factory-required examples, Node-only CSV limitation, entry-point distinction, and local packaging verification commands.
 
 ### PR 2: Playwright harness and TLS pinning
 
@@ -67,26 +73,30 @@ Deliver the change as four independently reviewable pull requests, merged sequen
 - [ ] Preserve Node integration coverage and certificate-chain handling.
 - [ ] Add implementation and integration trace tags for the migrated scenarios.
 
-### PR 4: CI, documentation, and finalization
+### PR 4: Full CI and finalization
 
 - [ ] Update Jest projects and npm scripts for the real-browser integration suites.
 - [ ] Update CI to install Chromium and run browser integration tests against supported Exasol Docker versions.
-- [ ] Update the README and user guide with browser-safe imports, explicit-factory examples for custom Node TLS settings, and the Node-only CSV limitation.
-- [ ] Update the developer guide with browser versus Node entry points, when an explicit factory is required, local browser integration prerequisites and commands, Chromium provisioning, Docker/Testcontainers requirements, certificate pinning behavior, and its test-only scope.
 - [ ] Complete the GH-78 OpenFastTrace requirements, design, implementation, and test coverage.
 - [ ] Update release metadata and changelog according to the target release policy.
 
 ## Verification
 
-- [ ] Verify the browser bundle loads in Chromium without resolving Node-only CSV/TLS modules.
-- [ ] Verify both entry points construct drivers and pools with an explicit factory.
-- [ ] Verify custom Node TLS factories continue to work.
-- [ ] Verify browser tests fail when the certificate pin is absent or mismatched.
+- [ ] Verify the built browser bundle loads without resolving Node-only CSV/TLS modules.
+- [ ] Verify both entry points construct drivers and pools with explicit factories.
+- [ ] Verify existing factory-first constructor calls and custom Node TLS factories continue to work.
 - [ ] Verify browser integration uses native `WebSocket` and `wss`, without `ws`, `rejectUnauthorized: false`, or `ignoreHTTPSErrors`.
 - [ ] Run `npm run build`.
 - [ ] Run `npm run typecheck`.
 - [ ] Run `npm run lint:ci`.
 - [ ] Run `npm run test`.
-- [ ] Run `env -u NODE_OPTIONS npm run itest` with Docker access.
+- [ ] Run `env -u NODE_OPTIONS npm run itest` with Docker access once the Chromium harness is introduced.
 - [ ] Run `npm run trace`.
 - [ ] Run `npm run audit`.
+
+## Assumptions
+
+- WebSocket factories remain required in PR 1; entry-point-specific default factories are not part of this PR.
+- No production TLS behavior changes in PR 1.
+- Playwright and Chromium are introduced in PR 2.
+- Version and changelog updates remain part of the final release PR unless the release policy requires versioning each sequential PR.
