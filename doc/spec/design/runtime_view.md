@@ -315,6 +315,60 @@ Covers:
 
 Needs: impl, utest, itest
 
+## Parquet Import
+
+### Parquet Import File Readability Check
+`dsn~runtime-parquet-import-file-readability-check~1`
+
+**Given** a Node.js driver and a local Parquet file path
+**When** `importFromParquetFile()` is called
+**Then** the driver checks file readability before creating an Exasol tunnel and rejects with error code `E-EDJS-14` if the file is missing or unreadable
+
+Covers:
+- `scn~parquet-import-rejects-missing-file~1`
+- `constr~node-only-parquet-import~1`
+
+Needs: impl, utest
+
+### Parquet Import File Stream
+`dsn~runtime-parquet-import-file-stream~1`
+
+**Given** a Node.js driver connected to Exasol 2025.1.9 or later, a readable local Parquet file, and a target table
+**When** `importFromParquetFile()` is called
+**Then** the driver creates an Exasol tunnel, wraps it with TLS, executes `IMPORT INTO ... FROM PARQUET` with `MaxConcurrentReads=1`, serves Exasol's sequential HTTP `HEAD` and byte-range `GET` requests with file-size and range-aware responses, destroys the secure socket, and returns the import row count
+
+Evidence: [Exasol changelog 28781](https://docs.exasol.com/db/latest/changelogs/28781.htm) introduced HTTP/HTTPS Parquet imports in Exasol 2025.1.9, which the local-file tunnel requires.
+
+Covers:
+- `scn~parquet-import-succeeds~1`
+- `constr~node-only-parquet-import~1`
+
+Needs: impl, utest, itest
+
+### Parquet Import Version Support
+`dsn~runtime-parquet-import-version-support~1`
+
+**Given** an Exasol version before 2025.1.9 and a request to import a local Parquet file
+**When** the driver executes the `IMPORT FROM PARQUET` statement
+**Then** Exasol rejects the statement with its version-support message, which the driver includes in its standardized SQL error returned to the application
+
+Covers:
+- `scn~parquet-import-rejects-unsupported-server~1`
+
+Note: We don't cover this with an integration test because this would require testing with an outdated Exasol version.
+
+### Parquet Import Cancellation
+`dsn~runtime-parquet-import-cancellation~1`
+
+**Given** an in-flight Parquet import with an `AbortSignal`
+**When** the signal is aborted
+**Then** the driver destroys the file stream and both import-tunnel sockets, sends `abortQuery` for the server-side import without waiting for its response, and rejects the import promise with an `AbortError` using `E-EDJS-37`
+
+Covers:
+- `scn~parquet-import-is-cancelled~1`
+
+Needs: impl, utest, itest
+
 ## CSV Export
 
 ### CSV Export Destination File

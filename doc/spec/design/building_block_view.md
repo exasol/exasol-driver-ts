@@ -12,9 +12,9 @@ component "Connection" as Connection
 component "Command Types" as Commands
 component "Fetch and QueryResult" as Results
 component "ExasolPool" as Pool
-component "CSV Import" as CsvImport
+component "Local File Import" as FileImport
 database "Exasol Database" as Exasol
-file "Local CSV File" as CsvFile
+file "Local CSV or Parquet File" as LocalFile
 
 App --> Driver
 App --> Pool
@@ -22,19 +22,19 @@ Pool --> Driver
 Driver --> Connection
 Driver --> Commands
 Driver --> Results
-Driver --> CsvImport
-CsvImport --> CsvFile
+Driver --> FileImport
+FileImport --> LocalFile
 Connection --> Exasol
-CsvImport --> Exasol
+FileImport --> Exasol
 @enduml
 ```
 
 ## Component Design Items
 
 ### Driver API
-`dsn~driver-api~3`
+`dsn~driver-api~4`
 
-`ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV imports. It supports asynchronous disposal by delegating `Symbol.asyncDispose` to `close()`.
+`ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV and Parquet imports. Parquet import reserves a dedicated options argument for future format-specific settings, separate from import control options. It supports asynchronous disposal by delegating `Symbol.asyncDispose` to `close()`.
 
 Covers:
 - `scn~connect-with-basic-authentication~1`
@@ -45,6 +45,7 @@ Covers:
 - `scn~prepared-statement-execution~1`
 - `scn~cancel-active-work~1`
 - `scn~csv-import-is-cancelled~1`
+- `scn~parquet-import-is-cancelled~1`
 - `scn~session-attributes-sent-during-login~1`
 - `scn~async-dispose-driver~1`
 - `scn~async-dispose-prepared-statement~1`
@@ -92,6 +93,17 @@ Covers:
 - `scn~csv-import-rejects-missing-target-table~1`
 - `scn~csv-import-applies-format-options~1`
 - `scn~csv-import-is-cancelled~1`
+
+### Parquet Import Components
+`dsn~parquet-import-components~1`
+
+The Parquet import module builds `IMPORT FROM PARQUET` SQL and delegates local-file readability checks, encrypted tunnel creation, TLS, range-aware HTTP file serving, cleanup, and cancellation to the format-neutral local-file import helper.
+
+Covers:
+- `scn~parquet-import-succeeds~1`
+- `scn~parquet-import-rejects-missing-file~1`
+- `scn~parquet-import-is-cancelled~1`
+- `constr~node-only-parquet-import~1`
 
 ### CSV Export Components
 `dsn~csv-export-components~2`

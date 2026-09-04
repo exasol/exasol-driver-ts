@@ -40,8 +40,7 @@ export function createTunnel(host: string, port: number, signal?: AbortSignal): 
 
     const abortTunnel = () => {
       socket.destroy();
-      const message = new ExaErrorBuilder('E-EDJS-21').message('The CSV import was aborted.').toString();
-      reject(new DOMException(message, 'AbortError'));
+      reject(newLocalFileImportAbortedError());
     };
 
     if (signal?.aborted) {
@@ -75,4 +74,9 @@ export function createTunnel(host: string, port: number, signal?: AbortSignal): 
       );
     });
   });
+}
+
+function newLocalFileImportAbortedError(): DOMException {
+  const message = new ExaErrorBuilder('E-EDJS-21').message('The local file import was aborted.').toString();
+  return new DOMException(message, 'AbortError');
 }

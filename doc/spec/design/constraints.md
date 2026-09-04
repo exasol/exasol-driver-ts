@@ -48,6 +48,17 @@ The implementation imports `node:fs`, `node:path`, `node:net`, and `node:tls`.
 
 Needs: dsn
 
+### Node-only Parquet Import
+`constr~node-only-parquet-import~1`
+
+Parquet file import is limited to Node.js because it depends on local filesystem access and Node networking/TLS modules.
+
+Rationale:
+
+The implementation imports `node:fs`, `node:path`, `node:net`, and `node:tls` through the local-file import helper.
+
+Needs: dsn
+
 ### Node-only CSV Export
 `constr~node-only-csv-export~1`
 

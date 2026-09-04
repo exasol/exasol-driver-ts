@@ -2,7 +2,7 @@
 
 ## Introduction
 
-`@exasol/exasol-driver-ts` is a TypeScript and JavaScript driver for connecting applications to an Exasol database. Applications use the driver to open WebSocket connections, authenticate, execute SQL statements, fetch query results, manage a connection pool, and import or export local CSV files from Node.js.
+`@exasol/exasol-driver-ts` is a TypeScript and JavaScript driver for connecting applications to an Exasol database. Applications use the driver to open WebSocket connections, authenticate, execute SQL statements, fetch query results, manage a connection pool, and import or export local files from Node.js.
 
 The library is published as an npm package and is intended for both browser and Node.js runtimes. Browser applications use the runtime-provided `WebSocket` implementation. Node.js applications provide a compatible WebSocket implementation, for example the `ws` package.
 
@@ -13,7 +13,7 @@ The library is published as an npm package and is intended for both browser and 
 * APIs for connecting, querying, executing commands, and closing connections.
 * Support secure database communication by default.
 * Provide connection pooling for concurrent workloads.
-* Support Node.js CSV file imports into and exports from Exasol.
+* Support Node.js CSV and Parquet file imports into, and CSV exports from, Exasol.
 
 ## Evidence Base
 
@@ -59,9 +59,13 @@ The Exasol protocol response returned without converting it to `QueryResult` or 
 
 A user-provided function that receives the database WebSocket URL and returns an object compatible with the driver's `ExaWebsocket` interface.
 
-### CSV Import
+### Local File Import
 
-Node.js-only functionality that imports a readable local CSV file into an Exasol table using Exasol's `IMPORT FROM CSV` mechanism.
+Node.js-only functionality that imports a readable local CSV or Parquet file into an Exasol table using Exasol's corresponding `IMPORT FROM CSV` or `IMPORT FROM PARQUET` mechanism.
+
+### Parquet Import
+
+Node.js-only functionality that imports a readable local Parquet file into an Exasol table using Exasol's `IMPORT FROM PARQUET` mechanism. It requires Exasol 2025.1.9 or later.
 
 ### CSV Export
 
@@ -111,6 +115,13 @@ Needs: req
 `feat~csv-file-import~1`
 
 The driver lets Node.js applications import local CSV files into Exasol tables.
+
+Needs: req
+
+### Parquet File Import
+`feat~parquet-file-import~1`
+
+The driver lets Node.js applications import local Parquet files into Exasol tables on Exasol 2025.1.9 or later.
 
 Needs: req
 
@@ -278,6 +289,28 @@ The Node.js application cancels an in-flight CSV file import through an `AbortSi
 
 Covers:
 - `feat~csv-file-import~1`
+
+Needs: scn
+
+### Parquet Import
+
+#### Import Local Parquet Files
+`req~import-local-parquet-files~1`
+
+The Node.js application imports a readable local Parquet file into a target Exasol table and receives the imported row count when connected to Exasol 2025.1.9 or later.
+
+Covers:
+- `feat~parquet-file-import~1`
+
+Needs: scn
+
+#### Cancel Parquet File Import
+`req~cancel-parquet-file-import~1`
+
+The Node.js application cancels an in-flight local Parquet import through an `AbortSignal` and promptly releases the local file and import-tunnel resources.
+
+Covers:
+- `feat~parquet-file-import~1`
 
 Needs: scn
 
@@ -626,6 +659,56 @@ Needs: dsn
 
 Covers:
 - `req~cancel-csv-file-import~1`
+
+Needs: dsn, uman
+
+### Parquet Import
+
+#### Parquet Import Succeeds
+`scn~parquet-import-succeeds~1`
+
+**Given** a Node.js application, an authenticated driver connected to Exasol 2025.1.9 or later, a readable local Parquet file, and an existing target table
+**When** the application calls `importFromParquetFile()`
+**Then** the driver streams the original file bytes through Exasol's import tunnel and resolves with the imported row count
+
+Covers:
+- `req~import-local-parquet-files~1`
+
+Needs: dsn, uman
+
+#### Parquet Import Rejects Missing File
+`scn~parquet-import-rejects-missing-file~1`
+
+**Given** a Node.js application and an authenticated driver
+**When** the application calls `importFromParquetFile()` with a missing or unreadable file path
+**Then** the driver rejects before opening the import tunnel and reports a file-not-found error
+
+Covers:
+- `req~import-local-parquet-files~1`
+
+Needs: dsn
+
+#### Parquet Import Rejects Unsupported Exasol Versions
+`scn~parquet-import-rejects-unsupported-server~1`
+
+**Given** a Node.js application, an authenticated driver connected to an Exasol version before 2025.1.9, a readable local Parquet file, and an existing target table
+**When** the application calls `importFromParquetFile()`
+**Then** the driver rejects with Exasol's message that explains Parquet import is unavailable
+
+Covers:
+- `req~import-local-parquet-files~1`
+
+Needs: dsn
+
+#### Parquet Import Is Cancelled
+`scn~parquet-import-is-cancelled~1`
+
+**Given** a Node.js application importing a local Parquet file with an `AbortSignal`
+**When** the application aborts the signal while the import is in flight
+**Then** the driver stops streaming the file, closes the import tunnel, aborts the server-side import query, and rejects promptly with an `AbortError` using `E-EDJS-37`
+
+Covers:
+- `req~cancel-parquet-file-import~1`
 
 Needs: dsn, uman
 

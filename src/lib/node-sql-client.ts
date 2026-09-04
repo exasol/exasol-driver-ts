@@ -1,7 +1,8 @@
 import { ErrClosed } from './errors/errors';
 import { exportCsvFile } from './import/csv-file-export';
 import { importCsvFile } from './import/csv-file-import';
-import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
+import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions, FileImportOptions, ParquetImportOptions } from './import/types';
+import { importParquetFile } from './import/parquet-file-import';
 import { ILogger } from './logger/logger';
 import { BaseExasolDriver, Config, WebsocketFactory } from './sql-client';
 import { IExasolDriver } from './sql-client.interface';
@@ -29,6 +30,27 @@ export class NodeExasolDriver extends BaseExasolDriver implements IExasolDriver 
       filePath,
       executeSql: (sql: string) => this.execute(sql),
       csvOptions,
+      options,
+      cancelSql: () => this.cancel(),
+    });
+  }
+
+  public async importFromParquetFile(
+    tableName: string,
+    filePath: string,
+    parquetOptions?: ParquetImportOptions,
+    options?: FileImportOptions,
+  ): Promise<number> {
+    if (this.closed) {
+      throw ErrClosed;
+    }
+    return importParquetFile({
+      host: this.config.host,
+      port: this.config.port,
+      tableName,
+      filePath,
+      parquetOptions,
+      executeSql: (sql: string) => this.execute(sql),
       options,
       cancelSql: () => this.cancel(),
     });

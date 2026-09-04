@@ -453,9 +453,6 @@ export class BaseExasolDriver implements IExasolClient {
       });
   }
 
-  /**
-   * @inheritDoc
-   */
   private async acquire() {
     if (this.closed) {
       throw ErrClosed;
