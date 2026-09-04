@@ -24,7 +24,7 @@ Check out the [user guide](doc/user_guide/user_guide.md) for more details.
 1. Connect to an [Exasol](https://www.exasol.com/) database and execute SQL queries and commands
 2. Encrypted communication via TLS
 3. Works in Node.js and the browser
-4. Supports importing local CSV files into a table
+4. Supports importing local CSV and Parquet files into a table from Node.js (Parquet requires Exasol 2025.1.9 or later)
 
 ## Information for Users
 

@@ -17,7 +17,8 @@ import {
 import { fetchData } from './fetch';
 import { exportCsvFile } from './import/csv-file-export';
 import { importCsvFile } from './import/csv-file-import';
-import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions } from './import/types';
+import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions, FileImportOptions, ParquetImportOptions } from './import/types';
+import { importParquetFile } from './import/parquet-file-import';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { createLoginOptions } from './login-options';
 import { ConnectionPool } from './pool/pool';
@@ -475,6 +476,28 @@ export class ExasolDriver implements IExasolDriver {
       filePath,
       executeSql: (sql: string) => this.execute(sql),
       csvOptions,
+      options,
+      cancelSql: () => this.cancel(),
+    });
+  }
+
+  /** @inheritDoc */
+  public async importFromParquetFile(
+    tableName: string,
+    filePath: string,
+    parquetOptions?: ParquetImportOptions,
+    options?: FileImportOptions,
+  ): Promise<number> {
+    if (this.closed) {
+      throw ErrClosed;
+    }
+    return importParquetFile({
+      host: this.config.host,
+      port: this.config.port,
+      tableName,
+      filePath,
+      parquetOptions,
+      executeSql: (sql: string) => this.execute(sql),
       options,
       cancelSql: () => this.cancel(),
     });

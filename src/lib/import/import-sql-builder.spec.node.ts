@@ -1,4 +1,4 @@
-import { buildCsvImportSql } from './import-sql-builder';
+import { buildCsvImportSql, buildParquetImportSql } from './import-sql-builder';
 import { CsvFormatOptions, RowSeparator, TrimMode } from './types';
 
 // [utest->dsn~runtime-csv-import-format-options~1]
@@ -80,6 +80,15 @@ describe('import-sql-builder', () => {
       const sql = buildCsvImportSql('TEST_TABLE', { host: '192.168.1.10', port: 4362 }, 'fingerprint', csvOptions);
 
       expect(sql).toContain(expectedClause);
+    });
+  });
+
+  // [utest->dsn~runtime-parquet-import-file-stream~1]
+  describe('buildParquetImportSql', () => {
+    it('should generate IMPORT FROM PARQUET SQL', () => {
+      const sql = buildParquetImportSql('MYSCHEMA.MYTABLE', { host: '192.168.1.10', port: 4362 }, 'sha256//abc123');
+
+      expect(sql).toBe("IMPORT INTO MYSCHEMA.MYTABLE FROM PARQUET AT 'https://192.168.1.10:4362;MaxConcurrentReads=1' PUBLIC KEY 'sha256//abc123' FILE '001.parquet'");
     });
   });
 });

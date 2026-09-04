@@ -1,3 +1,5 @@
+import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as stream from 'node:stream';
 import * as tls from 'node:tls';
@@ -17,9 +19,9 @@ export interface HttpRequest {
  * Returns when headers are fully received and retains body bytes that arrived
  * in the same socket chunk.
  */
-export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<HttpRequest> {
+export function readHttpRequest(socket: net.Socket | tls.TLSSocket, initialBuffer: Buffer = Buffer.alloc(0)): Promise<HttpRequest> {
   return new Promise((resolve, reject) => {
-    let buffer = Buffer.alloc(0);
+    let buffer = initialBuffer;
 
     function onData(chunk: Buffer) {
       buffer = Buffer.concat([buffer, chunk]);
@@ -46,14 +48,15 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket): Promise<Htt
     }
 
     function cleanup() {
-      socket.removeListener('data', onData);
-      socket.removeListener('end', onEnd);
-      socket.removeListener('error', onError);
+      removeListeners(socket, { data: onData, end: onEnd, error: onError });
     }
 
     socket.on('data', onData);
     socket.on('end', onEnd);
     socket.on('error', onError);
+    if (initialBuffer.length > 0) {
+      onData(Buffer.alloc(0));
+    }
   });
 }
 
@@ -142,45 +145,257 @@ function takeBodyBytes(bytes: Buffer, remaining: number | undefined): { bytes: B
  * Writes HTTP response headers, then pipes the readable stream as chunks,
  * then sends the terminating zero-length chunk.
  */
-export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable): Promise<void> {
+export function sendChunkedResponse(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    socket.write('HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n');
-
     function onData(chunk: Buffer) {
-      const hexLength = chunk.length.toString(16);
-      socket.write(hexLength + '\r\n');
-      socket.write(chunk);
-      const flushed = socket.write('\r\n');
-      if (!flushed) {
-        dataStream.pause();
-        socket.once('drain', () => {
-          dataStream.resume();
-        });
+      try {
+        const hexLength = chunk.length.toString(16);
+        socket.write(hexLength + '\r\n');
+        socket.write(chunk);
+        const flushed = socket.write('\r\n');
+        if (!flushed) {
+          dataStream.pause();
+          socket.once('drain', onDrain);
+        }
+      } catch (error) {
+        fail(error);
       }
+    }
+    function onDrain() {
+      dataStream.resume();
     }
 
     function onEnd() {
-      socket.write('0\r\n\r\n', () => {
-        cleanup();
-        resolve();
-      });
+      try {
+        socket.write('0\r\n\r\n', () => {
+          cleanup();
+          resolve();
+        });
+      } catch (error) {
+        fail(error);
+      }
     }
 
     function onError(err: Error) {
+      fail(err);
+    }
+    function onAbort() {
+      fail(new Error('Chunked response cancelled.'));
+    }
+    function onSocketError(err: Error) {
+      fail(err);
+    }
+    function onSocketClose() {
+      fail(new Error('Tunnel socket closed while sending chunked response.'));
+    }
+    function fail(err: unknown) {
       cleanup();
+      dataStream.destroy();
+      const reason = err instanceof Error ? err.message : String(err);
       reject(
-        new ExaErrorBuilder('E-EDJS-18').message('Failed to send chunked HTTP response through tunnel: {{reason}}.', err.message).error(),
+        new ExaErrorBuilder('E-EDJS-18').message('Failed to send chunked HTTP response through tunnel: {{reason}}.', reason).error(),
       );
     }
 
     function cleanup() {
-      dataStream.removeListener('data', onData);
-      dataStream.removeListener('end', onEnd);
-      dataStream.removeListener('error', onError);
+      removeListeners(dataStream, { data: onData, end: onEnd, error: onError });
+      socket.removeListener('drain', onDrain);
+      socket.removeListener('error', onSocketError);
+      socket.removeListener('close', onSocketClose);
+      signal?.removeEventListener('abort', onAbort);
     }
 
     dataStream.on('data', onData);
     dataStream.on('end', onEnd);
     dataStream.on('error', onError);
+    socket.on('error', onSocketError);
+    socket.on('close', onSocketClose);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) {
+      onAbort();
+      return;
+    }
+    try {
+      socket.write('HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n');
+    } catch (error) {
+      fail(error);
+    }
+  });
+}
+
+function removeListeners(emitter: EventEmitter, listeners: Record<string, Parameters<EventEmitter['removeListener']>[1]>): void {
+  for (const [event, listener] of Object.entries(listeners)) {
+    emitter.removeListener(event, listener);
+  }
+}
+
+export interface FileServingOptions {
+  rangeRequests?: boolean;
+  onFileStream?: (fileStream: fs.ReadStream) => void;
+}
+
+/** Serves a local file until Exasol completes the import query. */
+export async function serveFileRequests(
+  socket: net.Socket | tls.TLSSocket,
+  filePath: string,
+  sqlPromise: Promise<number>,
+  options: FileServingOptions = {},
+): Promise<number> {
+  const fileSize = options.rangeRequests ? (await fs.promises.stat(filePath)).size : undefined;
+  const sqlResult = sqlPromise.then((rowCount) => ({ rowCount }));
+  let pendingRequestBytes: Buffer = Buffer.alloc(0);
+
+  while (true) {
+    let result: { rowCount: number } | { request: HttpRequest };
+    try {
+      result = await Promise.race([
+        sqlResult,
+        readHttpRequest(socket, pendingRequestBytes).then((request) => ({ request })),
+      ]);
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('E-EDJS-13:')) {
+        return sqlPromise;
+      }
+      throw error;
+    }
+    if ('rowCount' in result) {
+      return result.rowCount;
+    }
+    pendingRequestBytes = result.request.initialBody;
+    const responseAbort = new AbortController();
+    try {
+      const responseResult = await Promise.race([
+        sqlResult,
+        sendFileResponse(socket, filePath, result.request, fileSize, options, responseAbort.signal).then(() => undefined),
+      ]);
+      if (responseResult !== undefined) {
+        responseAbort.abort();
+        return responseResult.rowCount;
+      }
+    } catch (error) {
+      responseAbort.abort();
+      throw error;
+    }
+    socket.resume();
+  }
+}
+
+async function sendFileResponse(
+  socket: net.Socket | tls.TLSSocket,
+  filePath: string,
+  request: HttpRequest,
+  fileSize: number | undefined,
+  options: FileServingOptions,
+  signal: AbortSignal,
+): Promise<void> {
+  if (!options.rangeRequests) {
+    const fileStream = fs.createReadStream(filePath);
+    options.onFileStream?.(fileStream);
+    await sendChunkedResponse(socket, fileStream, signal);
+    return;
+  }
+  if (fileSize === undefined) {
+    throw new Error('File size is required for range requests.');
+  }
+  const method = request.headers.split('\r\n', 1)[0]?.split(' ', 1)[0];
+  const range = parseByteRange(request.headers, fileSize);
+  if (range === null) {
+    socket.write(`HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */${fileSize}\r\nContent-Length: 0\r\n\r\n`);
+    return;
+  }
+  if (range === undefined && fileSize === 0) {
+    socket.write('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n');
+    return;
+  }
+
+  const { start, end } = range ?? { start: 0, end: fileSize - 1 };
+  const contentLength = end - start + 1;
+  const status = range === undefined ? '200 OK' : '206 Partial Content';
+  const contentRange = range === undefined ? '' : `Content-Range: bytes ${start}-${end}/${fileSize}\r\n`;
+  socket.write(`HTTP/1.1 ${status}\r\nAccept-Ranges: bytes\r\n${contentRange}Content-Length: ${contentLength}\r\n\r\n`);
+
+  if (method === 'HEAD') {
+    return;
+  }
+  const fileStream = fs.createReadStream(filePath, { start, end });
+  options.onFileStream?.(fileStream);
+  await writeReadable(socket, fileStream, signal);
+}
+
+// Exported for testing purposes.
+export function parseByteRange(headers: string, fileSize: number): { start: number; end: number } | undefined | null {
+  const value = /^range:\s*bytes=(\d*)-(\d*)\s*$/im.exec(headers);
+  if (!value) {
+    return undefined;
+  }
+  const [, startText, endText] = value;
+  if (startText === '' && endText === '') {
+    return null;
+  }
+  if (startText === '') {
+    const suffixLength = Number(endText);
+    const start = Math.max(0, fileSize - suffixLength);
+    const end = fileSize - 1;
+    return start >= fileSize || start > end ? null : { start, end };
+  }
+  const start = Number(startText);
+  const end = endText === '' ? fileSize - 1 : Math.min(Number(endText), fileSize - 1);
+  return start >= fileSize || start > end ? null : { start, end };
+}
+
+function writeReadable(socket: net.Socket | tls.TLSSocket, dataStream: stream.Readable, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    function onData(chunk: Buffer) {
+      try {
+        if (!socket.write(chunk)) {
+          dataStream.pause();
+          socket.once('drain', onDrain);
+        }
+      } catch (error) {
+        fail(error);
+      }
+    }
+    function onDrain() {
+      dataStream.resume();
+    }
+    function onEnd() {
+      cleanup();
+      resolve();
+    }
+    function onError(error: Error) {
+      fail(error);
+    }
+    function onSocketError(error: Error) {
+      fail(error);
+    }
+    function onSocketClose() {
+      fail(new Error('Tunnel socket closed while sending file response.'));
+    }
+    function onAbort() {
+      fail(new Error('File response cancelled.'));
+    }
+    function fail(error: unknown) {
+      cleanup();
+      dataStream.destroy();
+      reject(error);
+    }
+    function cleanup() {
+      dataStream.removeListener('data', onData);
+      dataStream.removeListener('end', onEnd);
+      dataStream.removeListener('error', onError);
+      socket.removeListener('drain', onDrain);
+      socket.removeListener('error', onSocketError);
+      socket.removeListener('close', onSocketClose);
+      signal?.removeEventListener('abort', onAbort);
+    }
+    dataStream.on('data', onData);
+    dataStream.on('end', onEnd);
+    dataStream.on('error', onError);
+    socket.on('error', onSocketError);
+    socket.on('close', onSocketClose);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) {
+      onAbort();
+    }
   });
 }

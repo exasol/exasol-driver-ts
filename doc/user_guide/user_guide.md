@@ -297,6 +297,38 @@ await importPromise;
 
 See the [Exasol documentation](https://docs.exasol.com/db/latest/sql/import.htm#Usagenotes) for details about these options.
 
+### Parquet Import
+<!-- [uman->scn~parquet-import-succeeds~1] -->
+
+Parquet import with `importFromParquetFile()` is only available in Node.js and requires Exasol 2025.1.9 or later. The driver streams the original local Parquet file to the database.
+
+The optional third argument is reserved for Parquet import options and is currently empty. Pass `undefined` when supplying import control options as the fourth argument.
+
+```ts
+const importedRows = await driver.importFromParquetFile(
+  'MY_SCHEMA.MY_TABLE',
+  '/absolute/path/to/data.parquet',
+);
+```
+
+#### Cancelling a Running Parquet Import
+<!-- [uman->scn~parquet-import-is-cancelled~1] -->
+
+Pass an `AbortSignal` as the optional fourth argument to stop an in-flight Parquet import. The promise rejects with an `AbortError` and releases its file and tunnel resources.
+
+```ts
+const controller = new AbortController();
+const importPromise = driver.importFromParquetFile(
+  'MY_SCHEMA.MY_TABLE',
+  '/absolute/path/to/data.parquet',
+  undefined,
+  { signal: controller.signal },
+);
+
+controller.abort();
+await importPromise;
+```
+
 ### CSV Export
 
 CSV export is available in Node.js. It writes a new local file and returns the number of exported rows.

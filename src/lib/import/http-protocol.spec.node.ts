@@ -1,5 +1,10 @@
+import { EventEmitter } from 'node:events';
+import type { ReadStream } from 'node:fs';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { PassThrough, Writable } from 'node:stream';
-import { HttpRequest, readHttpRequest, receiveHttpRequestBody, sendChunkedResponse } from './http-protocol';
+import { HttpRequest, parseByteRange, readHttpRequest, receiveHttpRequestBody, sendChunkedResponse, serveFileRequests } from './http-protocol';
 
 // [utest->dsn~runtime-csv-import-file-stream~1]
 describe('http-protocol', () => {
@@ -43,6 +48,20 @@ describe('http-protocol', () => {
         headers: 'PUT /001.csv HTTP/1.1\r\nContent-Length: 5\r\n\r\n',
         initialBody: Buffer.from('hello'),
       });
+    });
+
+    it('should parse a request from bytes already buffered by a previous request', async () => {
+      const socket = new PassThrough();
+      const request = await readHttpRequest(
+        socket as never,
+        Buffer.from('GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'),
+      );
+
+      expect(request).toEqual({
+        headers: 'GET /001.csv HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n',
+        initialBody: Buffer.alloc(0),
+      });
+      expect(socket.isPaused()).toBe(true);
     });
 
     it('should reject with E-EDJS-17 if socket emits error', async () => {
@@ -235,6 +254,264 @@ describe('http-protocol', () => {
 
       await expect(responsePromise).rejects.toThrow("E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'read error'.");
     });
+
+    it('should reject with E-EDJS-18 and destroy the source when the tunnel closes under backpressure', async () => {
+      const socket = new FakeSocket(false);
+      const dataStream = new PassThrough();
+      const responsePromise = sendChunkedResponse(socket as never, dataStream);
+
+      dataStream.push('hello');
+      socket.emit('close');
+
+      await expect(responsePromise).rejects.toThrow(
+        "E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'Tunnel socket closed while sending chunked response.'.",
+      );
+      expect(dataStream.destroyed).toBe(true);
+    });
+
+    it('should reject with E-EDJS-18 when the tunnel emits an error', async () => {
+      const socket = new FakeSocket();
+      const dataStream = new PassThrough();
+      const responsePromise = sendChunkedResponse(socket as never, dataStream);
+
+      socket.emit('error', new Error('connection reset'));
+
+      await expect(responsePromise).rejects.toThrow(
+        "E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'connection reset'.",
+      );
+      expect(dataStream.destroyed).toBe(true);
+    });
+
+    it.each([
+      ['the response header', 1],
+      ['a data chunk', 3],
+    ])('should reject with E-EDJS-18 when writing %s throws', async (_description, failingWrite) => {
+      const socket = new ThrowingFakeSocket(failingWrite);
+      const dataStream = new PassThrough();
+      const responsePromise = sendChunkedResponse(socket as never, dataStream);
+
+      if (failingWrite === 1) {
+        await expect(responsePromise).rejects.toThrow("E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'write failed'.");
+      } else {
+        dataStream.push('hello');
+        await expect(responsePromise).rejects.toThrow("E-EDJS-18: Failed to send chunked HTTP response through tunnel: 'write failed'.");
+      }
+      expect(dataStream.destroyed).toBe(true);
+    });
+  });
+
+  describe('serveFileRequests', () => {
+    // [utest->dsn~runtime-parquet-import-file-stream~1]
+    it('responds to sequential HEAD and byte-range GET requests before returning the SQL result', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        await sendHttpRequest(fixture.socket, 'HEAD /001.parquet HTTP/1.1\r\n\r\n', 1);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=2-4\r\n\r\n', 2);
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 6\r\n\r\n');
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 206 Partial Content\r\nAccept-Ranges: bytes\r\nContent-Range: bytes 2-4/6\r\nContent-Length: 3\r\n\r\ncde');
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('serves a subsequent request whose headers arrived with the previous request', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        await waitFor(() => fixture.socket.listenerCount('data') > 0);
+        fixture.socket.emit(
+          'data',
+          Buffer.from('HEAD /001.parquet HTTP/1.1\r\n\r\nGET /001.parquet HTTP/1.1\r\nRange: bytes=2-4\r\n\r\n'),
+        );
+        await waitFor(() => fixture.socket.written.length >= 3);
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toContain('Content-Range: bytes 2-4/6\r\nContent-Length: 3\r\n\r\ncde');
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('responds to suffix byte-range GET requests with the requested trailing bytes', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=-3\r\n\r\n', 2);
+
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 206 Partial Content\r\nAccept-Ranges: bytes\r\nContent-Range: bytes 3-5/6\r\nContent-Length: 3\r\n\r\ndef');
+
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=-6\r\n\r\n', 2);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=-10\r\n\r\n', 2);
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toContain('Content-Range: bytes 0-5/6\r\nContent-Length: 6\r\n\r\nabcdef');
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('retains explicit, open-ended, malformed, and unsatisfiable byte-range handling', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=2-10\r\n\r\n', 2);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=4-\r\n\r\n', 2);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=invalid\r\n\r\n', 2);
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=6-7\r\n\r\n', 1);
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toContain('Content-Range: bytes 2-5/6\r\nContent-Length: 4\r\n\r\ncdef');
+        expect(fixture.socket.written.join('')).toContain('Content-Range: bytes 4-5/6\r\nContent-Length: 2\r\n\r\nef');
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 6\r\n\r\nabcdef');
+        expect(fixture.socket.written.join('')).toContain('HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */6\r\nContent-Length: 0\r\n\r\n');
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it.each([
+      ['a no-range GET', 'GET /001.parquet HTTP/1.1\r\n\r\n', 'HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n'],
+      ['a byte-range GET', 'GET /001.parquet HTTP/1.1\r\nRange: bytes=0-0\r\n\r\n', 'HTTP/1.1 416 Range Not Satisfiable\r\nContent-Range: bytes */0\r\nContent-Length: 0\r\n\r\n'],
+    ])('responds to a zero-byte file for %s without creating a file stream', async (_description, request, response) => {
+      let fileStream: ReadStream | undefined;
+      const fixture = await createRangeServingFixture('', (stream) => {
+        fileStream = stream;
+      });
+
+      try {
+        await sendHttpRequest(fixture.socket, request, 1);
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fixture.socket.written.join('')).toBe(response);
+        expect(fileStream).toBeUndefined();
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('rejects and destroys the file stream when a backpressured tunnel closes', async () => {
+      let fileStream: ReadStream | undefined;
+      const fixture = await createRangeServingFixture(
+        'abcdef',
+        (stream) => {
+          fileStream = stream;
+        },
+        false,
+      );
+
+      try {
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\n\r\n', 2);
+        fixture.socket.emit('close');
+
+        await expect(fixture.serving).rejects.toThrow('Tunnel socket closed while sending file response.');
+        expect(fileStream?.destroyed).toBe(true);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('rejects with the SQL error and destroys a backpressured file stream', async () => {
+      let fileStream: ReadStream | undefined;
+      const fixture = await createRangeServingFixture('abcdef', (stream) => {
+        fileStream = stream;
+      }, false);
+      const sqlError = new Error('import failed');
+
+      try {
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=0-\r\n\r\n', 2);
+        fixture.rejectSql(sqlError);
+
+        await expect(fixture.serving).rejects.toBe(sqlError);
+        expect(fileStream?.destroyed).toBe(true);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('returns the SQL row count and destroys a backpressured file stream', async () => {
+      let fileStream: ReadStream | undefined;
+      const fixture = await createRangeServingFixture('abcdef', (stream) => {
+        fileStream = stream;
+      }, false);
+
+      try {
+        await sendHttpRequest(fixture.socket, 'GET /001.parquet HTTP/1.1\r\nRange: bytes=0-\r\n\r\n', 2);
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+        expect(fileStream?.destroyed).toBe(true);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('uses the SQL error when the tunnel closes before a request', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        fixture.socket.emit('end');
+        fixture.rejectSql(new Error('import failed'));
+
+        await expect(fixture.serving).rejects.toThrow('import failed');
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('uses the SQL row count when the tunnel closes before a request', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        fixture.socket.emit('end');
+        fixture.resolveSql(3);
+
+        await expect(fixture.serving).resolves.toBe(3);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+
+    it('reports non-header-close request errors immediately while SQL is pending', async () => {
+      const fixture = await createRangeServingFixture('abcdef');
+
+      try {
+        const readError = new Error('connection reset');
+        await waitFor(() => fixture.socket.listenerCount('data') > 0);
+        fixture.socket.emit('error', readError);
+
+        await expect(fixture.serving).rejects.toThrow('E-EDJS-17');
+        fixture.resolveSql(3);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+  });
+
+  describe('parseByteRange', () => {
+    it.each([
+      ['an explicit range', 'Range: bytes=2-4\r\n', { start: 2, end: 4 }],
+      ['an explicit range with a clamped end', 'Range: bytes=2-10\r\n', { start: 2, end: 5 }],
+      ['an open-ended range', 'Range: bytes=4-\r\n', { start: 4, end: 5 }],
+      ['a suffix range', 'Range: bytes=-3\r\n', { start: 3, end: 5 }],
+      ['a suffix range equal to the file size', 'Range: bytes=-6\r\n', { start: 0, end: 5 }],
+      ['a suffix range larger than the file size', 'Range: bytes=-10\r\n', { start: 0, end: 5 }],
+      ['a malformed range', 'Range: bytes=invalid\r\n', undefined],
+      ['an empty range', 'Range: bytes=\r\n', undefined],
+      ['an minus range', 'Range: bytes=-\r\n', null],
+      ['an missing range header', '', undefined],
+      ['an unsatisfiable explicit range', 'Range: bytes=6-7\r\n', null],
+      ['an unsatisfiable suffix range', 'Range: bytes=-0\r\n', null],
+    ])('parses %s', (_description, rangeHeader, expectedRange) => {
+      expect(parseByteRange(`GET /001.parquet HTTP/1.1\r\n${rangeHeader}\r\n`, 6)).toEqual(expectedRange);
+    });
   });
 });
 
@@ -247,4 +524,90 @@ function createBodyDestination(): { destination: Writable; getReceivedBody: () =
     },
   });
   return { destination, getReceivedBody: () => Buffer.concat(received).toString() };
+}
+
+class FakeSocket extends EventEmitter {
+  public readonly written: string[] = [];
+
+  public constructor(private readonly writeResult = true) {
+    super();
+  }
+
+  public pause(): this {
+    return this;
+  }
+
+  public resume(): this {
+    return this;
+  }
+
+  public write(data: string | Buffer): boolean {
+    this.written.push(data.toString());
+    return this.writeResult;
+  }
+}
+
+class ThrowingFakeSocket extends FakeSocket {
+  private writeCount = 0;
+
+  public constructor(private readonly failingWrite: number) {
+    super();
+  }
+
+  public override write(data: string | Buffer): boolean {
+    this.writeCount++;
+    if (this.writeCount === this.failingWrite) {
+      throw new Error('write failed');
+    }
+    return super.write(data);
+  }
+}
+
+async function createRangeServingFixture(content: string, onFileStream?: (stream: ReadStream) => void, writeResult = true) {
+  const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-ts-http-'));
+  const filePath = join(directory, 'source.parquet');
+  await writeFile(filePath, content);
+  const socket = new FakeSocket(writeResult);
+  let resolveSql: (rowCount: number) => void;
+  let rejectSql: (error: Error) => void;
+  const sqlPromise = new Promise<number>((resolve, reject) => {
+    resolveSql = resolve;
+    rejectSql = reject;
+  });
+
+  return {
+    socket,
+    resolveSql: resolveSql!,
+    rejectSql: rejectSql!,
+    serving: serveFileRequests(socket as never, filePath, sqlPromise, { rangeRequests: true, onFileStream }),
+    cleanup: () => rm(directory, { recursive: true, force: true }),
+  };
+}
+
+async function sendHttpRequest(socket: FakeSocket, request: string, expectedWrites: number): Promise<void> {
+  await waitFor(() => socket.listenerCount('data') > 0);
+  const writeCount = socket.written.length;
+  socket.emit('data', Buffer.from(request));
+  await waitFor(() => socket.written.length >= writeCount + expectedWrites);
+  await nextTurn();
+}
+
+function nextTurn(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+async function waitFor(condition: () => boolean): Promise<void> {
+  const timeoutAt = Date.now() + 1_000;
+  while (Date.now() < timeoutAt) {
+    if (condition()) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+
+  if (condition()) {
+    return;
+  }
+
+  throw new Error('Condition did not become true.');
 }

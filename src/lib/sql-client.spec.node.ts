@@ -392,6 +392,26 @@ describe('sqlClient', () => {
     });
   });
 
+  describe('importFromParquetFile', () => {
+    // [utest->dsn~runtime-parquet-import-file-readability-check~1]
+    it('should fail due to closed connection', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      await driver.close();
+
+      await expect(driver.importFromParquetFile('targetTable', '/tmp/missing')).rejects.toThrow('E-EDJS-2: Connection was closed.');
+    });
+
+    it('should fail due to missing file', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      await expect(driver.importFromParquetFile('targetTable', '/tmp/missing')).rejects.toThrow("E-EDJS-14: Import file not found: '/tmp/missing'. Verify the file path exists and is readable.");
+    });
+  });
+
   describe('exportToCsvFile', () => {
     it('should fail due to closed connection', async () => {
       const connectPromise = driver.connect();

@@ -55,7 +55,7 @@ describe('http-transport', () => {
       const tunnelPromise = createTunnel('192.168.1.10', 8563, controller.signal);
       controller.abort();
 
-      await expect(tunnelPromise).rejects.toThrow(new DOMException('E-EDJS-21: The CSV import was aborted.', 'AbortError'));
+      await expect(tunnelPromise).rejects.toThrow(new DOMException('E-EDJS-21: The local file import was aborted.', 'AbortError'));
       expect(mockSocket.destroy).toHaveBeenCalledTimes(1);
     });
 
