@@ -432,11 +432,11 @@ await exportPromise;
 | `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
 | `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
 
-### Pool
+### Connection Pool
 
 As of version 0.2.0 we now also provide a connection pool called `ExasolPool`.
 
-#### NPM packages
+#### NPM Packages
 
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry:
 
@@ -452,7 +452,7 @@ Browser:
 npm install --save @exasol/exasol-driver-ts
 ```
 
-#### Creating a connection pool:
+#### Creating a Connection Pool
 
 Node.js:
 
@@ -491,13 +491,13 @@ const pool = new ExasolPool((url) => {
 
 The configuration is very similar to the `ExasolDriver` (client). With the added `minimumPoolSize` and `maximumPoolSize` options you can specify the minimum and maximum number of active connections in the pool. Defaults are 0 (minimumPoolSize) and 5 (maximumPoolSize).
 
-#### Runninq a query
+#### Runninq a Query
 
 ```ts
 const queryResult = await pool.query('SELECT x FROM SCHEMANAME.TABLENAME');
 ```
 
-#### Clearing the pool
+#### Clearing the Pool
 
 Draining and clearing the pool (do this when you don't need the pool anymore or before exiting the application):
 
