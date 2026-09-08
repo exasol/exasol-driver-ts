@@ -15,7 +15,7 @@ The relevant deployment nodes are:
 * Browser JavaScript runtime.
 * Node.js process.
 * Exasol database server.
-* Local filesystem for Node.js loca file import and export.
+* Local filesystem for Node.js local file import and export.
 * npm package registry.
 * GitHub Actions release workflow.
 
@@ -39,7 +39,7 @@ Npm --> Driver : install package
 
 ## Deployment Strategy
 
-Users install the package from npm and select the root Node.js entry point or the `/browser` subpath. The package is built with Rollup into CommonJS and ES module outputs, and conditional exports route `import` and `require` consumers to the corresponding artifacts. Releases are currently performed manually according to the developer guide, with GitHub release automation publishing to npm.
+Users install the package from npm and select the root Node.js entry point or the `/browser` subpath. The package is built with Rollup into CommonJS and ES module outputs, and conditional exports route `import` and `require` consumers to the corresponding libraries. Releases are currently performed manually according to the developer guide, with GitHub release automation publishing to npm.
 
 ## Open Issues
 

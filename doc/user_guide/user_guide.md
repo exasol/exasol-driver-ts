@@ -2,7 +2,7 @@
 
 ### Introduction
 
-`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes. Use the package root in Node.js and `@exasol/exasol-driver-ts/browser` in browser applications.
+`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes. Use the package root `@exasol/exasol-driver-ts` in Node.js. In browser applications use `@exasol/exasol-driver-ts/browser`.
 
 For the complete public API, see the [API reference](https://exasol.github.io/exasol-driver-ts/api/).
 

@@ -4,7 +4,7 @@ Code name: Browser Entry Point
 
 ## Summary
 
-This release adds a browser-safe package entry point for applications that connect to Exasol from a browser. Import `@exasol/exasol-driver-ts/browser` to use the driver and connection-pool APIs with the runtime-native `WebSocket` implementation.
+This release adds a browser-safe package entry point for applications that connect to Exasol from a browser. Import `@exasol/exasol-driver-ts/browser` to use the driver and connection-pool APIs with the browser-internal `WebSocket` implementation.
 
 The browser entry point excludes the Node.js-only local CSV and Parquet import and CSV export APIs. Both the Node.js and browser entry points require an explicit WebSocket factory.
 
