@@ -1,7 +1,7 @@
 export { ExasolDriver, driverVersion } from './lib/sql-client';
 export type { Config, WebsocketFactory } from './lib/sql-client';
-export { ExasolPool } from './lib/sql-pool';
-export type { ClientPoolConfig } from './lib/sql-pool';
+export { ExasolPool } from './lib/exasol-pool';
+export type { ClientPoolConfig } from './lib/exasol-pool';
 export * from './lib/errors/errors';
 export * from './lib/types';
 export * from './lib/commands';

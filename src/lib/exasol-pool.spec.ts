@@ -1,4 +1,4 @@
-import { ExasolPool } from './sql-pool';
+import { ExasolPool } from './exasol-pool';
 import { createMockWebsocketFactory } from './mock-socket';
 
 describe('exasolPool', () => {

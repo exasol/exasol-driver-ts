@@ -2,7 +2,7 @@ import { WebSocket } from 'ws';
 import { Pool } from 'generic-pool';
 import { ExaWebsocket } from '../../src/lib/connection';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
-import { ExasolPool } from '../../src/lib/sql-pool';
+import { ExasolPool } from '../../src/lib/exasol-pool';
 import { startNewDockerContainer } from '../exasolContainer';
 
 // [itest->dsn~runtime-inflight-websocket-failure~1]

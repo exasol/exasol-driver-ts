@@ -22,7 +22,7 @@ This specification was reverse-engineered from:
 * [User Guide](../user_guide/user_guide.md)
 * [README](../../README.md)
 * [Developer Guide](../developer_guide/developer_guide.md)
-* Public API declarations in `src/index.ts`, `src/lib/sql-client.interface.ts`, `src/lib/sql-client.ts`, and `src/lib/sql-pool.ts`
+* Public API declarations in `src/index.ts`, `src/lib/sql-client.interface.ts`, `src/lib/sql-client.ts`, and `src/lib/exasol-pool.ts`
 * CSV import and export implementation in `src/lib/import/`
 * Unit tests in `src/lib/**/*.spec.ts`, `src/lib/**/*.spec.node.ts`, and `src/lib/**/*.spec.dom.ts`
 * Integration tests in `integration-test/`

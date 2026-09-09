@@ -1,7 +1,7 @@
 import { RandomUuid } from 'testcontainers/build/common/uuid';
 import { Logger, LogLevel } from '../../src/lib/logger/logger';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
-import { ExasolPool } from '../../src/lib/sql-pool';
+import { ExasolPool } from '../../src/lib/exasol-pool';
 import { TestEnvironment, TestWebsocketFactory } from '../common';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 
