@@ -1,12 +1,12 @@
 import { spawn } from 'node:child_process';
 
-const executableSuffix = process.platform === 'win32' ? '.cmd' : '';
-const smokeTest = 'integration-test/package/browser-package-smoke.ts';
+const browserSmokeTest = 'integration-test/package/browser-package-smoke.ts';
+const nodeSmokeTest = 'integration-test/package/node-package-smoke.ts';
 const compilerOptions = ['--ignoreConfig', '--noEmit', '--target', 'ES2022', '--lib', 'ES2022,ESNext.Disposable,DOM'];
 
 async function run(command, arguments_, useWindowsShim = false) {
   await new Promise((resolve, reject) => {
-    const executable = useWindowsShim ? `${command}${executableSuffix}` : command;
+    const executable = useWindowsShim && process.platform === 'win32' ? `${command}.cmd` : command;
     const child = spawn(executable, arguments_, { stdio: 'inherit' });
     child.on('error', reject);
     child.on('exit', (code, signal) => {
@@ -21,7 +21,8 @@ async function run(command, arguments_, useWindowsShim = false) {
 
 await run('npm', ['run', 'build'], true);
 // Keep typechecking compatible with bundler-based TypeScript consumers.
-await run('tsc', [...compilerOptions, '--module', 'ESNext', '--moduleResolution', 'Bundler', smokeTest], true);
+await run('tsc', [...compilerOptions, '--module', 'ESNext', '--moduleResolution', 'Bundler', browserSmokeTest, nodeSmokeTest], true);
 // Verify declarations work for NodeNext consumers, which require explicit ESM extensions.
-await run('tsc', [...compilerOptions, '--module', 'NodeNext', '--moduleResolution', 'NodeNext', smokeTest], true);
+await run('tsc', [...compilerOptions, '--module', 'NodeNext', '--moduleResolution', 'NodeNext', browserSmokeTest, nodeSmokeTest], true);
 await run(process.execPath, ['integration-test/package/browser-package-smoke.mjs']);
+await run(process.execPath, ['integration-test/package/node-package-smoke.mjs']);

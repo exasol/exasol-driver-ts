@@ -15,12 +15,9 @@ assert.ok(!browserEsm.includes('importFromCsvFile'));
 assert.ok(!browserEsm.includes('importFromParquetFile'));
 assert.ok(!browserEsm.includes('exportToCsvFile'));
 
-const declarationFiles = ['index.d.ts', 'browser.d.ts'];
-for (const declarationFile of declarationFiles) {
-  const declarations = await readFile(new URL(`../../dist/${declarationFile}`, import.meta.url), 'utf8');
-  for (const match of declarations.matchAll(/(?:from\s*|import\()\s*['"](\.\.?\/[^'"]+)['"]/g)) {
-    assert.ok(match[1].endsWith('.js'), `${declarationFile} contains an extensionless relative specifier: ${match[1]}`);
-  }
+const browserDeclarations = await readFile(new URL('../../dist/browser.d.ts', import.meta.url), 'utf8');
+for (const match of browserDeclarations.matchAll(/(?:from\s*|import\()\s*['"](\.\.?\/[^'"]+)['"]/g)) {
+  assert.ok(match[1].endsWith('.js'), `browser.d.ts contains an extensionless relative specifier: ${match[1]}`);
 }
 
 const require = createRequire(import.meta.url);
@@ -33,13 +30,4 @@ for (const browserExports of [browserEsmExports, browserCjsExports]) {
   new browserExports.ExasolPool(fakeWebSocketFactory, { accessToken: 'access-token' });
   assert.equal('importFromCsvFile' in driver, false);
   assert.equal('exportToCsvFile' in driver, false);
-}
-
-const nodeEsmExports = await import('@exasol/exasol-driver-ts');
-const nodeCjsExports = require('@exasol/exasol-driver-ts');
-for (const nodeExports of [nodeEsmExports, nodeCjsExports]) {
-  const driver = new nodeExports.ExasolDriver(fakeWebSocketFactory, { accessToken: 'access-token' });
-  new nodeExports.ExasolPool(fakeWebSocketFactory, { accessToken: 'access-token' });
-  assert.equal(typeof driver.importFromCsvFile, 'function');
-  assert.equal(typeof driver.exportToCsvFile, 'function');
 }
