@@ -2,7 +2,7 @@ import { ExasolDriver, ExasolPool, Logger, LogLevel } from '@exasol/exasol-drive
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { basicAuthConfig, connectionSettings, nativeWebSocketFactory, schemaName } from './browser-test-support';
 
-// [itest->dsn~runtime-browser-websocket~3]
+// [itest->dsn~runtime-browser-websocket~2]
 // [itest->dsn~decision-use-vitest-browser-mode~1]
 describe('Browser compression integration', () => {
   vi.setConfig({ testTimeout: 7_000_000 });

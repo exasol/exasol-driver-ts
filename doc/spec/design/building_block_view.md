@@ -56,7 +56,7 @@ Covers:
 `Connection` owns a single `ExaWebsocket`, serializes protocol commands, optionally compresses command payloads, parses responses, handles cancellation, prevents parallel work on the same active connection, and marks itself broken when an in-flight command loses its WebSocket.
 
 Covers:
-- `scn~browser-connection-uses-native-websocket~3`
+- `scn~browser-connection-uses-native-websocket~2`
 - `scn~node-connection-uses-injected-websocket~2`
 - `scn~cancel-active-work~1`
 - `scn~reject-command-on-unexpected-websocket-termination~1`
