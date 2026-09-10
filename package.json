@@ -12,7 +12,7 @@
     "docs:api": "typedoc",
     "build": "rollup --failAfterWarnings --config rollup.config.mjs && node scripts/add-js-extensions-to-declarations.mjs",
     "watch": "rollup --failAfterWarnings --watch --config rollup.config.mjs",
-    "typecheck": "tsc --noEmit --project tsconfig.json && tsc --noEmit --project tsconfig.spec.dom.json && tsc --noEmit --project tsconfig.spec.json && tsc --noEmit --project tsconfig.vitest.json",
+    "typecheck": "npm run build && tsc --noEmit --project tsconfig.json && tsc --noEmit --project tsconfig.spec.dom.json && tsc --noEmit --project tsconfig.spec.json && tsc --noEmit --project tsconfig.vitest.json",
     "lint": "eslint --ext .js,.ts --fix .",
     "lint:ci": "eslint --max-warnings 0 --ext .js,.ts .",
     "format": "prettier --write .",
