@@ -11,3 +11,11 @@ The browser entry point excludes the Node.js-only local CSV and Parquet import a
 ## Features
 
 * #78: Added the browser-safe `@exasol/exasol-driver-ts/browser` package entry point.
+## Dependency Updates
+
+### Development Dependency Updates
+
+* Added `vite:^7.3.6`
+* Added `vitest:^4.1.11`
+* Added `@vitest/browser-playwright:^4.1.11`
+* Added `@vitest/coverage-v8:^4.1.11`
