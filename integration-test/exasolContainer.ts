@@ -59,10 +59,6 @@ export class ExasolContainer {
   public async loadCAKey() {
     return await this.certProvider.readCAKey();
   }
-
-  public async stop(): Promise<void> {
-    await this.container.stop();
-  }
 }
 
 export async function startNewDockerContainer(): Promise<ExasolContainer> {

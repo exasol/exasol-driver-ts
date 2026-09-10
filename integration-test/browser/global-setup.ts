@@ -17,14 +17,4 @@ export default async function setup({ provide }: { provide: (key: 'browserConnec
     user: 'sys',
     password: 'exasol',
   } satisfies BrowserConnectionSettings);
-
-  return async () => {
-    try {
-      await container.stop();
-    } catch (error) {
-      if (!(error instanceof Error && 'statusCode' in error && error.statusCode === 404)) {
-        throw error;
-      }
-    }
-  };
 }
