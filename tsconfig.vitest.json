@@ -2,7 +2,6 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "../../../dist/out-tsc",
     "module": "ESNext",
     "lib": [
       "es2015",
@@ -12,7 +11,10 @@
       "esnext.disposable",
       "DOM"
     ],
-    "types": ["node", "vitest/browser"],
+    "types": [
+      "node",
+      "vitest/browser"
+    ],
     "declaration": false,
     "skipLibCheck": true
   },
