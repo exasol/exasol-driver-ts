@@ -7,7 +7,8 @@ manifest.mf
 build.xml
 node_modules/*
 npm-debug.log
-coverage
+/coverage/
+/coverage-browser/
 *.map
 *.d.ts
 dist
@@ -65,3 +66,4 @@ pom.xml.versionsBackup
 /.scannerwork/
 /.codex
 /.serena/
+

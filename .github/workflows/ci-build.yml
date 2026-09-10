@@ -86,6 +86,12 @@ jobs:
           node-version: '26'
           cache: 'npm'
       - run: npm ci --ignore-scripts
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
       - run: npm run test:all # Run all tests (not only integration tests) to collect test coverage for SonarCloud
         env:
           EXASOL_DOCKER_VERSION: ${{ env.EXASOL_DOCKER_VERSION }}

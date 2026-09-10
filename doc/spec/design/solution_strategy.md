@@ -13,7 +13,7 @@ Runtime portability is achieved by injecting the WebSocket implementation throug
 * Portability between browser and Node.js for the core driver.
 * Secure communication by default through encrypted WebSocket URLs.
 * Simple public API for common SQL query and command use cases.
-* Testability through separated Node.js, jsdom, and integration test projects.
+* Testability through separated Node.js and jsdom unit tests plus Chromium browser integration tests.
 * Maintainability through TypeScript types, ESLint, Prettier, and focused modules.
 
 ## Reuse of Existing Facilities
@@ -25,7 +25,7 @@ The implementation reuses:
 * `pako` for optional compression and decompression.
 * `node-forge` for password encryption and CSV import certificate generation.
 * Node.js `fs`, `net`, `tls`, and `path` modules for CSV import.
-* Jest, ts-jest, babel-jest, ESLint, Prettier, npm audit, and SonarCloud for verification.
+* Jest, Vitest Browser Mode with the Playwright Chromium provider, ts-jest, ESLint, Prettier, npm audit, and SonarCloud for verification.
 
 ## Data and Control Flow Strategy
 

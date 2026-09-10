@@ -52,6 +52,15 @@ against a different database version, set `EXASOL_DOCKER_VERSION` to its Docker 
 EXASOL_DOCKER_VERSION=exasol/docker-db:2025.1.16 npm run itest
 ```
 
+Browser integration tests run in Chromium through Vitest Browser Mode. Install the provider-managed Chromium binary before running them locally:
+
+```sh
+npx playwright install chromium
+npm run itest
+```
+
+Vitest Browser Mode accepts certificate errors in its Chromium contexts. The browser suite verifies the native browser WebSocket implementation and encrypted `wss` transport, but does not verify database certificate, CA-chain, or hostname validation.
+
 ### Browser-safe package verification
 
 Build and verify the Node.js and browser package entry points with:
