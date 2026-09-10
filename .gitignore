@@ -13,6 +13,9 @@ npm-debug.log
 *.d.ts
 dist
 
+# Vitest screenshots
+/.vitest-attachments/
+
 #################
 ## JetBrains
 #################
