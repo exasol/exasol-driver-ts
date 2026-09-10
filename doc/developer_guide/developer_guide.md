@@ -52,6 +52,16 @@ against a different database version, set `EXASOL_DOCKER_VERSION` to its Docker 
 EXASOL_DOCKER_VERSION=exasol/docker-db:2025.1.16 npm run itest
 ```
 
+### Browser-safe package verification
+
+Build and verify the Node.js and browser package entry points with:
+
+```sh
+npm run test:package
+```
+
+The browser entry point is `@exasol/exasol-driver-ts/browser`. It intentionally excludes Node.js local file import/export and their filesystem, networking, and TLS modules; applications still provide an explicit WebSocket factory.
+
 #### MacOS
 
 If you're using Docker Desktop, please set

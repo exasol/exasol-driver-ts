@@ -2,7 +2,7 @@ import { createPool, Factory, Options, Pool } from 'generic-pool';
 import { Attributes } from './commands';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { QueryResult } from './query-result';
-import { Config, ExasolDriver, WebsocketFactory } from './sql-client';
+import { BaseExasolDriver, Config, ExasolDriver, WebsocketFactory } from './sql-client';
 import { CetCancelFunction } from './sql-client.interface';
 import { SQLQueriesResponse, SQLResponse } from './types';
 
@@ -11,26 +11,37 @@ export interface ClientPoolConfig {
   minimumPoolSize: number;
   maximumPoolSize: number;
 }
-function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger: ILogger) {
+type DriverConstructor<Driver extends BaseExasolDriver> = new (
+  websocketFactory: WebsocketFactory,
+  config: Partial<Config>,
+  logger?: ILogger,
+) => Driver;
+
+function getPool<Driver extends BaseExasolDriver>(
+  DriverClass: DriverConstructor<Driver>,
+  websocketFactory: WebsocketFactory,
+  config: Partial<Config> & Partial<ClientPoolConfig>,
+  logger: ILogger,
+) {
   // [impl->dsn~runtime-pool-capacity-management~1]
   async function createClient() {
-    const exasolClient: ExasolDriver = new ExasolDriver(websocketFactory, config, logger);
+    const exasolClient = new DriverClass(websocketFactory, config, logger);
     await exasolClient.connect();
     return exasolClient;
   }
 
-  async function destroyClient(exasolClient: ExasolDriver) {
+  async function destroyClient(exasolClient: Driver) {
     await exasolClient.close();
   }
 
-  const poolFactory: Factory<ExasolDriver> = {
+  const poolFactory: Factory<Driver> = {
     create: function () {
       return createClient();
     },
-    destroy: function (client: ExasolDriver) {
+    destroy: function (client: Driver) {
       return destroyClient(client);
     },
-    validate: function (client: ExasolDriver) {
+    validate: function (client: Driver) {
       // [impl->dsn~runtime-pool-borrow-validation~1]
       return Promise.resolve(!client.broken);
     },
@@ -49,8 +60,8 @@ function getPool(websocketFactory: WebsocketFactory, config: Partial<Config> & P
  *
  * @class ExasolPool
  */
-export class ExasolPool implements AsyncDisposable {
-  private readonly internalPool: Pool<ExasolDriver>;
+export class BaseExasolPool<Driver extends BaseExasolDriver> implements AsyncDisposable {
+  private readonly internalPool: Pool<Driver>;
   private readonly logger: ILogger;
   /**
    * Creates an instance of ExasolPool.
@@ -59,13 +70,14 @@ export class ExasolPool implements AsyncDisposable {
    * @param {(Partial<Config> & Partial<ClientPoolConfig>)} config
    * @param {ILogger} [logger=new Logger(LogLevel.Debug)]
    */
-  constructor(
+  protected constructor(
+    DriverClass: DriverConstructor<Driver>,
     websocketFactory: WebsocketFactory,
     config: Partial<Config> & Partial<ClientPoolConfig>,
     logger: ILogger = new Logger(LogLevel.Off),
   ) {
     this.logger = logger;
-    this.internalPool = getPool(websocketFactory, config, logger);
+    this.internalPool = getPool(DriverClass, websocketFactory, config, logger);
   }
   /**
    * Query single SQL statement
@@ -165,5 +177,17 @@ export class ExasolPool implements AsyncDisposable {
     } finally {
       await this.clear();
     }
+  }
+}
+
+/** Browser-compatible connection pool without Node.js local file operations. */
+export class ExasolPool extends BaseExasolPool<ExasolDriver> {
+  // [impl->dsn~runtime-browser-websocket~2]
+  constructor(
+    websocketFactory: WebsocketFactory,
+    config: Partial<Config> & Partial<ClientPoolConfig>,
+    logger?: ILogger,
+  ) {
+    super(ExasolDriver, websocketFactory, config, logger);
   }
 }

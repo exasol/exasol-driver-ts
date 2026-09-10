@@ -11,7 +11,8 @@ export type Cancelable = () => void;
 
 export type CetCancelFunction = (cancel?: Cancelable) => void;
 
-export interface IExasolDriver extends AsyncDisposable {
+/** Browser-safe driver contract without Node.js local-file operations. */
+export interface IExasolClient extends AsyncDisposable {
   /**
    * Connect to database
    *
@@ -119,6 +120,10 @@ export interface IExasolDriver extends AsyncDisposable {
    * @returns {Promise.<SQLResponse<T>>}
    */
   sendCommand<T>(cmd: Commands): Promise<SQLResponse<T>>;
+}
+
+/** Node.js driver contract including local CSV import and export. */
+export interface IExasolDriver extends IExasolClient {
 
   /**
    * Import data from a local CSV file into an Exasol table.

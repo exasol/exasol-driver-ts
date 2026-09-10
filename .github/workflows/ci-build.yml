@@ -22,6 +22,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run audit
       - run: npm run build
+      - run: npm run test:package
 
   trace-requirements:
     runs-on: ubuntu-latest

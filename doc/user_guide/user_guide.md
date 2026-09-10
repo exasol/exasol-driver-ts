@@ -2,11 +2,11 @@
 
 ### Introduction
 
-`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes.
+`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes. Use the package root `@exasol/exasol-driver-ts` in Node.js. In browser applications use `@exasol/exasol-driver-ts/browser`.
 
 For the complete public API, see the [API reference](https://exasol.github.io/exasol-driver-ts/api/).
 
-In a browser, the library uses the native `WebSocket` implementation that is available in the runtime. In Node.js, you need to provide a WebSocket implementation such as the `ws` package when creating the driver or connection pool.
+Both entry points require an explicit WebSocket factory. In a browser, use the runtime-native `WebSocket`; in Node.js, provide a compatible implementation such as `ws`. The browser entry excludes the Node.js-only local file import and export APIs.
 
 The following sections show the runtime-specific setup for both environments.
 
@@ -111,6 +111,8 @@ Do not use `rejectUnauthorized: false`: it accepts any server certificate. When 
 
 ### Browser
 
+<!-- [uman->scn~browser-connection-uses-native-websocket~2] -->
+
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
 
 ```sh
@@ -120,7 +122,7 @@ npm install --save @exasol/exasol-driver-ts
 Connecting to the database:
 
 ```ts
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts/browser';
 
 const driver = new ExasolDriver((url) => {
       return new WebSocket(url) as ExaWebsocket;
@@ -430,11 +432,11 @@ await exportPromise;
 | `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
 | `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
 
-### Pool
+### Connection Pool
 
 As of version 0.2.0 we now also provide a connection pool called `ExasolPool`.
 
-#### NPM packages
+#### NPM Packages
 
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry:
 
@@ -450,7 +452,7 @@ Browser:
 npm install --save @exasol/exasol-driver-ts
 ```
 
-#### Creating a connection pool:
+#### Creating a Connection Pool
 
 Node.js:
 
@@ -473,7 +475,7 @@ const pool = new ExasolPool((url) => {
 Browser:
 
 ```ts
-import { ExasolDriver,ExaWebsocket } from '@exasol/exasol-driver-ts';
+import { ExaWebsocket, ExasolPool } from '@exasol/exasol-driver-ts/browser';
 
 const pool = new ExasolPool((url) => {
   return new WebSocket(url) as ExaWebsocket;
@@ -489,13 +491,13 @@ const pool = new ExasolPool((url) => {
 
 The configuration is very similar to the `ExasolDriver` (client). With the added `minimumPoolSize` and `maximumPoolSize` options you can specify the minimum and maximum number of active connections in the pool. Defaults are 0 (minimumPoolSize) and 5 (maximumPoolSize).
 
-#### Runninq a query
+#### Runninq a Query
 
 ```ts
 const queryResult = await pool.query('SELECT x FROM SCHEMANAME.TABLENAME');
 ```
 
-#### Clearing the pool
+#### Clearing the Pool
 
 Draining and clearing the pool (do this when you don't need the pool anymore or before exiting the application):
 

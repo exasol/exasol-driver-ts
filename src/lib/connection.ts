@@ -6,8 +6,8 @@ import { PoolItem } from './pool/pool';
 import { Cancelable } from './sql-client.interface';
 import { SQLResponse } from './types';
 
-// [impl->dsn~runtime-browser-websocket~1]
-// [impl->dsn~runtime-node-websocket~1]
+// [impl->dsn~runtime-browser-websocket~2]
+// [impl->dsn~runtime-node-websocket~2]
 // [impl->dsn~runtime-inflight-websocket-failure~1]
 export interface ExaMessageEvent {
   data: unknown;

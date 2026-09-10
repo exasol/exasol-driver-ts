@@ -160,9 +160,9 @@ Considered alternatives:
 3. Publish both formats.
 
 #### Publish CJS and ESM
-`dsn~decision-publish-cjs-and-esm~1`
+`dsn~decision-publish-cjs-and-esm~2`
 
-The system builds CommonJS and ES module outputs from the same TypeScript entry point.
+The system builds CommonJS, ES module, and declaration outputs for separate Node.js and browser entry points.
 
 Rationale:
 
@@ -171,7 +171,7 @@ This improves compatibility with different consuming application build systems.
 Covers:
 - `constr~typescript-library-package~1`
 
-Needs: impl
+Needs: impl, utest
 
 Tags: packaging
 
