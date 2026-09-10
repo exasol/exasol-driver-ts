@@ -57,6 +57,18 @@ describe('Browser basic integration', () => {
     expect(result.getRows()).toEqual([{ X: 15 }]);
   });
 
+  test('fetches a 10,000-row result set', async () => {
+    driver = new ExasolDriver(factory, basicAuthConfig(connection));
+    await driver.connect();
+    await driver.execute(`CREATE SCHEMA ${schema}`);
+    await driver.execute(`CREATE TABLE ${schema}.TEST_TABLE(x INT)`);
+    const values = Array.from({ length: 10_000 }, (_, index) => `(${index})`);
+    await driver.execute(`INSERT INTO ${schema}.TEST_TABLE VALUES ${values.join(',')}`);
+
+    const result = await driver.query(`SELECT x FROM ${schema}.TEST_TABLE GROUP BY x ORDER BY x`);
+    expect(result.getRows()).toHaveLength(10_000);
+  });
+
   test('stores the default browser login metadata', async () => {
     driver = new ExasolDriver(factory, basicAuthConfig(connection));
     await driver.connect();
@@ -76,5 +88,14 @@ describe('Browser basic integration', () => {
     await new Promise(resolve => setTimeout(resolve, 500));
     await driver.cancel();
     await expect(query).rejects.toThrow("E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort.");
+  });
+
+  test('cancels a running statement', async () => {
+    driver = new ExasolDriver(factory, basicAuthConfig(connection));
+    await driver.connect();
+    const statement = driver.execute('select "$SLEEP"(5)');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await driver.cancel();
+    await expect(statement).rejects.toThrow("E-EDJS-25: SQL error: code: 'R0003', message: 'Client requested execution abort.");
   });
 });

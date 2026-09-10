@@ -26,7 +26,7 @@ describe('Browser compression integration', () => {
     }
   });
 
-  test('executes compressed driver and pool queries', async () => {
+  test('executes a compressed driver query', async () => {
     setupDriver = new ExasolDriver(factory, basicAuthConfig(connection), new Logger(LogLevel.Off));
     await setupDriver.connect();
     await setupDriver.execute(`CREATE SCHEMA ${schema}`);
@@ -38,6 +38,14 @@ describe('Browser compression integration', () => {
     const result = await compressedDriver.query(`SELECT x FROM ${schema}.TEST_TABLE`);
     expect(result.getRows()).toEqual([{ X: 15 }]);
     await compressedDriver.close();
+  });
+
+  test('executes concurrent compressed pool queries', async () => {
+    setupDriver = new ExasolDriver(factory, basicAuthConfig(connection), new Logger(LogLevel.Off));
+    await setupDriver.connect();
+    await setupDriver.execute(`CREATE SCHEMA ${schema}`);
+    await setupDriver.execute(`CREATE TABLE ${schema}.TEST_TABLE(x INT)`);
+    await setupDriver.execute(`INSERT INTO ${schema}.TEST_TABLE VALUES (15)`);
 
     pool = new ExasolPool(factory, {
       ...basicAuthConfig(connection),
