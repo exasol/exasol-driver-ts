@@ -172,18 +172,17 @@ export class Connection implements PoolItem {
 
   private parseResponse(event: ExaMessageEvent): SQLResponse<unknown> {
     this.logger.trace(`[Entered OnMessage for :${this.name}]`);
-    this.logger.trace(`[Compression enabled: ${this.useCompression}]`);
 
     const rawResponse = this.useCompression
       ? new TextDecoder().decode(inflate(new Uint8Array(event.data as ArrayBuffer)))
       : event.data;
     if (typeof rawResponse !== 'string') {
-      throw new Error('WebSocket response is not text.');
+      throw new Error(`WebSocket response is not text: received ${typeof rawResponse}.`);
     }
 
     const response = JSON.parse(rawResponse) as SQLResponse<unknown>;
     if (!response || typeof response !== 'object' || (response.status !== 'ok' && response.status !== 'error')) {
-      throw new Error('WebSocket response has an invalid status.');
+      throw new Error(`WebSocket response has an invalid status: received '${String(response?.status)}'.`);
     }
     this.logger.trace(`[Connection:${this.name}] Received data`);
     return response;
