@@ -1,4 +1,4 @@
-import { AbortQueryCommand, CloseResultSetCommand } from './commands';
+import { AbortQueryCommand } from './commands';
 import { Connection, ExaWebsocket } from './connection';
 import { Logger } from './logger/logger';
 import { MockExaWebSocket } from './mock-socket';
@@ -127,27 +127,6 @@ describe('connection', () => {
     await expect(command).rejects.toThrow("E-EDJS-16: Socket error: 'connection reset'");
     expect(connection.active).toBe(false);
     expect(connection.broken).toBe(true);
-  });
-
-  // [utest->dsn~runtime-response-command-serialization~1]
-  it('serializes response-producing commands in FIFO order', async () => {
-    const mockSocket = createManualMockSocket();
-    const connection = new Connection(mockSocket, new Logger(), 'test');
-
-    const firstCommand = connection.sendCommand({ command: 'execute', sqlText: 'select 1' });
-    const secondCommand = connection.sendCommand(new CloseResultSetCommand([17]));
-
-    expect(mockSocket.sentCommands).toEqual([{ command: 'execute', sqlText: 'select 1' }]);
-    mockSocket.callOnMessage({ data: JSON.stringify({ status: 'ok', responseData: { command: 1 } }) });
-    await expect(firstCommand).resolves.toEqual({ status: 'ok', responseData: { command: 1 } });
-    expect(mockSocket.sentCommands).toEqual([
-      { command: 'execute', sqlText: 'select 1' },
-      { command: 'closeResultSet', resultSetHandles: [17] },
-    ]);
-
-    mockSocket.callOnMessage({ data: JSON.stringify({ status: 'ok', responseData: { command: 2 } }) });
-    await expect(secondCommand).resolves.toEqual({ status: 'ok', responseData: { command: 2 } });
-    expect(connection.active).toBe(false);
   });
 
   // [utest->dsn~runtime-response-command-serialization~1]

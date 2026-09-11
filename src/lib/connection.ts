@@ -3,6 +3,7 @@ import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from
 import { ErrClosed, ErrNotConnected, MissingExceptionError, newMalformedWebsocketResponseError, newSocketClosedError, newSocketError } from './errors/errors';
 import { ILogger } from './logger/logger';
 import { PoolItem } from './pool/pool';
+import { ResponseCommandQueue } from './response-command-queue';
 import { Cancelable } from './sql-client.interface';
 import { SQLResponse } from './types';
 
@@ -39,28 +40,22 @@ export enum ReadyState {
   CLOSED = 3
 }
 
-interface PendingCommand<T> {
-  command: Commands;
-  resolve: (response: SQLResponse<T>) => void;
-  reject: (error: Error) => void;
-}
-
 export class Connection implements PoolItem {
-  private isInUse = false;
   private isBroken = false;
   private useCompression = false;
-  private pendingCommand: PendingCommand<unknown> | undefined;
-  private readonly commandQueue: PendingCommand<unknown>[] = [];
+  private readonly commandQueue = new ResponseCommandQueue(
+    (command) => {
+      this.logger.trace(`[Connection:${this.name}] Send request:`, command);
+      this.sendCmd(command);
+    },
+    (cause) => this.breakConnection(newSocketError(cause)),
+  );
 
   public setCompression(compression: boolean) {
     this.useCompression = compression;
   }
-  public set active(v: boolean) {
-    this.isInUse = v;
-  }
-
   public get active(): boolean {
-    return this.isInUse;
+    return this.commandQueue.active;
   }
 
   public get connection(): ExaWebsocket {
@@ -157,43 +152,19 @@ export class Connection implements PoolItem {
     }
   }
 
-  private dispatchNextCommand() {
-    if (this.pendingCommand || this.isBroken) {
-      return;
-    }
-
-    const pendingCommand = this.commandQueue.shift();
-    if (!pendingCommand) {
-      this.active = false;
-      return;
-    }
-
-    this.pendingCommand = pendingCommand;
-    this.active = true;
-    this.logger.trace(`[Connection:${this.name}] Send request:`, pendingCommand.command);
-    try {
-      this.sendCmd(pendingCommand.command);
-    } catch (error) {
-      this.breakConnection(newSocketError(error));
-    }
-  }
-
   private handleSocketMessage(event: ExaMessageEvent) {
-    const pendingCommand = this.pendingCommand;
-    if (!pendingCommand) {
+    if (!this.commandQueue.active) {
       this.breakConnection(newMalformedWebsocketResponseError());
       return;
     }
 
     try {
       const data = this.parseResponse(event);
-      this.pendingCommand = undefined;
       if (data.status !== 'ok' && !data.exception) {
-        pendingCommand.reject(MissingExceptionError);
+        this.commandQueue.reject(MissingExceptionError);
       } else {
-        pendingCommand.resolve(data);
+        this.commandQueue.resolve(data);
       }
-      this.dispatchNextCommand();
     } catch {
       this.breakConnection(newMalformedWebsocketResponseError());
     }
@@ -224,13 +195,7 @@ export class Connection implements PoolItem {
     }
 
     this.isBroken = true;
-    this.active = false;
-    const pendingCommands = [this.pendingCommand, ...this.commandQueue];
-    this.pendingCommand = undefined;
-    this.commandQueue.length = 0;
-    for (const pendingCommand of pendingCommands) {
-      pendingCommand?.reject(error);
-    }
+    this.commandQueue.rejectAll(error);
     if (closeSocket) {
       this.cleanupConnection();
     }
@@ -250,14 +215,10 @@ export class Connection implements PoolItem {
 
     getCancel?.(cancelQuery);
 
-    return new Promise<SQLResponse<T>>((resolve, reject) => {
-      if (this.connection === undefined) {
-        this.isBroken = true;
-        reject(ErrNotConnected);
-        return;
-      }
-      this.commandQueue.push({ command: cmd, resolve, reject } as PendingCommand<unknown>);
-      this.dispatchNextCommand();
-    });
+    if (this.connection === undefined) {
+      this.isBroken = true;
+      return Promise.reject(ErrNotConnected);
+    }
+    return this.commandQueue.enqueue<T>(cmd);
   } //end of sendCommand
 }
