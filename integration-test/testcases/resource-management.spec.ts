@@ -1,7 +1,7 @@
 import { IntegrationTestRuntime } from './runtime';
 
 export const resourceManagementTests = (runtime: IntegrationTestRuntime) => {
-  const { beforeAll, describe, test } = runtime.api;
+  const { beforeAll, describe, expect, test } = runtime.api;
 
   describe(`${runtime.name} explicit resource management`, () => {
     let connection: Awaited<ReturnType<IntegrationTestRuntime['setup']>>['connection'];
@@ -19,6 +19,7 @@ export const resourceManagementTests = (runtime: IntegrationTestRuntime) => {
       }
 
       await closed!;
+      expect(runtime.isLatestWebSocketClosed()).toBe(true);
     });
 
     // [itest->dsn~runtime-pool-async-disposal~1]
@@ -31,6 +32,7 @@ export const resourceManagementTests = (runtime: IntegrationTestRuntime) => {
       }
 
       await closed!;
+      expect(runtime.isLatestWebSocketClosed()).toBe(true);
     });
   });
 };

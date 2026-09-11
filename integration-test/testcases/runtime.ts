@@ -71,6 +71,7 @@ export interface IntegrationTestRuntime {
   expectedDefaultOsName: RegExp;
   createSilentLogger: () => ILogger;
   waitForLatestWebSocketClose: () => Promise<void>;
+  isLatestWebSocketClosed: () => boolean;
   createDriver: (factory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) => IntegrationDriver;
   createPool: (factory: WebsocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger?: ILogger) => IntegrationPool;
 }

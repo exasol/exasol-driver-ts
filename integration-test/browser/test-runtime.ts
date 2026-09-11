@@ -20,6 +20,7 @@ export function createBrowserRuntime(): IntegrationTestRuntime {
     expectedDefaultOsName: /.+/,
     createSilentLogger: () => new Logger(LogLevel.Off),
     waitForLatestWebSocketClose: () => websocketFactory?.waitForClose() ?? Promise.resolve(),
+    isLatestWebSocketClosed: () => websocketFactory?.isClosed() ?? false,
     createDriver: (factory, config, logger) => new ExasolDriver(factory, config, logger),
     createPool: (factory, config, logger) => new ExasolPool(factory, config, logger),
   };

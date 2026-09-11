@@ -37,6 +37,7 @@ export function createNodeRuntime(): IntegrationTestRuntime {
       }
       return new Promise(resolve => websocket?.once('close', () => resolve()));
     },
+    isLatestWebSocketClosed: () => websocket?.readyState === WebSocket.CLOSED,
     createDriver: (factory, config, logger) => new ExasolDriver(factory, config, logger),
     createPool: (factory, config, logger) => new ExasolPool(factory, config, logger),
   };

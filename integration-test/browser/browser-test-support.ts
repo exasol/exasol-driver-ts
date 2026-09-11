@@ -6,7 +6,7 @@ export function connectionSettings(): BrowserConnectionSettings {
   return inject('browserConnection' as never) as BrowserConnectionSettings;
 }
 
-export function nativeWebSocketFactory(): { factory: WebsocketFactory; urls: string[]; waitForClose: () => Promise<void> } {
+export function nativeWebSocketFactory(): { factory: WebsocketFactory; urls: string[]; waitForClose: () => Promise<void>; isClosed: () => boolean } {
   const urls: string[] = [];
   let websocket: WebSocket | undefined;
   return {
@@ -22,6 +22,7 @@ export function nativeWebSocketFactory(): { factory: WebsocketFactory; urls: str
       }
       return new Promise(resolve => websocket?.addEventListener('close', () => resolve(), { once: true }));
     },
+    isClosed: () => websocket?.readyState === WebSocket.CLOSED,
   };
 }
 
