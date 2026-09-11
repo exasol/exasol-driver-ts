@@ -177,7 +177,7 @@ export class Connection implements PoolItem {
       ? new TextDecoder().decode(inflate(new Uint8Array(event.data as ArrayBuffer)))
       : event.data;
     if (typeof rawResponse !== 'string') {
-      throw new Error(`WebSocket response is not text: received ${typeof rawResponse}.`);
+      throw new TypeError(`WebSocket response is not text: received ${typeof rawResponse}.`);
     }
 
     const response = JSON.parse(rawResponse) as SQLResponse<unknown>;
