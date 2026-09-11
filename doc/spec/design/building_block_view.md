@@ -51,15 +51,16 @@ Covers:
 - `scn~async-dispose-prepared-statement~1`
 
 ### WebSocket Connection
-`dsn~websocket-connection~1`
+`dsn~websocket-connection~2`
 
-`Connection` owns a single `ExaWebsocket`, serializes protocol commands, optionally compresses command payloads, parses responses, handles cancellation, prevents parallel work on the same active connection, and marks itself broken when an in-flight command loses its WebSocket.
+`Connection` owns a single `ExaWebsocket`, serializes response-producing protocol commands through a FIFO dispatcher, optionally compresses command payloads, parses responses, handles immediate response-free cancellation, and marks itself broken when an in-flight command loses its WebSocket or an unexpected or malformed frame arrives.
 
 Covers:
 - `scn~browser-connection-uses-native-websocket~2`
 - `scn~node-connection-uses-injected-websocket~2`
 - `scn~cancel-active-work~1`
 - `scn~reject-command-on-unexpected-websocket-termination~1`
+- `scn~serialize-websocket-command-responses~1`
 
 ### Result Handling
 `dsn~result-handling~1`

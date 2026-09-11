@@ -1,5 +1,5 @@
 import { TextDecoder as NodeTextDecoder } from 'util';
-import { newSocketClosedError, newSocketError } from './errors';
+import { newMalformedWebsocketResponseError, newSocketClosedError, newSocketError } from './errors';
 
 describe('errors (Node)', () => {
   beforeAll(() => {
@@ -28,6 +28,10 @@ describe('errors (Node)', () => {
         "E-EDJS-16: Socket error: '{\"code\":\"ECONNREFUSED\"}'",
       );
     });
+  });
+
+  it('identifies malformed WebSocket response frames', () => {
+    expect(newMalformedWebsocketResponseError().message).toBe('E-EDJS-38: Malformed WebSocket response.');
   });
 
   // [utest->dsn~runtime-inflight-websocket-failure~1]

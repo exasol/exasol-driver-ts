@@ -146,6 +146,18 @@ Covers:
 
 Needs: impl, utest, itest
 
+### Response Command Serialization
+`dsn~runtime-response-command-serialization~1`
+
+**Given** a `Connection` with multiple submitted response-producing protocol commands
+**When** it receives a response for the command currently in flight
+**Then** it resolves that command, sends the next command in FIFO order, and keeps `abortQuery` outside the response queue; an unexpected or malformed response marks the connection broken, rejects all pending commands, and closes the WebSocket
+
+Covers:
+- `scn~serialize-websocket-command-responses~1`
+
+Needs: impl, utest
+
 ### In-Flight WebSocket Failure
 `dsn~runtime-inflight-websocket-failure~1`
 
