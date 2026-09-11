@@ -52,6 +52,24 @@ against a different database version, set `EXASOL_DOCKER_VERSION` to its Docker 
 EXASOL_DOCKER_VERSION=exasol/docker-db:2025.1.16 npm run itest
 ```
 
+#### General
+
+We run the same integration tests with both Node.js and the browser.
+
+* `integration-test/package/`: Smoke tests for entry points
+* `integration-test/testcases/runtime.ts`: Shared interfaces for both runtimes
+* `integration-test/testcases/*.ts`: Common test cases for both environments
+* `integration-test/node/`: Node.js specific tests cases
+* `integration-test/browser/`: Browser specific test cases
+
+#### Node.js Integration Tests With Jest
+
+Node.js integration tests run with Jest: `npm run itest:node`.
+
+#### Browser Integration Tests With Vitest
+
+Browser integration tests run in Chromium with Vitest Browser Mode: `npm run itest:browser`.
+
 Browser integration tests run in Chromium through Vitest Browser Mode. Install the provider-managed Chromium binary before running them locally:
 
 ```sh

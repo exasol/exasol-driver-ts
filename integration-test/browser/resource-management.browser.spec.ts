@@ -1,8 +1,8 @@
 import { vi } from 'vitest';
-import { basicPoolTests } from '../testcases/pool.basic.spec';
+import { resourceManagementTests } from '../testcases/resource-management.spec';
 import { createBrowserRuntime } from './test-runtime';
 
 // [itest->dsn~runtime-browser-websocket~2]
 // [itest->dsn~decision-use-vitest-browser-mode~1]
 vi.setConfig({ testTimeout: 7_000_000 });
-basicPoolTests(createBrowserRuntime());
+resourceManagementTests(createBrowserRuntime());

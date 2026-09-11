@@ -1,4 +1,4 @@
 import { basicTests } from '../testcases/basic.spec';
-import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
+import { createNodeRuntime } from './test-runtime';
 
-basicTests('Node', createWebsocketFactoryWithCertificate);
+basicTests(createNodeRuntime());

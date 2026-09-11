@@ -57,7 +57,7 @@ Needs: impl, utest
 Covers:
 - `scn~async-dispose-driver~1`
 
-Needs: impl, utest
+Needs: impl, utest, itest
 
 ## SQL Execution
 
@@ -248,7 +248,7 @@ Needs: impl, itest
 Covers:
 - `scn~async-dispose-connection-pool~1`
 
-Needs: impl, utest
+Needs: impl, utest, itest
 
 ## CSV Import
 

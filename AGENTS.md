@@ -38,9 +38,11 @@ Run this command in an interactive terminal/PTY and wait for the terminal sessio
 
 ### Node And Browser Test Parity
 
-The shared integration scenarios for basic driver behavior, pooling, and compression must remain aligned between Node.js and browser runs. Prefer browser-safe, parameterized scenario helpers over separate copies of tests. Keep lifecycle, certificate handling, `process` access, and WebSocket-factory setup in runtime-specific wrappers only.
+Node.js integration tests run with Jest from `integration-test/node/` (`npm run itest:node`). Browser integration tests run with Vitest Browser Mode and Playwright Chromium from `integration-test/browser/` (`npm run itest:browser`).
 
-When adding or changing a shared scenario, update both runtimes and compare their individual test cases before considering the work complete. Runtime-specific tests are appropriate only for behavior unique to that runtime, such as the browser suite's native `WebSocket` and `wss` transport assertion or Node's certificate-validation behavior.
+Every integration scenario for portable driver or pool behavior must run in both environments. Prefer browser-safe, parameterized scenario helpers under `integration-test/testcases/` over separate copies of tests. When adding or changing a shared scenario, register it in both runtime runners and compare their individual test cases before considering the work complete.
+
+Keep lifecycle, certificate handling, `process` access, and WebSocket-factory setup in runtime-specific wrappers only. Add a runtime-specific integration test only when the behavior itself is unique to that environment, such as the browser suite's native `WebSocket` and `wss` transport assertion or Node's certificate-validation behavior.
 
 ## Error Codes
 

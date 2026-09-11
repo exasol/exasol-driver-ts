@@ -6,14 +6,22 @@ export function connectionSettings(): BrowserConnectionSettings {
   return inject('browserConnection' as never) as BrowserConnectionSettings;
 }
 
-export function nativeWebSocketFactory(): { factory: WebsocketFactory; urls: string[] } {
+export function nativeWebSocketFactory(): { factory: WebsocketFactory; urls: string[]; waitForClose: () => Promise<void> } {
   const urls: string[] = [];
+  let websocket: WebSocket | undefined;
   return {
     factory: (url: string) => {
       urls.push(url);
-      return new WebSocket(url) as ReturnType<WebsocketFactory>;
+      websocket = new WebSocket(url);
+      return websocket as ReturnType<WebsocketFactory>;
     },
     urls,
+    waitForClose: () => {
+      if (!websocket || websocket.readyState === WebSocket.CLOSED) {
+        return Promise.resolve();
+      }
+      return new Promise(resolve => websocket?.addEventListener('close', () => resolve(), { once: true }));
+    },
   };
 }
 

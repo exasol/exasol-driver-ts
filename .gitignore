@@ -15,6 +15,7 @@ dist
 
 # Vitest screenshots
 /.vitest-attachments/
+/integration-test/browser/__screenshots__/
 
 #################
 ## JetBrains
