@@ -19,7 +19,7 @@ describe('Browser native WebSocket integration', () => {
     driver = undefined;
   });
 
-  test('connects through the native wss WebSocket', async () => {
+  test('uses the native WebSocket factory with the default wss URL', async () => {
     driver = new ExasolDriver(nativeWebSocket.factory, basicAuthConfig(connection));
     await driver.connect();
     expect(nativeWebSocket.urls).toEqual([`wss://${connection.host}:${connection.port}`]);

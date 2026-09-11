@@ -68,9 +68,9 @@ Node.js integration tests run with Jest: `npm run itest:node`.
 
 #### Browser Integration Tests With Vitest
 
-Browser integration tests run in Chromium with Vitest Browser Mode: `npm run itest:browser`.
+Browser integration tests run in Chromium through Vitest Browser Mode: `npm run itest:browser`
 
-Browser integration tests run in Chromium through Vitest Browser Mode. Install the provider-managed Chromium binary before running them locally:
+Install the provider-managed Chromium binary before running them locally:
 
 ```sh
 npx playwright install chromium
