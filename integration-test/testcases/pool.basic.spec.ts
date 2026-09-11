@@ -1,4 +1,4 @@
-import { IntegrationTestRuntime } from './runtime';
+import type { IntegrationConnectionConfig, IntegrationDriver, IntegrationPool, IntegrationTestRuntime, IntegrationWebsocketFactory } from './runtime';
 
 // [itest->dsn~runtime-pool-capacity-management~1]
 // [itest->dsn~runtime-pooled-query-execution~1]
@@ -8,14 +8,14 @@ export const basicPoolTests = (runtime: IntegrationTestRuntime) => {
   const { afterEach, beforeAll, beforeEach, describe, expect, test } = runtime.api;
 
   describe(`${runtime.name} pool`, () => {
-    let connection: Awaited<ReturnType<IntegrationTestRuntime['setup']>>['connection'];
-    let factory: Awaited<ReturnType<IntegrationTestRuntime['setup']>>['factory'];
+    let connection: IntegrationConnectionConfig;
+    let factory: IntegrationWebsocketFactory;
     let schemaName = '';
-    let setupDriver: ReturnType<IntegrationTestRuntime['createDriver']> | undefined;
-    let pool: ReturnType<IntegrationTestRuntime['createPool']> | undefined;
+    let setupDriver: IntegrationDriver | undefined;
+    let pool: IntegrationPool | undefined;
 
-    beforeAll(async () => { ({ connection, factory } = await runtime.setup()); });
-    beforeEach(() => { schemaName = runtime.createSchemaName(); });
+    beforeAll(async () => { ({ connection, factory } = await runtime.database.setup()); });
+    beforeEach(() => { schemaName = runtime.database.createSchemaName(); });
     afterEach(async () => {
       if (!connection || !factory) {
         return;
@@ -25,7 +25,7 @@ export const basicPoolTests = (runtime: IntegrationTestRuntime) => {
       await setupDriver?.close().catch(() => undefined);
       pool = undefined;
       setupDriver = undefined;
-      const cleanupDriver = runtime.createDriver(factory, connection);
+      const cleanupDriver = runtime.driver.create(factory, connection);
       try {
         await cleanupDriver.connect();
         await cleanupDriver.execute(`DROP SCHEMA IF EXISTS ${schemaName} CASCADE`);
@@ -40,7 +40,7 @@ export const basicPoolTests = (runtime: IntegrationTestRuntime) => {
     });
 
     test('Exec and fetch (default min / max connection settings)', async () => {
-      pool = runtime.createPool(factory, connection);
+      pool = runtime.pool.create(factory, connection);
       await createSimpleTestTable();
       await expectSingleResult(pool);
     });
@@ -70,24 +70,24 @@ export const basicPoolTests = (runtime: IntegrationTestRuntime) => {
     });
 
     function createPool(minimumPoolSize: number, maximumPoolSize: number) {
-      return runtime.createPool(factory, { ...connection, minimumPoolSize, maximumPoolSize });
+      return runtime.pool.create(factory, { ...connection, minimumPoolSize, maximumPoolSize });
     }
 
     async function createSimpleTestTable() {
-      setupDriver = runtime.createDriver(factory, connection);
+      setupDriver = runtime.driver.create(factory, connection);
       await setupDriver.connect();
       await setupDriver.execute(`CREATE SCHEMA ${schemaName}`);
       await setupDriver.execute(`CREATE TABLE ${schemaName}.TEST_TABLE(x INT)`);
       await setupDriver.execute(`INSERT INTO ${schemaName}.TEST_TABLE VALUES (15)`);
     }
 
-    async function expectSingleResult(poolToQuery: ReturnType<IntegrationTestRuntime['createPool']>) {
+    async function expectSingleResult(poolToQuery: IntegrationPool) {
       const data = await poolToQuery.query(`SELECT x FROM ${schemaName}.TEST_TABLE`);
       expect(data.getColumns()[0].name).toBe('X');
       expect(data.getRows()[0]['X']).toBe(15);
     }
 
-    async function expectQueryCount(poolToQuery: ReturnType<IntegrationTestRuntime['createPool']>, queryCount: number) {
+    async function expectQueryCount(poolToQuery: IntegrationPool, queryCount: number) {
       const results = await Promise.all(Array.from({ length: queryCount }, () => poolToQuery.query(`SELECT x FROM ${schemaName}.TEST_TABLE`)));
       for (const data of results) {
         expect(data.getColumns()[0].name).toBe('X');

@@ -3,6 +3,13 @@ import type { ILogger } from '../../src/lib/logger/logger';
 import type { Config, WebsocketFactory } from '../../src/lib/sql-client';
 
 export type TestEnvironment = 'Node' | 'Browser';
+export type IntegrationConnectionConfig = Partial<Config>;
+export type IntegrationWebsocketFactory = WebsocketFactory;
+
+export interface IntegrationTestSetup {
+  connection: IntegrationConnectionConfig;
+  factory: IntegrationWebsocketFactory;
+}
 
 type TestCallback = () => void | Promise<void>;
 
@@ -65,13 +72,21 @@ interface IntegrationRawResponse {
 export interface IntegrationTestRuntime {
   name: TestEnvironment;
   api: TestApi;
-  setup: () => Promise<{ connection: Partial<Config>; factory: WebsocketFactory }>;
-  createSchemaName: () => string;
-  expectedDriverName: RegExp;
-  expectedDefaultOsName: RegExp;
-  createSilentLogger: () => ILogger;
-  waitForLatestWebSocketClose: () => Promise<void>;
-  isLatestWebSocketClosed: () => boolean;
-  createDriver: (factory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) => IntegrationDriver;
-  createPool: (factory: WebsocketFactory, config: Partial<Config> & Partial<ClientPoolConfig>, logger?: ILogger) => IntegrationPool;
+  database: {
+    setup: () => Promise<IntegrationTestSetup>;
+    createSchemaName: () => string;
+  };
+  driver: {
+    expectedName: RegExp;
+    expectedDefaultOsName: RegExp;
+    create: (factory: IntegrationWebsocketFactory, config: IntegrationConnectionConfig, logger?: ILogger) => IntegrationDriver;
+    createSilentLogger: () => ILogger;
+  };
+  pool: {
+    create: (factory: IntegrationWebsocketFactory, config: IntegrationConnectionConfig & Partial<ClientPoolConfig>, logger?: ILogger) => IntegrationPool;
+  };
+  websocket: {
+    waitForLatestClose: () => Promise<void>;
+    isLatestClosed: () => boolean;
+  };
 }

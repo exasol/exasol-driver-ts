@@ -10,18 +10,24 @@ export function createBrowserRuntime(): IntegrationTestRuntime {
   return {
     name: 'Browser',
     api: { describe, test: test as TestApi['test'], beforeAll, beforeEach, afterEach, expect },
-    setup: async () => {
-      const connection = connectionSettings();
-      websocketFactory = nativeWebSocketFactory();
-      return { connection: basicAuthConfig(connection), factory: websocketFactory.factory };
+    database: {
+      setup: async () => {
+        const connection = connectionSettings();
+        websocketFactory = nativeWebSocketFactory();
+        return { connection: basicAuthConfig(connection), factory: websocketFactory.factory };
+      },
+      createSchemaName: schemaName,
     },
-    createSchemaName: schemaName,
-    expectedDriverName: new RegExp(`^exasol-driver-ts ${driverVersion.replace(/\./g, '\\.')}\\s*$`),
-    expectedDefaultOsName: /.+/,
-    createSilentLogger: () => new Logger(LogLevel.Off),
-    waitForLatestWebSocketClose: () => websocketFactory?.waitForClose() ?? Promise.resolve(),
-    isLatestWebSocketClosed: () => websocketFactory?.isClosed() ?? false,
-    createDriver: (factory, config, logger) => new ExasolDriver(factory, config, logger),
-    createPool: (factory, config, logger) => new ExasolPool(factory, config, logger),
+    driver: {
+      expectedName: new RegExp(`^exasol-driver-ts ${driverVersion.replace(/\./g, '\\.')}\\s*$`),
+      expectedDefaultOsName: /.+/,
+      createSilentLogger: () => new Logger(LogLevel.Off),
+      create: (factory, config, logger) => new ExasolDriver(factory, config, logger),
+    },
+    pool: { create: (factory, config, logger) => new ExasolPool(factory, config, logger) },
+    websocket: {
+      waitForLatestClose: () => websocketFactory?.waitForClose() ?? Promise.resolve(),
+      isLatestClosed: () => websocketFactory?.isClosed() ?? false,
+    },
   };
 }

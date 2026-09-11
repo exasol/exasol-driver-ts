@@ -1,4 +1,4 @@
-import { IntegrationTestRuntime } from './runtime';
+import type { IntegrationConnectionConfig, IntegrationDriver, IntegrationPool, IntegrationTestRuntime, IntegrationWebsocketFactory } from './runtime';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
 // [itest->dsn~decision-share-cross-runtime-integration-scenarios~1]
@@ -6,15 +6,15 @@ export const basicCompressionTests = (runtime: IntegrationTestRuntime) => {
   const { afterEach, beforeAll, beforeEach, describe, expect, test } = runtime.api;
 
   describe(`${runtime.name} compression`, () => {
-    let connection: Awaited<ReturnType<IntegrationTestRuntime['setup']>>['connection'];
-    let factory: Awaited<ReturnType<IntegrationTestRuntime['setup']>>['factory'];
+    let connection: IntegrationConnectionConfig;
+    let factory: IntegrationWebsocketFactory;
     let schemaName = '';
-    let setupDriver: ReturnType<IntegrationTestRuntime['createDriver']> | undefined;
-    let pool: ReturnType<IntegrationTestRuntime['createPool']> | undefined;
-    const silentLogger = runtime.createSilentLogger();
+    let setupDriver: IntegrationDriver | undefined;
+    let pool: IntegrationPool | undefined;
+    const silentLogger = runtime.driver.createSilentLogger();
 
-    beforeAll(async () => { ({ connection, factory } = await runtime.setup()); });
-    beforeEach(() => { schemaName = runtime.createSchemaName(); });
+    beforeAll(async () => { ({ connection, factory } = await runtime.database.setup()); });
+    beforeEach(() => { schemaName = runtime.database.createSchemaName(); });
     afterEach(async () => {
       await pool?.drain();
       await pool?.clear();
@@ -28,7 +28,7 @@ export const basicCompressionTests = (runtime: IntegrationTestRuntime) => {
 
     test('Exec and fetch', async () => {
       await createSimpleTestTable();
-      const compressedDriver = runtime.createDriver(factory, { ...connection, compression: true }, silentLogger);
+      const compressedDriver = runtime.driver.create(factory, { ...connection, compression: true }, silentLogger);
       await compressedDriver.connect();
       try {
         const data = await compressedDriver.query(`SELECT x FROM ${schemaName}.TEST_TABLE`);
@@ -41,7 +41,7 @@ export const basicCompressionTests = (runtime: IntegrationTestRuntime) => {
 
     test('Fetch multiple queries simultaneously/asynchronously', async () => {
       await createSimpleTestTable();
-      pool = runtime.createPool(factory, {
+      pool = runtime.pool.create(factory, {
         ...connection,
         compression: true,
         minimumPoolSize: 1,
@@ -55,7 +55,7 @@ export const basicCompressionTests = (runtime: IntegrationTestRuntime) => {
     });
 
     async function createSimpleTestTable() {
-      setupDriver = runtime.createDriver(factory, connection, silentLogger);
+      setupDriver = runtime.driver.create(factory, connection, silentLogger);
       await setupDriver.connect();
       await setupDriver.execute(`CREATE SCHEMA ${schemaName}`);
       await setupDriver.execute(`CREATE TABLE ${schemaName}.TEST_TABLE(x INT)`);

@@ -1,4 +1,4 @@
-import { IntegrationTestRuntime } from './runtime';
+import type { IntegrationConnectionConfig, IntegrationDriver, IntegrationTestRuntime, IntegrationWebsocketFactory } from './runtime';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
 // [itest->dsn~runtime-browser-websocket~2]
@@ -8,13 +8,13 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
   const { afterEach, beforeAll, beforeEach, describe, expect, test } = runtime.api;
 
   describe(runtime.name, () => {
-    let connection: Awaited<ReturnType<IntegrationTestRuntime['setup']>>['connection'];
-    let factory: Awaited<ReturnType<IntegrationTestRuntime['setup']>>['factory'];
-    let tmpDriver: ReturnType<IntegrationTestRuntime['createDriver']> | undefined;
+    let connection: IntegrationConnectionConfig;
+    let factory: IntegrationWebsocketFactory;
+    let tmpDriver: IntegrationDriver | undefined;
     let schemaName = '';
 
-    beforeAll(async () => { ({ connection, factory } = await runtime.setup()); });
-    beforeEach(() => { schemaName = runtime.createSchemaName(); });
+    beforeAll(async () => { ({ connection, factory } = await runtime.database.setup()); });
+    beforeEach(() => { schemaName = runtime.database.createSchemaName(); });
 
     test('Connect to DB', async () => {
       const driver = await openConnection();
@@ -30,7 +30,7 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
 
     // [itest->dsn~runtime-login-metadata~1]
     test('stores configured login metadata in the session table', async () => {
-      const driver = runtime.createDriver(factory, {
+      const driver = runtime.driver.create(factory, {
         ...connection,
         clientName: 'exasol-driver-ts-integration-test',
         clientOs: 'configured operating system',
@@ -42,7 +42,7 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
       const session = await driver.query('SELECT CLIENT, DRIVER, OS_NAME, OS_USER FROM EXA_DBA_SESSIONS WHERE SESSION_ID = CURRENT_SESSION');
       expect(session.getRows()).toEqual([{
         CLIENT: 'exasol-driver-ts-integration-test 1',
-        DRIVER: expect.stringMatching(runtime.expectedDriverName),
+        DRIVER: expect.stringMatching(runtime.driver.expectedName),
         OS_NAME: 'configured operating system',
         OS_USER: 'configured user',
       }]);
@@ -50,14 +50,14 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
 
     // [itest->dsn~runtime-login-metadata~1]
     test('stores default login metadata in the session table', async () => {
-      const driver = runtime.createDriver(factory, connection);
+      const driver = runtime.driver.create(factory, connection);
       await driver.connect();
       tmpDriver = driver;
       const session = await driver.query('SELECT CLIENT, DRIVER, OS_NAME FROM EXA_DBA_SESSIONS WHERE SESSION_ID = CURRENT_SESSION');
       expect(session.getRows()).toEqual([{
         CLIENT: 'Javascript client 1',
-        DRIVER: expect.stringMatching(runtime.expectedDriverName),
-        OS_NAME: expect.stringMatching(runtime.expectedDefaultOsName),
+        DRIVER: expect.stringMatching(runtime.driver.expectedName),
+        OS_NAME: expect.stringMatching(runtime.driver.expectedDefaultOsName),
       }]);
     });
 
@@ -83,7 +83,7 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
 
       test('reuses a pooled connection after fetching a multi-block result set', async () => {
         const driver = await openConnection();
-        const pool = runtime.createPool(factory, { ...connection, minimumPoolSize: 1, maximumPoolSize: 1 });
+        const pool = runtime.pool.create(factory, { ...connection, minimumPoolSize: 1, maximumPoolSize: 1 });
         try {
           await driver.execute(`CREATE SCHEMA ${schemaName}`);
           await driver.execute(`CREATE TABLE ${schemaName}.TEST_TABLE(x INT)`);
@@ -144,7 +144,7 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
       }
       await tmpDriver?.close().catch(error => console.warn('Could not close driver', error));
       tmpDriver = undefined;
-      const cleanupDriver = runtime.createDriver(factory, connection, runtime.createSilentLogger());
+      const cleanupDriver = runtime.driver.create(factory, connection, runtime.driver.createSilentLogger());
       try {
         await cleanupDriver.connect();
         await cleanupDriver.execute(`DROP SCHEMA IF EXISTS ${schemaName} CASCADE`);
@@ -156,13 +156,13 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
     });
 
     async function openConnection(url?: string, host = connection.host, port = connection.port) {
-      const driver = runtime.createDriver(factory, { ...connection, host, port, url });
+      const driver = runtime.driver.create(factory, { ...connection, host, port, url });
       await driver.connect();
       tmpDriver = driver;
       return driver;
     }
 
-    async function createSimpleTestTable(driver: ReturnType<IntegrationTestRuntime['createDriver']>) {
+    async function createSimpleTestTable(driver: IntegrationDriver) {
       await driver.execute(`CREATE SCHEMA ${schemaName}`);
       await driver.execute(`CREATE TABLE ${schemaName}.TEST_TABLE(x INT)`);
       await driver.execute(`INSERT INTO ${schemaName}.TEST_TABLE VALUES (15)`);

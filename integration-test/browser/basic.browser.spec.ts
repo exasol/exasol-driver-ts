@@ -1,6 +1,9 @@
 import { ExasolDriver } from '@exasol/exasol-driver-ts/browser';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { basicTests } from '../testcases/basic.spec';
+import { basicCompressionTests } from '../testcases/compression.basic.spec';
+import { basicPoolTests } from '../testcases/pool.basic.spec';
+import { resourceManagementTests } from '../testcases/resource-management.spec';
 import { basicAuthConfig, connectionSettings, nativeWebSocketFactory } from './browser-test-support';
 import { createBrowserRuntime } from './test-runtime';
 
@@ -8,6 +11,9 @@ import { createBrowserRuntime } from './test-runtime';
 // [itest->dsn~decision-use-vitest-browser-mode~1]
 vi.setConfig({ testTimeout: 7_000_000 });
 basicTests(createBrowserRuntime());
+basicPoolTests(createBrowserRuntime());
+basicCompressionTests(createBrowserRuntime());
+resourceManagementTests(createBrowserRuntime());
 
 describe('Browser native WebSocket integration', () => {
   const connection = connectionSettings();
