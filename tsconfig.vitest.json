@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "module": "ESNext",
+    "lib": [
+      "es2015",
+      "es2016",
+      "es2017",
+      "es2022.error",
+      "esnext.disposable",
+      "DOM"
+    ],
+    "types": [
+      "node",
+      "vitest/browser"
+    ],
+    "declaration": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "vitest.config.ts",
+    "integration-test/browser/**/*.ts"
+  ],
+  "exclude": []
+}

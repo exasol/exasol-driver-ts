@@ -4,6 +4,8 @@ import { ExaWebsocket } from '../../src/lib/connection';
 import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
 import { ExasolPool } from '../../src/lib/exasol-pool';
 import { startNewDockerContainer } from '../exasolContainer';
+import { resourceManagementTests } from '../testcases/resource-management.spec';
+import { createNodeRuntime } from './test-runtime';
 
 // [itest->dsn~runtime-inflight-websocket-failure~1]
 describe('Connection lifecycle', () => {
@@ -124,3 +126,5 @@ describe('Connection lifecycle', () => {
     expect(replacementDriver).not.toBe(originalDriver);
   });
 });
+
+resourceManagementTests(createNodeRuntime());

@@ -22,7 +22,7 @@ Outside the system are the application using the library, the Exasol database, t
 
 ## Supported Environment
 
-The core driver and pool are intended for browser and Node.js runtimes. Tests exercise Node.js and jsdom environments. CSV import is supported only in Node.js.
+The core driver and pool are intended for browser and Node.js runtimes. Tests exercise Node.js, jsdom unit tests, and Chromium browser integration tests. CSV import is supported only in Node.js.
 
 ## External Interfaces
 

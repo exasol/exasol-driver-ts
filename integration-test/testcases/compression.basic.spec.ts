@@ -1,126 +1,65 @@
-import { RandomUuid } from 'testcontainers/build/common/uuid';
-import { Logger, LogLevel } from '../../src/lib/logger/logger';
-import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
-import { ExasolPool } from '../../src/lib/exasol-pool';
-import { TestEnvironment, TestWebsocketFactory } from '../common';
-import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
+import type { IntegrationConnectionConfig, IntegrationDriver, IntegrationPool, IntegrationTestRuntime, IntegrationWebsocketFactory } from './runtime';
 
 // [itest->dsn~runtime-connect-basic-authentication~1]
-export const basicCompressionTests = (name: TestEnvironment, createWSFactory: TestWebsocketFactory) =>
-  describe(name, () => {
-    const randomId = new RandomUuid();
-    let container: ExasolContainer;
-    let factory: WebsocketFactory;
-    jest.setTimeout(7000000);
+// [itest->dsn~decision-share-cross-runtime-integration-scenarios~1]
+export const basicCompressionTests = (runtime: IntegrationTestRuntime) => {
+  const { afterEach, beforeAll, beforeEach, describe, expect, test } = runtime.api;
+
+  describe(`${runtime.name} compression`, () => {
+    let connection: IntegrationConnectionConfig;
+    let factory: IntegrationWebsocketFactory;
     let schemaName = '';
+    let setupDriver: IntegrationDriver | undefined;
+    let pool: IntegrationPool | undefined;
+    const silentLogger = runtime.driver.createSilentLogger();
 
-    beforeAll(async () => {
-      container = await startNewDockerContainer();
-      const certString = await container.loadCA();
-      factory = createWSFactory(certString);
+    beforeAll(async () => { ({ connection, factory } = await runtime.database.setup()); });
+    beforeEach(() => { schemaName = runtime.database.createSchemaName(); });
+    afterEach(async () => {
+      await pool?.drain();
+      await pool?.clear();
+      if (setupDriver) {
+        await setupDriver.execute(`DROP SCHEMA IF EXISTS ${schemaName} CASCADE`);
+        await setupDriver.close();
+      }
+      pool = undefined;
+      setupDriver = undefined;
     });
 
-    beforeEach(() => {
-      schemaName = 'TEST_SCHEMA' + randomId.nextUuid();
+    test('Exec and fetch', async () => {
+      await createSimpleTestTable();
+      const compressedDriver = runtime.driver.create(factory, { ...connection, compression: true }, silentLogger);
+      await compressedDriver.connect();
+      try {
+        const data = await compressedDriver.query(`SELECT x FROM ${schemaName}.TEST_TABLE`);
+        expect(data.getColumns()[0].name).toBe('X');
+        expect(data.getRows()[0]['X']).toBe(15);
+      } finally {
+        await compressedDriver.close();
+      }
     });
 
-    it('Exec and fetch', async () => {
-      const setupClient = createClient(factory, container, LogLevel.Off);
-
-      await setupClient.connect();
-
-      await setupClient.execute('CREATE SCHEMA ' + schemaName);
-      await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
-      await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
-
-      const clientWithCompression = createClient(factory, container, LogLevel.Off);
-
-      await clientWithCompression.connect();
-      const dataPromise1 = clientWithCompression.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-
-      const data1 = await dataPromise1;
-      expect(data1.getColumns()[0].name).toBe('X');
-      expect(data1.getRows()[0]['X']).toBe(15);
-
-      await clientWithCompression.close();
-
-      await setupClient.execute('DROP SCHEMA ' + schemaName + ' CASCADE;');
-      await setupClient.close();
-    });
-    it('Fetch multiple queries simultaneously/asynchronously', async () => {
-      const setupClient = createClient(factory, container, LogLevel.Off);
-
-      const poolToQuery = createPool(factory, container, 1, 10, LogLevel.Off);
-
-      await setupClient.connect();
-
-      await createSimpleTestTable(setupClient, schemaName);
-
-      const dataPromise1 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-      const dataPromise2 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-      const dataPromise3 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-      const dataPromise4 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-
-      const data1 = await dataPromise1;
-      expect(data1.getColumns()[0].name).toBe('X');
-      expect(data1.getRows()[0]['X']).toBe(15);
-
-      const data2 = await dataPromise2;
-      expect(data2.getColumns()[0].name).toBe('X');
-      expect(data2.getRows()[0]['X']).toBe(15);
-
-      const data3 = await dataPromise3;
-      expect(data3.getColumns()[0].name).toBe('X');
-      expect(data3.getRows()[0]['X']).toBe(15);
-
-      const data4 = await dataPromise4;
-      expect(data4.getColumns()[0].name).toBe('X');
-      expect(data4.getRows()[0]['X']).toBe(15);
-
-      await poolToQuery.drain();
-      await poolToQuery.clear();
-
-      await setupClient.close();
+    test('Fetch multiple queries simultaneously/asynchronously', async () => {
+      await createSimpleTestTable();
+      pool = runtime.pool.create(factory, {
+        ...connection,
+        compression: true,
+        minimumPoolSize: 1,
+        maximumPoolSize: 10,
+      }, silentLogger);
+      const results = await Promise.all(Array.from({ length: 4 }, () => pool!.query(`SELECT x FROM ${schemaName}.TEST_TABLE`)));
+      for (const data of results) {
+        expect(data.getColumns()[0].name).toBe('X');
+        expect(data.getRows()[0]['X']).toBe(15);
+      }
     });
 
-    afterAll(async () => { });
+    async function createSimpleTestTable() {
+      setupDriver = runtime.driver.create(factory, connection, silentLogger);
+      await setupDriver.connect();
+      await setupDriver.execute(`CREATE SCHEMA ${schemaName}`);
+      await setupDriver.execute(`CREATE TABLE ${schemaName}.TEST_TABLE(x INT)`);
+      await setupDriver.execute(`INSERT INTO ${schemaName}.TEST_TABLE VALUES (15)`);
+    }
   });
-async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: string) {
-  await setupClient.execute('CREATE SCHEMA ' + schemaName);
-  await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
-  await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
-}
-function createPool(
-  factory: WebsocketFactory,
-  container: ExasolContainer,
-  minimumPoolSize: number,
-  maximumPoolSize: number,
-  logLevel: LogLevel
-) {
-  return new ExasolPool(
-    factory,
-    {
-      host: container.getHost(),
-      port: container.getPort(),
-      user: 'sys',
-      password: 'exasol',
-      minimumPoolSize: minimumPoolSize,
-      maximumPoolSize: maximumPoolSize,
-      compression: true,
-    },
-    new Logger(logLevel),
-  );
-}
-function createClient(factory: WebsocketFactory, container: ExasolContainer, logLevel: LogLevel) {
-  return new ExasolDriver(
-    factory,
-    {
-      host: container.getHost(),
-      port: container.getPort(),
-      user: 'sys',
-      password: 'exasol',
-      compression: true,
-    },
-    new Logger(logLevel),
-  );
-}
+};

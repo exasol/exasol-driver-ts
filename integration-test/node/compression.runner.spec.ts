@@ -1,4 +1,4 @@
 import { basicCompressionTests } from '../testcases/compression.basic.spec';
-import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
+import { createNodeRuntime } from './test-runtime';
 
-basicCompressionTests('Node', createWebsocketFactoryWithCertificate);
+basicCompressionTests(createNodeRuntime());

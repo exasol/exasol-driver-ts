@@ -7,10 +7,15 @@ manifest.mf
 build.xml
 node_modules/*
 npm-debug.log
-coverage
+/coverage/
+/coverage-browser/
 *.map
 *.d.ts
 dist
+
+# Vitest screenshots
+/.vitest-attachments/
+/integration-test/browser/__screenshots__/
 
 #################
 ## JetBrains

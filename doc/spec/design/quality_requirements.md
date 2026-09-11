@@ -28,12 +28,12 @@ Public APIs should remain typed and exported from `src/index.ts` when they are p
 
 ## Test Quality
 
-Jest is the test framework. Unit tests are split into Node.js and jsdom projects:
+Jest runs unit and Node.js integration tests. Vitest Browser Mode, with the Playwright Chromium provider, runs browser integration tests:
 
 * `unit-node` runs `src/**/*.spec.ts` and `src/**/*.spec.node.ts` in Node.js.
 * `unit-dom` runs `src/**/*.spec.ts` and `src/**/*.spec.dom.ts` in jsdom.
 * `itest-node` runs Node.js integration tests under `integration-test/node/`.
-* `itest-dom` runs browser-style integration tests under `integration-test/browser/`.
+* `itest-browser` runs real-browser integration tests under `integration-test/browser/`.
 
 Tests should cover protocol command handling, driver behavior, pool behavior, CSV import helpers, error reporting, and integration behavior against Exasol where practical.
 
@@ -72,7 +72,7 @@ Covers:
 
 The design favors testability by separating protocol command construction, connection handling, result fetching, pooling, CSV SQL generation, HTTP tunnel handling, TLS wrapping, and file import behavior into focused modules.
 
-Coverage is collected by Jest into `coverage/`. Minimum coverage is enforced by SonarCloud on new code, which must have at least 80% coverage.
+Jest writes coverage to `coverage/` and Vitest writes browser coverage to `coverage-browser/`; SonarCloud consumes both LCOV reports. Minimum coverage is enforced by SonarCloud on new code, which must have at least 80% coverage.
 
 ## Open Issues
 

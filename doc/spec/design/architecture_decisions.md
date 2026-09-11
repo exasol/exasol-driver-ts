@@ -147,6 +147,36 @@ Needs: impl
 
 Tags: csv-export, compression, nodejs
 
+## Browser Integration Testing
+
+### Use Vitest Browser Mode
+`dsn~decision-use-vitest-browser-mode~1`
+
+The browser integration suite uses Vitest Browser Mode with its Playwright Chromium provider instead of a standalone Playwright harness.
+
+Rationale:
+
+Jest's browser-like `jsdom` environment does not provide Chromium's native `WebSocket` implementation or a real browser transport. Vitest Browser Mode executes `test`, `expect`, and lifecycle hooks directly in Chromium, keeping browser scenarios close to the existing Jest-style tests while Node global setup owns Docker lifecycle. This removes a custom browser protocol and code serialization layer. Vitest creates contexts that accept certificate errors, so the suite verifies native-browser `wss` transport but deliberately does not authenticate the database certificate.
+
+Covers:
+- `scn~browser-connection-uses-native-websocket~2`
+
+Needs: impl, itest
+
+### Share Cross-Runtime Integration Scenarios
+`dsn~decision-share-cross-runtime-integration-scenarios~1`
+
+The Node.js and browser integration suites execute the same browser-safe basic driver, pool, and compression scenarios. Runtime adapters supply the test framework, database fixture, WebSocket factory, and runtime-specific expectations.
+
+Rationale:
+
+The driver and pool expose the same behavior in both runtimes. Keeping shared behavior in one scenario definition prevents one suite from silently losing coverage when the other gains a regression case. Runtime-specific checks remain local, including Node.js TLS certificate validation and the browser's native `WebSocket` and `wss` assertion.
+
+Covers:
+- `constr~browser-and-nodejs-runtime-support~1`
+
+Needs: impl, itest
+
 ## Packaging
 
 ### Build CommonJS and ES Module Outputs

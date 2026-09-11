@@ -36,6 +36,14 @@ env -u NODE_OPTIONS npm run itest
 
 Run this command in an interactive terminal/PTY and wait for the terminal session to exit. In Codex, request elevated Docker access when sandboxing prevents access to the Docker socket. Unsetting `NODE_OPTIONS` avoids interference from the VS Code JavaScript debugger hook.
 
+### Node And Browser Test Parity
+
+Node.js integration tests run with Jest from `integration-test/node/` (`npm run itest:node`). Browser integration tests run with Vitest Browser Mode and Playwright Chromium from `integration-test/browser/` (`npm run itest:browser`).
+
+Every integration scenario for portable driver or pool behavior must run in both environments. Prefer browser-safe, parameterized scenario helpers under `integration-test/testcases/` over separate copies of tests. When adding or changing a shared scenario, register it in both runtime runners and compare their individual test cases before considering the work complete.
+
+Keep lifecycle, certificate handling, `process` access, and WebSocket-factory setup in runtime-specific wrappers only. Add a runtime-specific integration test only when the behavior itself is unique to that environment, such as the browser suite's native `WebSocket` and `wss` transport assertion or Node's certificate-validation behavior.
+
 ## Error Codes
 
 Every new error created with `ExaErrorBuilder` must use a unique `E-EDJS-<number>` code. Before assigning a code, search the repository for existing `E-EDJS-` identifiers. Allocate new codes monotonically after the highest code already in use; do not reuse historical gaps.

@@ -13,7 +13,7 @@ export default defineConfig([
     //tseslint.configs.strict,
     //tseslint.configs.stylistic,
     {
-        ignores: ["coverage/**", "dist/**"],
+        ignores: ["coverage/**", "coverage-browser/**", "dist/**"],
     }, {
         plugins: {
             "@typescript-eslint": typescriptEslint,

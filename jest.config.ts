@@ -50,24 +50,6 @@ const config: Config = {
         ],
       },
     },
-    {
-      displayName: 'itest-dom',
-      testEnvironment: '<rootDir>/jest.environment.itest-dom.mjs',
-      testMatch: ['<rootDir>/integration-test/browser/**/*.spec.ts'],
-      transform: {
-        '^.+\\.[tj]s$': [
-          'ts-jest',
-          {
-            tsconfig: '<rootDir>/tsconfig.spec.dom.json',
-            isolatedModules: false,
-            diagnostics: true,
-          },
-        ],
-      },
-      transformIgnorePatterns: ['node_modules/(?!.*.mjs$)'],
-      moduleFileExtensions: ['ts', 'js', 'json'],
-      setupFiles: ['<rootDir>/jest.setup.ts', '<rootDir>/jest.setup.itest-dom.ts'],
-    },
   ],
   displayName: 'exasol-driver',
   transform: {

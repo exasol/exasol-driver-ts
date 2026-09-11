@@ -1,202 +1,98 @@
-import { RandomUuid } from 'testcontainers/build/common/uuid';
-import { QueryResult } from '../../src/lib/query-result';
-import { ExasolDriver, WebsocketFactory } from '../../src/lib/sql-client';
-import { ExasolPool } from '../../src/lib/exasol-pool';
-import { TestEnvironment, TestWebsocketFactory } from '../common';
-import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
+import type { IntegrationConnectionConfig, IntegrationDriver, IntegrationPool, IntegrationTestRuntime, IntegrationWebsocketFactory } from './runtime';
 
 // [itest->dsn~runtime-pool-capacity-management~1]
 // [itest->dsn~runtime-pooled-query-execution~1]
 // [itest->dsn~runtime-pool-shutdown~1]
-export const basicPoolTests = (name: TestEnvironment, createWSFactory: TestWebsocketFactory) =>
-  describe(name, () => {
-    const randomId = new RandomUuid();
-    let container: ExasolContainer;
-    let factory: WebsocketFactory;
-    jest.setTimeout(7000000);
+// [itest->dsn~decision-share-cross-runtime-integration-scenarios~1]
+export const basicPoolTests = (runtime: IntegrationTestRuntime) => {
+  const { afterEach, beforeAll, beforeEach, describe, expect, test } = runtime.api;
+
+  describe(`${runtime.name} pool`, () => {
+    let connection: IntegrationConnectionConfig;
+    let factory: IntegrationWebsocketFactory;
     let schemaName = '';
+    let setupDriver: IntegrationDriver | undefined;
+    let pool: IntegrationPool | undefined;
 
-    beforeAll(async () => {
-      container = await startNewDockerContainer();
-      const certString = await container.loadCA();
-      factory = createWSFactory(certString);
+    beforeAll(async () => { ({ connection, factory } = await runtime.database.setup()); });
+    beforeEach(() => { schemaName = runtime.database.createSchemaName(); });
+    afterEach(async () => {
+      if (!connection || !factory) {
+        return;
+      }
+      await pool?.drain();
+      await pool?.clear();
+      await setupDriver?.close().catch(() => undefined);
+      pool = undefined;
+      setupDriver = undefined;
+      const cleanupDriver = runtime.driver.create(factory, connection);
+      try {
+        await cleanupDriver.connect();
+        await cleanupDriver.execute(`DROP SCHEMA IF EXISTS ${schemaName} CASCADE`);
+      } finally {
+        await cleanupDriver.close().catch(() => undefined);
+      }
     });
 
-    beforeEach(() => {
-      schemaName = 'TEST_SCHEMA' + randomId.nextUuid();
+    test('Connect to DB', async () => {
+      pool = createPool(1, 10);
+      expect(pool).toBeDefined();
     });
 
-    it('Connect to DB', async () => {
-      const poolToQuery = createPool(factory, container, 1, 10);
-      expect(poolToQuery).toBeDefined();
-      await poolToQuery.drain();
-      await poolToQuery.clear();
+    test('Exec and fetch (default min / max connection settings)', async () => {
+      pool = runtime.pool.create(factory, connection);
+      await createSimpleTestTable();
+      await expectSingleResult(pool);
     });
 
-    it('Exec and fetch (default min / max connection settings)', async () => {
-      const setupClient = createSetupClient(factory, container);
+    test('Exec and fetch', async () => {
+      pool = createPool(1, 10);
+      await createSimpleTestTable();
+      await expectSingleResult(pool);
+    });
 
-      const poolToQuery = createPoolWithDefaultSize(factory, container);
+    test('Fetch multiple queries simultaneously/asynchronously', async () => {
+      pool = createPool(1, 10);
+      await createSimpleTestTable();
+      await expectQueryCount(pool, 4);
+    });
 
-      await setupClient.connect();
+    test('Fetch multiple queries asynchronously (20)', async () => {
+      pool = createPool(1, 10);
+      await createSimpleTestTable();
+      await expectQueryCount(pool, 20);
+    });
 
-      await createSimpleTestTable(setupClient, schemaName);
+    test('Fetch multiple queries asynchronously (100)', async () => {
+      pool = createPool(1, 10);
+      await createSimpleTestTable();
+      await expectQueryCount(pool, 100);
+    });
 
-      const data = await poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
+    function createPool(minimumPoolSize: number, maximumPoolSize: number) {
+      return runtime.pool.create(factory, { ...connection, minimumPoolSize, maximumPoolSize });
+    }
 
+    async function createSimpleTestTable() {
+      setupDriver = runtime.driver.create(factory, connection);
+      await setupDriver.connect();
+      await setupDriver.execute(`CREATE SCHEMA ${schemaName}`);
+      await setupDriver.execute(`CREATE TABLE ${schemaName}.TEST_TABLE(x INT)`);
+      await setupDriver.execute(`INSERT INTO ${schemaName}.TEST_TABLE VALUES (15)`);
+    }
+
+    async function expectSingleResult(poolToQuery: IntegrationPool) {
+      const data = await poolToQuery.query(`SELECT x FROM ${schemaName}.TEST_TABLE`);
       expect(data.getColumns()[0].name).toBe('X');
       expect(data.getRows()[0]['X']).toBe(15);
+    }
 
-      await poolToQuery.drain();
-      await poolToQuery.clear();
-
-      await setupClient.close();
-    });
-
-    it('Exec and fetch', async () => {
-      const setupClient = createSetupClient(factory, container);
-
-      const poolToQuery = createPool(factory, container, 1, 10);
-
-      await setupClient.connect();
-
-      await createSimpleTestTable(setupClient, schemaName);
-
-      const data = await poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-
-      expect(data.getColumns()[0].name).toBe('X');
-      expect(data.getRows()[0]['X']).toBe(15);
-
-      await poolToQuery.drain();
-      await poolToQuery.clear();
-
-      await setupClient.close();
-    });
-
-    it('Fetch multiple queries simultaneously/asynchronously', async () => {
-      const setupClient = createSetupClient(factory, container);
-
-      const poolToQuery = createPool(factory, container, 1, 10);
-
-      await setupClient.connect();
-
-      await createSimpleTestTable(setupClient, schemaName);
-
-      const dataPromise1 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-      const dataPromise2 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-      const dataPromise3 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-      const dataPromise4 = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-
-      const data1 = await dataPromise1;
-      expect(data1.getColumns()[0].name).toBe('X');
-      expect(data1.getRows()[0]['X']).toBe(15);
-
-      const data2 = await dataPromise2;
-      expect(data2.getColumns()[0].name).toBe('X');
-      expect(data2.getRows()[0]['X']).toBe(15);
-
-      const data3 = await dataPromise3;
-      expect(data3.getColumns()[0].name).toBe('X');
-      expect(data3.getRows()[0]['X']).toBe(15);
-
-      const data4 = await dataPromise4;
-      expect(data4.getColumns()[0].name).toBe('X');
-      expect(data4.getRows()[0]['X']).toBe(15);
-
-      await poolToQuery.drain();
-      await poolToQuery.clear();
-
-      await setupClient.close();
-    });
-
-    it('Fetch multiple queries asynchronously (20)', async () => {
-      const setupClient = createSetupClient(factory, container);
-
-      const poolToQuery = createPool(factory, container, 1, 10);
-
-      await setupClient.connect();
-
-      await createSimpleTestTable(setupClient, schemaName);
-
-      const amountOfRequests = 20;
-
-      await runQueryXNumberOfTimesAndCheckResult(amountOfRequests, poolToQuery, schemaName);
-
-      await poolToQuery.drain();
-      await poolToQuery.clear();
-
-      await setupClient.close();
-    });
-    it('Fetch multiple queries asynchronously (100)', async () => {
-      const setupClient = createSetupClient(factory, container);
-
-      const poolToQuery = createPool(factory, container, 1, 10);
-
-      await setupClient.connect();
-
-      await createSimpleTestTable(setupClient, schemaName);
-
-      const amountOfRequests = 100;
-
-      await runQueryXNumberOfTimesAndCheckResult(amountOfRequests, poolToQuery, schemaName);
-
-      await poolToQuery.drain();
-      await poolToQuery.clear();
-
-      await setupClient.close();
-    });
-
-    afterAll(async () => { });
+    async function expectQueryCount(poolToQuery: IntegrationPool, queryCount: number) {
+      const results = await Promise.all(Array.from({ length: queryCount }, () => poolToQuery.query(`SELECT x FROM ${schemaName}.TEST_TABLE`)));
+      for (const data of results) {
+        expect(data.getColumns()[0].name).toBe('X');
+        expect(data.getRows()[0]['X']).toBe(15);
+      }
+    }
   });
-
-async function createSimpleTestTable(setupClient: ExasolDriver, schemaName: string) {
-  await setupClient.execute('CREATE SCHEMA ' + schemaName);
-  await setupClient.execute('CREATE TABLE ' + schemaName + '.TEST_TABLE(x INT)');
-  await setupClient.execute('INSERT INTO ' + schemaName + '.TEST_TABLE VALUES (15)');
-}
-
-function createSetupClient(factory: WebsocketFactory, container: ExasolContainer) {
-  return new ExasolDriver(factory, {
-    host: container.getHost(),
-    port: container.getPort(),
-    user: 'sys',
-    password: 'exasol'
-  });
-}
-
-function createPoolWithDefaultSize(factory: WebsocketFactory, container: ExasolContainer) {
-  return new ExasolPool(factory, {
-    host: container.getHost(),
-    port: container.getPort(),
-    user: 'sys',
-    password: 'exasol'
-  });
-}
-
-function createPool(factory: WebsocketFactory, container: ExasolContainer, minimumPoolSize: number, maximumPoolSize: number) {
-  return new ExasolPool(factory, {
-    host: container.getHost(),
-    port: container.getPort(),
-    user: 'sys',
-    password: 'exasol',
-    minimumPoolSize: minimumPoolSize,
-    maximumPoolSize: maximumPoolSize,
-  });
-}
-
-async function runQueryXNumberOfTimesAndCheckResult(amountOfRequests: number, poolToQuery: ExasolPool, schemaName: string) {
-  const promiseArr: Promise<QueryResult>[] = [];
-
-  for (let i = 0; i < amountOfRequests; i++) {
-    const dataPromise = poolToQuery.query('SELECT x FROM ' + schemaName + '.TEST_TABLE');
-    promiseArr.push(dataPromise);
-  }
-
-  await Promise.all(promiseArr);
-
-  for (let i = 0; i < amountOfRequests; i++) {
-    const data = await promiseArr[i];
-    expect(data.getColumns()[0].name).toBe('X');
-    expect(data.getRows()[0]['X']).toBe(15);
-  }
-}
+};

@@ -27,6 +27,7 @@ export interface ExaWebsocket {
   send(data: string | Uint8Array): void;
   close(): void;
   readonly readyState: ReadyState;
+  binaryType?: 'arraybuffer' | 'blob';
 }
 
 export enum ReadyState {
@@ -71,6 +72,7 @@ export class Connection implements PoolItem {
     this.logger = logger;
     this.name = name;
     if (this.websocket) {
+      this.websocket.binaryType = 'arraybuffer';
       this.websocket.onclose = (event: unknown) => {
         this.handleSocketClose(event);
       };

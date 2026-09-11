@@ -1,4 +1,4 @@
 import { basicPoolTests } from '../testcases/pool.basic.spec';
-import { createWebsocketFactoryWithCertificate } from './createWebsocketFactoryWithCertificate';
+import { createNodeRuntime } from './test-runtime';
 
-basicPoolTests('Node', createWebsocketFactoryWithCertificate);
+basicPoolTests(createNodeRuntime());

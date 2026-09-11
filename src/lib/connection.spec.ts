@@ -4,6 +4,18 @@ import { Logger } from './logger/logger';
 import { MockExaWebSocket } from './mock-socket';
 
 describe('connection', () => {
+  it('requests ArrayBuffer frames for browser binary WebSocket responses', () => {
+    const mockSocket = {
+      send: jest.fn(),
+      readyState: 1,
+      binaryType: 'blob' as const,
+    } as unknown as ExaWebsocket;
+
+    new Connection(mockSocket, new Logger(), 'test');
+
+    expect(mockSocket.binaryType).toBe('arraybuffer');
+  });
+
   it('should work for sendCommandWithNoResult', async () => {
     const sendFunction = jest.fn();
     const mockSocket = {
