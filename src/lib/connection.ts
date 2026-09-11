@@ -1,4 +1,3 @@
-import { deflate, inflate } from 'pako';
 import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
 import { ErrClosed, ErrNotConnected, MissingExceptionError, newMalformedWebsocketResponseError, newSocketClosedError, newSocketError } from './errors/errors';
 import { ILogger } from './logger/logger';
@@ -6,6 +5,7 @@ import { PoolItem } from './pool/pool';
 import { ResponseCommandQueue } from './response-command-queue';
 import { Cancelable } from './sql-client.interface';
 import { SQLResponse } from './types';
+import { WebsocketProtocol } from './websocket-protocol';
 
 // [impl->dsn~runtime-browser-websocket~2]
 // [impl->dsn~runtime-node-websocket~2]
@@ -42,17 +42,17 @@ export enum ReadyState {
 
 export class Connection implements PoolItem {
   private isBroken = false;
-  private useCompression = false;
+  private readonly protocol: WebsocketProtocol;
   private readonly commandQueue = new ResponseCommandQueue(
     (command) => {
       this.logger.trace(`[Connection:${this.name}] Send request:`, command);
-      this.sendCmd(command);
+      this.protocol.sendCommand(command);
     },
     (cause) => this.breakConnection(newSocketError(cause)),
   );
 
   public setCompression(compression: boolean) {
-    this.useCompression = compression;
+    this.protocol.setCompression(compression);
   }
   public get active(): boolean {
     return this.commandQueue.active;
@@ -74,6 +74,7 @@ export class Connection implements PoolItem {
     this.websocket = websocket;
     this.logger = logger;
     this.name = name;
+    this.protocol = new WebsocketProtocol(websocket);
     if (this.websocket) {
       this.websocket.binaryType = 'arraybuffer';
       this.websocket.onmessage = (event: ExaMessageEvent) => {
@@ -126,30 +127,12 @@ export class Connection implements PoolItem {
 
     this.logger.trace('[WebSQL]: Send request with no result:', cmd);
     try {
-      this.sendCmd(cmd);
+      this.protocol.sendCommand(cmd);
     } catch (error) {
       this.breakConnection(newSocketError(error));
       throw newSocketError(error);
     }
     return;
-  }
-
-  private encodeAndCompressData(data: string): Uint8Array {
-    const encoded = new TextEncoder().encode(data);
-    return deflate(encoded);
-  }
-
-  private sendCmd(cmd: Commands) {
-    const cmdStr: string = JSON.stringify(cmd);
-
-    if (this.useCompression) {
-      this.logger.trace('Using compression');
-      const deflatedData = this.encodeAndCompressData(cmdStr);
-      this.connection.send(deflatedData);
-    } else {
-      this.logger.trace('Not using compression');
-      this.connection.send(cmdStr);
-    }
   }
 
   private handleSocketMessage(event: ExaMessageEvent) {
@@ -159,7 +142,8 @@ export class Connection implements PoolItem {
     }
 
     try {
-      const data = this.parseResponse(event);
+      const data = this.protocol.parseResponse(event.data);
+      this.logger.trace(`[Connection:${this.name}] Received data`);
       if (data.status !== 'ok' && !data.exception) {
         this.commandQueue.reject(MissingExceptionError);
       } else {
@@ -168,24 +152,6 @@ export class Connection implements PoolItem {
     } catch {
       this.breakConnection(newMalformedWebsocketResponseError());
     }
-  }
-
-  private parseResponse(event: ExaMessageEvent): SQLResponse<unknown> {
-    this.logger.trace(`[Entered OnMessage for :${this.name}]`);
-
-    const rawResponse = this.useCompression
-      ? new TextDecoder().decode(inflate(new Uint8Array(event.data as ArrayBuffer)))
-      : event.data;
-    if (typeof rawResponse !== 'string') {
-      throw new TypeError(`WebSocket response is not text: received ${typeof rawResponse}.`);
-    }
-
-    const response = JSON.parse(rawResponse) as SQLResponse<unknown>;
-    if (!response || typeof response !== 'object' || (response.status !== 'ok' && response.status !== 'error')) {
-      throw new Error(`WebSocket response has an invalid status: received '${String(response?.status)}'.`);
-    }
-    this.logger.trace(`[Connection:${this.name}] Received data`);
-    return response;
   }
 
   private breakConnection(error: Error, closeSocket = true) {
@@ -210,7 +176,6 @@ export class Connection implements PoolItem {
     const cancelQuery = () => {
       this.sendCommandWithNoResult(new AbortQueryCommand());
     };
-    this.logger.trace(`[useCompression is: ${this.useCompression}]`);
 
     getCancel?.(cancelQuery);
 
