@@ -214,6 +214,16 @@ Covers:
 
 Needs: scn
 
+#### Serialize WebSocket Command Responses
+`req~serialize-websocket-command-responses~1`
+
+The application can submit concurrent driver work without protocol responses being delivered to the wrong command.
+
+Covers:
+- `feat~sql-connectivity~1`
+
+Needs: scn
+
 #### Automatically Dispose Driver Resources
 `req~automatically-dispose-driver-resources~1`
 
@@ -489,6 +499,18 @@ Needs: dsn
 
 Covers:
 - `req~handle-unexpected-websocket-termination~2`
+
+Needs: dsn
+
+### Serialize WebSocket Command Responses
+`scn~serialize-websocket-command-responses~1`
+
+**Given** a connection with more than one response-producing protocol command submitted
+**When** Exasol returns protocol responses
+**Then** the driver sends and resolves the commands in submission order, while an `abortQuery` cancellation command is sent immediately without waiting for a response
+
+Covers:
+- `req~serialize-websocket-command-responses~1`
 
 Needs: dsn
 

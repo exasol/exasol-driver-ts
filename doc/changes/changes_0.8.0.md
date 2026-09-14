@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.8.0, released 2026-09-11
+# Exasol Driver ts 0.8.0, released 2026-09-??
 
 Code name: Browser Entry Point
 
@@ -10,9 +10,15 @@ The browser entry point excludes the Node.js-only local CSV and Parquet import a
 
 We also added browser based integration tests to ensure that the driver also works in a browser environment.
 
+This release also hardens per-connection WebSocket command-response handling. Response-producing protocol commands are serialized, preventing response mix-ups during concurrent work; malformed response frames now safely break and discard the affected connection.
+
 ## Features
 
 * #78: Added the browser-safe `@exasol/exasol-driver-ts/browser` package entry point and browser based integration tests
+
+## Bug Fixes
+
+* #93: Hardened WebSocket command-response handling through per-connection serialization
 
 ## Dependency Updates
 

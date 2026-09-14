@@ -8,6 +8,22 @@ describe('sqlClient', () => {
   let mockSocketFactory: MockWebsocketFactory;
   let driver: IExasolDriver;
 
+  function completeWithin<T>(promise: Promise<T>, timeoutMessage: string): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error(timeoutMessage)), 100);
+      void promise.then(
+        (value) => {
+          clearTimeout(timeout);
+          resolve(value);
+        },
+        (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        },
+      );
+    });
+  }
+
   beforeEach(() => {
     mockSocketFactory = createMockWebsocketFactory();
     driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token' });
@@ -88,6 +104,39 @@ describe('sqlClient', () => {
 
       await expect(query).rejects.toThrow("E-EDJS-36: Socket closed: code '1006', reason 'connection lost'.");
       expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    // [utest->dsn~runtime-inflight-websocket-failure~1]
+    it('calls onError and rejects an in-flight command when the WebSocket errors after connecting', async () => {
+      const onError = jest.fn();
+      driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', onError });
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      let commandSent: (() => void) | undefined;
+      const sent = new Promise<void>((resolve) => {
+        commandSent = resolve;
+      });
+      mockSocketFactory.mockSocket.send = (data: string | Uint8Array) => {
+        const command = JSON.parse(data.toString());
+        mockSocketFactory.mockSocket.sentCommands.push(command);
+        if (command.command === 'execute') {
+          commandSent?.();
+        }
+      };
+
+      const query = driver.query('select 1');
+      await sent;
+      mockSocketFactory.mockSocket.callOnError(new Error('connection reset'));
+
+      await expect(completeWithin(
+        query,
+        'WebSocket error did not reject the in-flight query within 100 ms.',
+      )).rejects.toThrow("E-EDJS-16: Socket error: 'connection reset'");
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(mockSocketFactory.mockSocket.closed).toBe(true);
+      await expect(driver.query('select 1')).rejects.toThrow('E-EDJS-2: Connection was closed.');
     });
   });
 
