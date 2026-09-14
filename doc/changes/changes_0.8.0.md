@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.8.0, released 2026-09-11
+# Exasol Driver ts 0.8.0, released 2026-09-14
 
 Code name: Browser Entry Point
 
