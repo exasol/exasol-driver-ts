@@ -154,7 +154,7 @@ export class Connection implements PoolItem {
     }
   }
 
-  private breakConnection(error: Error, closeSocket = true) {
+  public breakConnection(error: Error, closeSocket = true) {
     if (this.isBroken) {
       return;
     }
