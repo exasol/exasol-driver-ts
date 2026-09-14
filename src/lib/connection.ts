@@ -1,14 +1,16 @@
-import { deflate, inflate } from 'pako';
 import { AbortQueryCommand, Commands, CommandsNoResult, DisconnectCommand } from './commands';
-import { ErrClosed, ErrJobAlreadyRunning, ErrNotConnected, MissingExceptionError, newSocketClosedError, newSocketError } from './errors/errors';
+import { ErrClosed, ErrNotConnected, MissingExceptionError, newMalformedWebsocketResponseError, newSocketClosedError, newSocketError } from './errors/errors';
 import { ILogger } from './logger/logger';
 import { PoolItem } from './pool/pool';
+import { ResponseCommandQueue } from './response-command-queue';
 import { Cancelable } from './sql-client.interface';
 import { SQLResponse } from './types';
+import { WebsocketProtocol } from './websocket-protocol';
 
 // [impl->dsn~runtime-browser-websocket~2]
 // [impl->dsn~runtime-node-websocket~2]
 // [impl->dsn~runtime-inflight-websocket-failure~1]
+// [impl->dsn~runtime-response-command-serialization~1]
 export interface ExaMessageEvent {
   data: unknown;
   type: string;
@@ -39,20 +41,21 @@ export enum ReadyState {
 }
 
 export class Connection implements PoolItem {
-  private isInUse = false;
   private isBroken = false;
-  private useCompression = false;
-  private rejectPendingCommand: ((error: Error) => void) | undefined;
+  private readonly protocol: WebsocketProtocol;
+  private readonly commandQueue = new ResponseCommandQueue(
+    (command) => {
+      this.logger.trace(`[Connection:${this.name}] Send request:`, command);
+      this.protocol.sendCommand(command);
+    },
+    (cause) => this.breakConnection(newSocketError(cause)),
+  );
 
   public setCompression(compression: boolean) {
-    this.useCompression = compression;
+    this.protocol.setCompression(compression);
   }
-  public set active(v: boolean) {
-    this.isInUse = v;
-  }
-
   public get active(): boolean {
-    return this.isInUse;
+    return this.commandQueue.active;
   }
 
   public get connection(): ExaWebsocket {
@@ -71,10 +74,17 @@ export class Connection implements PoolItem {
     this.websocket = websocket;
     this.logger = logger;
     this.name = name;
+    this.protocol = new WebsocketProtocol(websocket);
     if (this.websocket) {
       this.websocket.binaryType = 'arraybuffer';
+      this.websocket.onmessage = (event: ExaMessageEvent) => {
+        this.handleSocketMessage(event);
+      };
       this.websocket.onclose = (event: unknown) => {
         this.handleSocketClose(event);
+      };
+      this.websocket.onerror = (event: unknown) => {
+        this.handleSocketError(event);
       };
     }
   }
@@ -82,12 +92,12 @@ export class Connection implements PoolItem {
   private handleSocketClose(event: unknown) {
     this.logger.debug('WebSocket close:', event);
     this.onClose?.(event);
-    if (this.rejectPendingCommand) {
-      this.rejectPendingCommand(newSocketClosedError(event));
-      return;
-    }
-    this.isBroken = true;
-    this.active = false;
+    this.breakConnection(newSocketClosedError(event), false);
+  }
+
+  private handleSocketError(event: unknown) {
+    this.logger.error('WebSocket error:', event);
+    this.breakConnection(newSocketError(event));
   }
 
   async close() {
@@ -103,43 +113,62 @@ export class Connection implements PoolItem {
   }
 
   private cleanupConnection() {
+    this.connection.onmessage = null;
     this.connection.onerror = null;
     this.connection.onclose = null;
     this.connection.close();
   }
 
   async sendCommandWithNoResult(cmd: CommandsNoResult) {
-    if (!this.connection || this.connection.readyState === ReadyState.CLOSED || this.connection.readyState === ReadyState.CLOSING) {
+    if (!this.connection || this.isBroken || this.connection.readyState === ReadyState.CLOSED || this.connection.readyState === ReadyState.CLOSING) {
       this.isBroken = true;
       return Promise.reject(ErrClosed);
     }
 
     this.logger.trace('[WebSQL]: Send request with no result:', cmd);
-    this.sendCmd(cmd);
+    try {
+      this.protocol.sendCommand(cmd);
+    } catch (error) {
+      this.breakConnection(newSocketError(error));
+      throw newSocketError(error);
+    }
     return;
   }
 
-  private encodeAndCompressData(data: string): Uint8Array {
-    const encoded = new TextEncoder().encode(data);
-    return deflate(encoded);
+  private handleSocketMessage(event: ExaMessageEvent) {
+    if (!this.commandQueue.active) {
+      this.breakConnection(newMalformedWebsocketResponseError());
+      return;
+    }
+
+    try {
+      const data = this.protocol.parseResponse(event.data);
+      this.logger.trace(`[Connection:${this.name}] Received data`);
+      if (data.status !== 'ok' && !data.exception) {
+        this.commandQueue.reject(MissingExceptionError);
+      } else {
+        this.commandQueue.resolve(data);
+      }
+    } catch {
+      this.breakConnection(newMalformedWebsocketResponseError());
+    }
   }
 
-  private sendCmd(cmd: Commands) {
-    const cmdStr: string = JSON.stringify(cmd);
+  public breakConnection(error: Error, closeSocket = true) {
+    if (this.isBroken) {
+      return;
+    }
 
-    if (this.useCompression) {
-      this.logger.trace('Using compression');
-      const deflatedData = this.encodeAndCompressData(cmdStr);
-      this.connection.send(deflatedData);
-    } else {
-      this.logger.trace('Not using compression');
-      this.connection.send(cmdStr);
+    this.isBroken = true;
+    this.commandQueue.rejectAll(error);
+    if (closeSocket) {
+      this.cleanupConnection();
     }
   }
 
   public sendCommand<T>(cmd: Commands, getCancel?: (cancel?: Cancelable) => void): Promise<SQLResponse<T>> {
     // [impl->dsn~runtime-query-cancellation~1]
-    if (this.connection?.readyState === ReadyState.CLOSED || this.connection?.readyState === ReadyState.CLOSING) {
+    if (this.isBroken || this.connection?.readyState === ReadyState.CLOSED || this.connection?.readyState === ReadyState.CLOSING) {
       this.isBroken = true;
       return Promise.reject(ErrClosed);
     }
@@ -147,83 +176,13 @@ export class Connection implements PoolItem {
     const cancelQuery = () => {
       this.sendCommandWithNoResult(new AbortQueryCommand());
     };
-    this.logger.trace(`[useCompression is: ${this.useCompression}]`);
 
     getCancel?.(cancelQuery);
 
-    return new Promise<SQLResponse<T>>((resolve, reject) => {
-      if (this.connection === undefined) {
-        this.isBroken = true;
-        reject(ErrNotConnected);
-      } else {
-        if (this.active === true) {
-          reject(ErrJobAlreadyRunning);
-          return;
-        }
-        const rejectForSocketFailure = (error: Error) => {
-          this.isBroken = true;
-          this.active = false;
-          this.rejectPendingCommand = undefined;
-          reject(error);
-        };
-        this.rejectPendingCommand = rejectForSocketFailure;
-        this.connection.onmessage = (event) => {
-          try {
-            this.logger.trace(`[Entered OnMessage for :${this.name}]`);
-            this.logger.trace(`[Compression enabled: ${this.useCompression}]`);
-
-            this.active = false;
-            this.rejectPendingCommand = undefined;
-            let data: SQLResponse<T>;
-            if (this.useCompression) {
-              this.logger.trace('inflate');
-              const decompressed = inflate(new Uint8Array(event.data));
-              this.logger.trace('decode');
-              const decoded = new TextDecoder().decode(decompressed);
-
-              this.logger.trace('parse');
-              data = JSON.parse(decoded) as SQLResponse<T>;
-            } else {
-              data = JSON.parse(event.data) as SQLResponse<T>;
-            }
-            this.logger.trace(`[Connection:${this.name}] Received data`);
-
-            if (data.status !== 'ok') {
-              this.logger.trace(`[Connection:${this.name}] Received invalid data or error`);
-
-              if (data.exception) {
-                resolve(data);
-              } else {
-                reject(MissingExceptionError);
-              }
-
-              return;
-            }
-            resolve(data);
-          } catch (error: unknown) {
-            let errorMessage = 'Unexpected error in message handling';
-            if (error instanceof Error) {
-              errorMessage = error.message;
-            }
-            this.logger.error(`[Unhandled error in onmessage: ${errorMessage}]`);
-            reject(new Error(errorMessage));
-          }
-        };
-        //end of onMessage
-
-        this.connection.onerror = (event: unknown) => {
-          this.logger.error('WebSocket error:', event);
-          rejectForSocketFailure(newSocketError(event));
-        };
-
-        this.active = true;
-        this.logger.trace(`[Connection:${this.name}] Send request:`, cmd);
-        try {
-          this.sendCmd(cmd);
-        } catch (error) {
-          rejectForSocketFailure(newSocketError(error));
-        }
-      }
-    }); //end of return new promise
+    if (this.connection === undefined) {
+      this.isBroken = true;
+      return Promise.reject(ErrNotConnected);
+    }
+    return this.commandQueue.enqueue<T>(cmd);
   } //end of sendCommand
 }

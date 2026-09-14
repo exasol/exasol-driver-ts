@@ -138,8 +138,10 @@ export class BaseExasolDriver implements IExasolClient {
         if (this.config.onError) {
           this.config.onError();
         }
-        this.close();
-        reject(newSocketError(err));
+        const error = newSocketError(err);
+        connection.breakConnection(error);
+        void this.close();
+        reject(error);
       };
       webSocket.onopen = () => {
         this.logger.debug('[SQLClient] Login');

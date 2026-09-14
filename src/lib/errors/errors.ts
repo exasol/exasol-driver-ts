@@ -72,3 +72,5 @@ export const newInvalidReturnValueRowCount = new ExaErrorBuilder('E-EDJS-11')
   .message('Invalid result type.')
   .mitigation('Please use method execute instead of query')
   .error();
+
+export const newMalformedWebsocketResponseError = () => new ExaErrorBuilder('E-EDJS-38').message('Malformed WebSocket response.').error();
