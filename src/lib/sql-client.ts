@@ -140,6 +140,7 @@ export class BaseExasolDriver implements IExasolClient {
         }
         const error = newSocketError(err);
         connection.breakConnection(error);
+        void this.close();
         reject(error);
       };
       webSocket.onopen = () => {

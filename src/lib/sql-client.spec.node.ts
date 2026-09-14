@@ -136,6 +136,7 @@ describe('sqlClient', () => {
       )).rejects.toThrow("E-EDJS-16: Socket error: 'connection reset'");
       expect(onError).toHaveBeenCalledTimes(1);
       expect(mockSocketFactory.mockSocket.closed).toBe(true);
+      await expect(driver.query('select 1')).rejects.toThrow('E-EDJS-2: Connection was closed.');
     });
   });
 
