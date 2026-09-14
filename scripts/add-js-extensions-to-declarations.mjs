@@ -9,6 +9,10 @@ const relativeSpecifierPattern = /((?:from\s*|import\()\s*['"])(\.\.?\/[^'"]+)([
 // but NodeNext requires explicit ESM extensions. Replace this with `.js`
 // specifiers in source imports and exports as tracked in
 // https://github.com/exasol/exasol-driver-ts/issues/106.
+/**
+ * @param {string} directory directory to search recursively
+ * @returns {Promise<string[]>} declaration files in the directory
+ */
 async function declarationFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = await Promise.all(entries.map(async (entry) => {
@@ -21,6 +25,10 @@ async function declarationFiles(directory) {
   return files.flat();
 }
 
+/**
+ * @param {string} specifier import or export specifier
+ * @returns {string} specifier with a JavaScript extension
+ */
 function addJsExtension(specifier) {
   return /\.(?:[cm]?js|json)$/u.test(specifier) ? specifier : `${specifier}.js`;
 }

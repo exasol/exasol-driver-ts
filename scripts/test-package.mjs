@@ -4,6 +4,12 @@ const browserSmokeTest = 'integration-test/package/browser-package-smoke.ts';
 const nodeSmokeTest = 'integration-test/package/node-package-smoke.ts';
 const compilerOptions = ['--ignoreConfig', '--noEmit', '--target', 'ES2022', '--lib', 'ES2022,ESNext.Disposable,DOM'];
 
+/**
+ * @param {string} command executable name
+ * @param {string[]} arguments_ executable arguments
+ * @param {boolean} [useWindowsShim] whether to use the Windows command shim
+ * @returns {Promise<void>} completion of the child process
+ */
 async function run(command, arguments_, useWindowsShim = false) {
   await new Promise((resolve, reject) => {
     const executable = useWindowsShim && process.platform === 'win32' ? `${command}.cmd` : command;
@@ -11,7 +17,7 @@ async function run(command, arguments_, useWindowsShim = false) {
     child.on('error', reject);
     child.on('exit', (code, signal) => {
       if (code === 0) {
-        resolve();
+        resolve(undefined);
       } else {
         reject(new Error(`${command} exited with ${signal ? `signal ${signal}` : `code ${code}`}.`));
       }

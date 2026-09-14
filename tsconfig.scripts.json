@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "target": "ES2022",
+    "module": "ESNext",
+    "allowJs": true,
+    "checkJs": true,
+    "declaration": false,
+    "noEmit": true,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "scripts/**/*.mjs",
+    "rollup.config.mjs"
+  ],
+  "exclude": []
+}
