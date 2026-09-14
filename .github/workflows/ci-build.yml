@@ -91,7 +91,6 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:all # Run all tests (not only integration tests) to collect test coverage for SonarCloud
         env:
           EXASOL_DOCKER_VERSION: ${{ env.EXASOL_DOCKER_VERSION }}

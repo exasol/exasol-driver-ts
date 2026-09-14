@@ -70,11 +70,10 @@ Node.js integration tests run with Jest: `npm run itest:node`.
 
 Browser integration tests run in Chromium through Vitest Browser Mode: `npm run itest:browser`
 
-Install the provider-managed Chromium binary before running them locally:
+The test command installs the provider-managed Chromium binary automatically via script `preitest:browser`. GitHub Actions also installs the required Linux browser dependencies:
 
 ```sh
-npx playwright install chromium
-npm run itest
+npm run itest:browser
 ```
 
 Vitest Browser Mode accepts certificate errors in its Chromium contexts. The browser suite verifies the native browser WebSocket implementation and encrypted `wss` transport, but does not verify database certificate, CA-chain, or hostname validation.

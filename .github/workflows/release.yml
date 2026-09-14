@@ -3,28 +3,8 @@ on:
   release:
     types: [released]
 jobs:
-  distributed-tasks:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: true
-      matrix:
-        target: ['lint:ci', 'test', 'itest']
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '26'
-          package-manager-cache: false
-      - run: npm ci --ignore-scripts
-      - run: npm run ${{ matrix.target }}
-
   release:
     name: Build and release
-    needs: [distributed-tasks]
     runs-on: ubuntu-latest
     permissions:
       id-token: write # Required for OIDC
@@ -39,6 +19,10 @@ jobs:
           package-manager-cache: false
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci --ignore-scripts
+      - run: npm run lint:ci
+      - run: npm run typecheck
+      - run: npm run trace
+      - run: npm run test:all
       - run: npm run audit
       - run: npm run build
       - run: npm pack
