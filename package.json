@@ -19,6 +19,7 @@
     "test": "jest --selectProjects unit-dom unit-node --coverage",
     "test:package": "node scripts/test-package.mjs",
     "itest:node": "jest --selectProjects itest-node --coverage",
+    "preitest:browser": "node scripts/install-playwright-chromium.mjs",
     "itest:browser": "vitest run --config vitest.config.ts --coverage",
     "itest": "npm run itest:node && npm run itest:browser",
     "test:all": "jest --selectProjects unit-dom unit-node itest-node --coverage && npm run itest:browser && npm run test:package"
