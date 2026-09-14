@@ -14,7 +14,8 @@
   },
   "include": [
     "scripts/**/*.mjs",
-    "rollup.config.mjs"
+    "rollup.config.mjs",
+    "eslint.config.mjs"
   ],
   "exclude": []
 }

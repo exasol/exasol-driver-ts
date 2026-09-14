@@ -1,5 +1,4 @@
 import js from "@eslint/js";
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import jest from "eslint-plugin-jest";
 import { defineConfig } from "eslint/config";
@@ -16,7 +15,6 @@ export default defineConfig([
         ignores: ["coverage/**", "coverage-browser/**", "dist/**"],
     }, {
         plugins: {
-            "@typescript-eslint": typescriptEslint,
             jest,
         },
 
