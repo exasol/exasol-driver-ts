@@ -1,12 +1,14 @@
-# Exasol Driver ts 0.8.1, released 2026-??-??
+# Exasol Driver ts 0.8.1, released 2026-09-25
 
-Code name:
+Code name: Native ESM Compatibility
 
 ## Summary
 
-## Features
+This release fixes native Node.js ES module consumers of the driver. Basic authentication and local file import now access the CommonJS-only `node-forge` dependency through its compatible default export.
 
-* ISSUE_NUMBER: description
+## Bug Fixes
+
+* #114: Fixed login and local file import failures when the driver is imported as a native ES module.
 
 ## Dependency Updates
 
