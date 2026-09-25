@@ -2,18 +2,20 @@ import { spawn } from 'node:child_process';
 
 const browserSmokeTest = 'integration-test/package/browser-package-smoke.ts';
 const nodeSmokeTest = 'integration-test/package/node-package-smoke.ts';
+const nodeRequireSmokeTest = 'integration-test/package/node-package-require-smoke.cts';
 const compilerOptions = ['--ignoreConfig', '--noEmit', '--target', 'ES2022', '--lib', 'ES2022,ESNext.Disposable,DOM'];
 
 /**
  * @param {string} command executable name
  * @param {string[]} arguments_ executable arguments
  * @param {boolean} [useWindowsShim] whether to use the Windows command shim
+ * @param {string} [cwd] working directory for the child process
  * @returns {Promise<void>} completion of the child process
  */
-async function run(command, arguments_, useWindowsShim = false) {
+async function run(command, arguments_, useWindowsShim = false, cwd = undefined) {
   await new Promise((resolve, reject) => {
     const executable = useWindowsShim && process.platform === 'win32' ? `${command}.cmd` : command;
-    const child = spawn(executable, arguments_, { stdio: 'inherit' });
+    const child = spawn(executable, arguments_, { cwd, stdio: 'inherit' });
     child.on('error', reject);
     child.on('exit', (code, signal) => {
       if (code === 0) {
@@ -29,6 +31,6 @@ await run('npm', ['run', 'build'], true);
 // Keep typechecking compatible with bundler-based TypeScript consumers.
 await run('tsc', [...compilerOptions, '--module', 'ESNext', '--moduleResolution', 'Bundler', browserSmokeTest, nodeSmokeTest], true);
 // Verify declarations work for NodeNext consumers, which require explicit ESM extensions.
-await run('tsc', [...compilerOptions, '--module', 'NodeNext', '--moduleResolution', 'NodeNext', browserSmokeTest, nodeSmokeTest], true);
+await run('tsc', [...compilerOptions, '--module', 'NodeNext', '--moduleResolution', 'NodeNext', browserSmokeTest, nodeSmokeTest, nodeRequireSmokeTest], true);
 await run(process.execPath, ['integration-test/package/browser-package-smoke.mjs']);
 await run(process.execPath, ['integration-test/package/node-package-smoke.mjs']);

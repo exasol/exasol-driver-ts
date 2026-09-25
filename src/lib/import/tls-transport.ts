@@ -1,4 +1,4 @@
-import * as forge from 'node-forge';
+import forge from 'node-forge';
 import * as tls from 'node:tls';
 import * as net from 'node:net';
 

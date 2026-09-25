@@ -1,4 +1,4 @@
-import * as forge from 'node-forge';
+import forge from 'node-forge';
 
 import { Attributes, Commands, CommandsNoResult, OIDCSQLCommand, SQLBatchCommand, SQLSingleCommand } from './commands';
 import { Connection, ExaWebsocket } from './connection';
