@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 
 const browserSmokeTest = 'integration-test/package/browser-package-smoke.ts';
 const nodeSmokeTest = 'integration-test/package/node-package-smoke.ts';
+const nodeRequireSmokeTest = 'integration-test/package/node-package-require-smoke.cts';
 const compilerOptions = ['--ignoreConfig', '--noEmit', '--target', 'ES2022', '--lib', 'ES2022,ESNext.Disposable,DOM'];
 
 /**
@@ -30,6 +31,6 @@ await run('npm', ['run', 'build'], true);
 // Keep typechecking compatible with bundler-based TypeScript consumers.
 await run('tsc', [...compilerOptions, '--module', 'ESNext', '--moduleResolution', 'Bundler', browserSmokeTest, nodeSmokeTest], true);
 // Verify declarations work for NodeNext consumers, which require explicit ESM extensions.
-await run('tsc', [...compilerOptions, '--module', 'NodeNext', '--moduleResolution', 'NodeNext', browserSmokeTest, nodeSmokeTest], true);
+await run('tsc', [...compilerOptions, '--module', 'NodeNext', '--moduleResolution', 'NodeNext', browserSmokeTest, nodeSmokeTest, nodeRequireSmokeTest], true);
 await run(process.execPath, ['integration-test/package/browser-package-smoke.mjs']);
 await run(process.execPath, ['integration-test/package/node-package-smoke.mjs']);
