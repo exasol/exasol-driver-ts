@@ -49,8 +49,11 @@ try {
   await cp('integration-test/package/consumer', consumerDirectory, { recursive: true });
   await run('npm', ['install', '--ignore-scripts', tarball], true, consumerDirectory);
   for (const fixture of ['node-esm.mjs', 'node-cjs.cjs', 'browser-esm.mjs', 'browser-cjs.cjs']) {
+    console.log(`Running fixture: ${fixture}`);
     await run(process.execPath, [fixture], false, consumerDirectory);
   }
 } finally {
   await rm(packageDirectory, { recursive: true, force: true });
 }
+
+console.log('Package tests completed successfully.');
