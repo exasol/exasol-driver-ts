@@ -11,9 +11,10 @@ const compilerOptions = ['--ignoreConfig', '--noEmit', '--target', 'ES2022', '--
  * @param {string} command executable name
  * @param {string[]} arguments_ executable arguments
  * @param {boolean} [useWindowsShim] whether to use the Windows command shim
+ * @param {string} [cwd] working directory for the child process
  * @returns {Promise<void>} completion of the child process
  */
-async function run(command, arguments_, useWindowsShim = false, cwd) {
+async function run(command, arguments_, useWindowsShim = false, cwd = undefined) {
   await new Promise((resolve, reject) => {
     const executable = useWindowsShim && process.platform === 'win32' ? `${command}.cmd` : command;
     const child = spawn(executable, arguments_, { cwd, stdio: 'inherit' });
@@ -39,7 +40,11 @@ await run(process.execPath, ['integration-test/package/node-package-smoke.mjs'])
 const packageDirectory = await mkdtemp(join(tmpdir(), 'exasol-driver-package-'));
 try {
   await run('npm', ['pack', '--pack-destination', packageDirectory, '--ignore-scripts'], true);
-  const tarball = join(packageDirectory, (await readdir(packageDirectory)).find((file) => file.endsWith('.tgz')));
+  const tarballFile = (await readdir(packageDirectory)).find((file) => file.endsWith('.tgz'));
+  if (!tarballFile) {
+    throw new Error('npm pack did not create a tarball.');
+  }
+  const tarball = join(packageDirectory, tarballFile);
   const consumerDirectory = join(packageDirectory, 'consumer');
   await cp('integration-test/package/consumer', consumerDirectory, { recursive: true });
   await run('npm', ['install', '--ignore-scripts', tarball], true, consumerDirectory);

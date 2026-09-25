@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { ExasolDriver } = require('@exasol/exasol-driver-ts/browser');
 const { connectWithBasicAuth } = require('./support.cjs');
 
-// [itest->dsn~runtime-packaging~2]
+// [itest->dsn~decision-publish-cjs-and-esm~3]
 // [itest->dsn~runtime-connect-basic-authentication~1]
 void connectWithBasicAuth(ExasolDriver).then(async (driver) => {
   assert.equal('importFromCsvFile' in driver, false);
