@@ -1,7 +1,4 @@
 import { spawn } from 'node:child_process';
-import { cp, mkdtemp, readdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 
 const browserSmokeTest = 'integration-test/package/browser-package-smoke.ts';
 const nodeSmokeTest = 'integration-test/package/node-package-smoke.ts';
@@ -36,24 +33,3 @@ await run('tsc', [...compilerOptions, '--module', 'ESNext', '--moduleResolution'
 await run('tsc', [...compilerOptions, '--module', 'NodeNext', '--moduleResolution', 'NodeNext', browserSmokeTest, nodeSmokeTest], true);
 await run(process.execPath, ['integration-test/package/browser-package-smoke.mjs']);
 await run(process.execPath, ['integration-test/package/node-package-smoke.mjs']);
-
-const packageDirectory = await mkdtemp(join(tmpdir(), 'exasol-driver-package-'));
-try {
-  await run('npm', ['pack', '--pack-destination', packageDirectory, '--ignore-scripts'], true);
-  const tarballFile = (await readdir(packageDirectory)).find((file) => file.endsWith('.tgz'));
-  if (!tarballFile) {
-    throw new Error('npm pack did not create a tarball.');
-  }
-  const tarball = join(packageDirectory, tarballFile);
-  const consumerDirectory = join(packageDirectory, 'consumer');
-  await cp('integration-test/package/consumer', consumerDirectory, { recursive: true });
-  await run('npm', ['install', '--ignore-scripts', tarball], true, consumerDirectory);
-  for (const fixture of ['node-esm.mjs', 'node-cjs.cjs', 'browser-esm.mjs', 'browser-cjs.cjs']) {
-    console.log(`Running fixture: ${fixture}`);
-    await run(process.execPath, [fixture], false, consumerDirectory);
-  }
-} finally {
-  await rm(packageDirectory, { recursive: true, force: true });
-}
-
-console.log('Package tests completed successfully.');

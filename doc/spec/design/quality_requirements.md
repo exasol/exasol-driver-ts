@@ -52,7 +52,7 @@ The repository defines the following verification commands:
 * `npm run trace` for OpenFastTrace requirement tracing.
 * `npm run test` for Node.js and jsdom unit tests with coverage.
 * `npm run test:package` for built Node.js and browser package-entry smoke tests.
-* `npm run itest` for Node.js and browser integration tests with coverage.
+* `npm run itest` for Node.js and browser integration tests with coverage, including packed-package consumer scenarios that run against Exasol.
 * `npm run audit` for production and full audit checks.
 * `npm run build` for Rollup packaging.
 

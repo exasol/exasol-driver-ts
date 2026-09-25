@@ -1,97 +1,66 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- This helper runs from CommonJS consumer fixtures. */
-const crypto = require('node:crypto');
+const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
+const { mkdtemp, rm, writeFile } = require('node:fs/promises');
+const { tmpdir } = require('node:os');
+const { join } = require('node:path');
+const { WebSocket } = require('ws');
 
-class FakeSocket {
-  constructor(onExecute) {
-    this.onExecute = onExecute;
-    this.readyState = 0;
-    queueMicrotask(() => {
-      this.readyState = 1;
-      this.onopen?.({});
-    });
-  }
+const config = {
+  host: requiredEnvironment('EXASOL_HOST'),
+  port: Number(requiredEnvironment('EXASOL_PORT')),
+  user: 'sys',
+  password: 'exasol',
+};
+const ca = Buffer.from(requiredEnvironment('EXASOL_CA_BASE64'), 'base64').toString();
 
-  send(data) {
-    const command = JSON.parse(data);
-    void this.reply(command);
+function requiredEnvironment(name) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
   }
-
-  async reply(command) {
-    let response;
-    if (command.command === 'login') {
-      response = loginKeyResponse();
-    } else if (command.command === 'execute') {
-      await this.onExecute?.();
-      response = rowCountResponse();
-    } else if ('username' in command) {
-      response = sessionResponse();
-    } else {
-      response = { status: 'ok', responseData: {} };
-    }
-    queueMicrotask(() => this.onmessage?.({ data: JSON.stringify(response) }));
-  }
-
-  close() {
-    this.readyState = 3;
-  }
+  return value;
 }
 
-const { publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
-const jwk = publicKey.export({ format: 'jwk' });
-const hex = (base64url) => Buffer.from(base64url, 'base64url').toString('hex');
-
-function loginKeyResponse() {
-  return {
-    status: 'ok',
-    responseData: {
-      publicKeyPem: publicKey.export({ type: 'spki', format: 'pem' }),
-      publicKeyModulus: hex(jwk.n),
-      publicKeyExponent: hex(jwk.e),
-    },
-  };
-}
-
-function sessionResponse() {
-  return {
-    status: 'ok',
-    responseData: {
-      sessionId: 1,
-      protocolVersion: 3,
-      releaseVersion: '8.32.0',
-      databaseName: 'db',
-      productName: 'EXASolution',
-      maxDataMessageSize: 67108864,
-      maxIdentifierLength: 128,
-      maxVarcharLength: 2000000,
-      identifierQuoteString: '"',
-      timeZone: 'UTC',
-      timeZoneBehavior: 'INVALID',
-    },
-  };
-}
-
-function rowCountResponse() {
-  return {
-    status: 'ok',
-    responseData: { numResults: 1, results: [{ resultType: 'rowCount', rowCount: 3 }] },
-  };
-}
-
-async function connectWithBasicAuth(ExasolDriver) {
-  const driver = new ExasolDriver(() => new FakeSocket(), { host: 'fake', port: 8563, user: 'user', password: 'password' });
-  await driver.connect();
-  return driver;
+function createDriver(ExasolDriver) {
+  return new ExasolDriver(
+    (url) => new WebSocket(url, { rejectUnauthorized: true, ca, checkServerIdentity: () => undefined }),
+    config,
+  );
 }
 
 async function verifyNodeEntry(ExasolDriver) {
-  const driver = await connectWithBasicAuth(ExasolDriver);
+  const driver = createDriver(ExasolDriver);
+  const schema = `PACKAGE_TEST_${randomUUID().replace(/-/g, '')}`;
+  const directory = await mkdtemp(join(tmpdir(), 'exasol-driver-package-'));
   try {
-    if (typeof driver.importFromCsvFile !== 'function' || typeof driver.importFromParquetFile !== 'function' || typeof driver.exportToCsvFile !== 'function') {
-      throw new Error('The Node.js package entry point does not expose local file APIs.');
-    }
+    await driver.connect();
+    assert.equal(typeof driver.importFromCsvFile, 'function');
+    await driver.execute(`CREATE SCHEMA ${schema}`);
+    await driver.execute(`CREATE TABLE ${schema}.CSV_IMPORT (ID DECIMAL(18,0), NAME VARCHAR(20))`);
+    const filePath = join(directory, 'input.csv');
+    await writeFile(filePath, '1,one\n2,two\n');
+    assert.equal(await driver.importFromCsvFile(`${schema}.CSV_IMPORT`, filePath), 2);
+    assert.deepEqual((await driver.query(`SELECT * FROM ${schema}.CSV_IMPORT ORDER BY ID`)).getRows(), [
+      { ID: 1, NAME: 'one' },
+      { ID: 2, NAME: 'two' },
+    ]);
   } finally {
-    await driver.close();
+    await driver.execute(`DROP SCHEMA IF EXISTS ${schema} CASCADE`).catch(() => undefined);
+    await driver.close().catch(() => undefined);
+    await rm(directory, { recursive: true, force: true });
   }
 }
 
-module.exports = { connectWithBasicAuth, verifyNodeEntry };
+async function verifyBrowserEntry(ExasolDriver) {
+  const driver = createDriver(ExasolDriver);
+  try {
+    await driver.connect();
+    assert.equal('importFromCsvFile' in driver, false);
+    assert.deepEqual((await driver.query('SELECT 1 AS X FROM DUAL')).getRows(), [{ X: 1 }]);
+  } finally {
+    await driver.close().catch(() => undefined);
+  }
+}
+
+module.exports = { verifyBrowserEntry, verifyNodeEntry };

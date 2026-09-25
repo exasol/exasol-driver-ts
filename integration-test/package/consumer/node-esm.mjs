@@ -3,4 +3,5 @@ import support from './support.cjs';
 
 // [itest->dsn~decision-publish-cjs-and-esm~3]
 // [itest->dsn~runtime-connect-basic-authentication~1]
+// [itest->dsn~runtime-csv-import-file-stream~1]
 await support.verifyNodeEntry(ExasolDriver);
