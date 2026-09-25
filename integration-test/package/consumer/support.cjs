@@ -23,10 +23,8 @@ function requiredEnvironment(name) {
 }
 
 function createDriver(ExasolDriver) {
-  return new ExasolDriver(
-    (url) => new WebSocket(url, { rejectUnauthorized: true, ca, checkServerIdentity: () => undefined }),
-    config,
-  );
+  const websocketFactory = (url) => new WebSocket(url, { rejectUnauthorized: true, ca, checkServerIdentity: () => undefined });
+  return new ExasolDriver(websocketFactory, config);
 }
 
 async function verifyNodeEntry(ExasolDriver) {
@@ -57,7 +55,7 @@ async function verifyBrowserEntry(ExasolDriver) {
   try {
     await driver.connect();
     assert.equal('importFromCsvFile' in driver, false);
-    assert.deepEqual((await driver.query('SELECT 1 AS X FROM DUAL')).getRows(), [{ X: 1 }]);
+    assert.deepEqual((await driver.query('SELECT 1 AS X')).getRows(), [{ X: 1 }]);
   } finally {
     await driver.close().catch(() => undefined);
   }
