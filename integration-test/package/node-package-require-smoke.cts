@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- This fixture verifies the CommonJS export condition. */
 import browser = require('@exasol/exasol-driver-ts/browser');
 import node = require('@exasol/exasol-driver-ts');
 
