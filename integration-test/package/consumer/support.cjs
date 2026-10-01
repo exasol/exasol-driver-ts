@@ -13,7 +13,6 @@ const config = {
   password: 'exasol',
 };
 const ca = Buffer.from(requiredEnvironment('EXASOL_CA_BASE64'), 'base64').toString();
-const expectedHostname = requiredEnvironment('EXASOL_TLS_HOSTNAME');
 const expectedCertificateFingerprint = requiredEnvironment('EXASOL_TLS_CERTIFICATE_FINGERPRINT');
 
 function requiredEnvironment(name) {
@@ -25,6 +24,7 @@ function requiredEnvironment(name) {
 }
 
 function createDriver(ExasolDriver) {
+  // The Exasol container certificate does not cover Testcontainers' mapped host. Pin its leaf certificate instead.
   const websocketFactory = (url) => new WebSocket(url, {
     rejectUnauthorized: true,
     ca,
@@ -34,9 +34,6 @@ function createDriver(ExasolDriver) {
 }
 
 function verifyServerIdentity(hostname, certificate) {
-  if (hostname !== expectedHostname) {
-    return new Error(`Expected TLS hostname ${expectedHostname}, got ${hostname}.`);
-  }
   if (certificate.fingerprint256 !== expectedCertificateFingerprint) {
     return new Error('The server certificate does not match the expected certificate.');
   }

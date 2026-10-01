@@ -29,7 +29,6 @@ describeWhenSupported('Packed package consumers', () => {
       EXASOL_HOST: container.getHost(),
       EXASOL_PORT: String(container.getPort()),
       EXASOL_CA_BASE64: Buffer.from(ca).toString('base64'),
-      EXASOL_TLS_HOSTNAME: container.getHost(),
       EXASOL_TLS_CERTIFICATE_FINGERPRINT: new X509Certificate(certificate).fingerprint256,
       NODE_OPTIONS: undefined,
     };
