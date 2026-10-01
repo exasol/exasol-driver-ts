@@ -1,4 +1,4 @@
-# Exasol Driver ts 0.8.1, released 2026-09-28
+# Exasol Driver ts 0.8.1, released 2026-10-01
 
 Code name: Native ESM Compatibility
 

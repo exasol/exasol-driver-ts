@@ -1,3 +1,4 @@
+import { X509Certificate } from 'node:crypto';
 import { ExasolContainer, startNewDockerContainer } from '../exasolContainer';
 import { PackageConsumer, preparePackageConsumer, runCommand } from '../package/package-consumer';
 
@@ -19,11 +20,17 @@ describeWhenSupported('Packed package consumers', () => {
     if (!ca) {
       throw new Error('Exasol container did not provide a CA certificate.');
     }
+    const certificate = await container.loadCert();
+    if (!certificate) {
+      throw new Error('Exasol container did not provide a TLS certificate.');
+    }
     fixtureEnvironment = {
       ...process.env,
       EXASOL_HOST: container.getHost(),
       EXASOL_PORT: String(container.getPort()),
       EXASOL_CA_BASE64: Buffer.from(ca).toString('base64'),
+      EXASOL_TLS_HOSTNAME: container.getHost(),
+      EXASOL_TLS_CERTIFICATE_FINGERPRINT: new X509Certificate(certificate).fingerprint256,
       NODE_OPTIONS: undefined,
     };
   });

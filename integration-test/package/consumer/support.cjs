@@ -13,6 +13,8 @@ const config = {
   password: 'exasol',
 };
 const ca = Buffer.from(requiredEnvironment('EXASOL_CA_BASE64'), 'base64').toString();
+const expectedHostname = requiredEnvironment('EXASOL_TLS_HOSTNAME');
+const expectedCertificateFingerprint = requiredEnvironment('EXASOL_TLS_CERTIFICATE_FINGERPRINT');
 
 function requiredEnvironment(name) {
   const value = process.env[name];
@@ -23,8 +25,22 @@ function requiredEnvironment(name) {
 }
 
 function createDriver(ExasolDriver) {
-  const websocketFactory = (url) => new WebSocket(url, { rejectUnauthorized: true, ca, checkServerIdentity: () => undefined });
+  const websocketFactory = (url) => new WebSocket(url, {
+    rejectUnauthorized: true,
+    ca,
+    checkServerIdentity: verifyServerIdentity,
+  });
   return new ExasolDriver(websocketFactory, config);
+}
+
+function verifyServerIdentity(hostname, certificate) {
+  if (hostname !== expectedHostname) {
+    return new Error(`Expected TLS hostname ${expectedHostname}, got ${hostname}.`);
+  }
+  if (certificate.fingerprint256 !== expectedCertificateFingerprint) {
+    return new Error('The server certificate does not match the expected certificate.');
+  }
+  return undefined;
 }
 
 async function verifyNodeEntry(ExasolDriver) {
