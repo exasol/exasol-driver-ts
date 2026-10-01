@@ -18,22 +18,26 @@ This release fixes native Node.js ES module consumers of the driver. Basic authe
 
 ### Development Dependency Updates
 
-* Updated `globals:^17.9.0` to `^17.12.0`
+* Updated `globals:^17.9.0` to `^17.13.0`
 * Updated `jest-environment-jsdom:^30.4.1` to `^30.5.2`
 * Updated `rollup:^4.62.4` to `^4.63.5`
 * Updated `eslint:^10.8.1` to `^10.11.0`
 * Updated `vite:^7.3.6` to `^8.3.1`
 * Updated `@babel/preset-typescript:^7.29.7` to `^8.0.1`
-* Updated `ts-jest:^29.4.12` to `^29.4.13`
+* Updated `ts-jest:^29.4.12` to `^29.4.14`
 * Updated `eslint-plugin-jest:^29.16.0` to `^29.16.6`
-* Updated `vitest:^4.1.11` to `^5.0.1`
-* Updated `@vitest/browser-playwright:^4.1.11` to `^5.0.1`
-* Updated `@vitest/coverage-v8:^4.1.11` to `^5.0.1`
+* Updated `vitest:^4.1.11` to `^5.0.3`
+* Updated `ws:^8.21.3` to `^8.22.0`
+* Updated `@vitest/browser-playwright:^4.1.11` to `^5.0.3`
+* Updated `testcontainers:^12.1.0` to `^12.2.0`
+* Updated `@vitest/coverage-v8:^4.1.11` to `^5.0.3`
+* Updated `@types/ws:^8.18.1` to `^8.18.2`
+* Updated `@types/tar-stream:^3.1.4` to `^3.1.5`
 * Updated `@babel/preset-env:^7.29.7` to `^8.0.6`
 * Updated `jest:^30.4.2` to `^30.5.2`
 * Updated `prettier:^3.9.6` to `^3.9.9`
 * Updated `hyparquet-writer:^0.16.9` to `^0.16.10`
 * Updated `@babel/core:^7.29.7` to `^8.0.6`
 * Updated `@eslint/eslintrc:^3.3.6` to `^3.3.7`
-* Updated `@types/node:^26.2.0` to `^26.6.2`
-* Updated `typescript-eslint:^8.66.0` to `^8.70.1`
+* Updated `@types/node:^26.2.0` to `^26.6.3`
+* Updated `typescript-eslint:^8.66.0` to `^8.71.0`
