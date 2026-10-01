@@ -197,9 +197,7 @@ export class BaseExasolDriver implements IExasolClient {
     this.logger.debug('[SQLClient] Close all connections');
 
     const connections = this.pool.getAll();
-    for (const connection of connections) {
-      await connection.close();
-    }
+    await Promise.all(connections.map((connection) => connection.close()));
     this.pool.clear();
   }
 
