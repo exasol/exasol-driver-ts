@@ -1,7 +1,7 @@
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { CertificateProvider } from './certificateProvider';
 
-const DOCKER_CONTAINER_VERSION: string = process.env['EXASOL_DOCKER_VERSION'] ?? 'exasol/docker-db:2026.1.1';
+const DOCKER_CONTAINER_VERSION: string = process.env['EXASOL_DOCKER_VERSION'] ?? 'exasol/docker-db:2026.1.2';
 
 
 export class ExasolContainer {

@@ -71,10 +71,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        exasol-version: ['2026.1.1', '2025.1.16', '8.29.13']
+        exasol-version: ['2026.1.2', '2025.1.16', '8.29.13']
     name: Exasol ${{ matrix.exasol-version }} integration tests
     env:
-      DEFAULT_EXASOL_VERSION: '2026.1.1'
+      DEFAULT_EXASOL_VERSION: '2026.1.2'
       EXASOL_DOCKER_VERSION: exasol/docker-db:${{ matrix.exasol-version }}
     steps:
       - uses: actions/checkout@v6

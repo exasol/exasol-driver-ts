@@ -190,9 +190,9 @@ Considered alternatives:
 3. Publish both formats.
 
 #### Publish CJS and ESM
-`dsn~decision-publish-cjs-and-esm~2`
+`dsn~decision-publish-cjs-and-esm~3`
 
-The system builds CommonJS, ES module, and declaration outputs for separate Node.js and browser entry points.
+The system builds CommonJS, ES module, and declaration outputs for separate Node.js and browser entry points. Package integration tests install the packed artifact into an isolated consumer and exercise every public conditional export route.
 
 Rationale:
 
@@ -201,7 +201,7 @@ This improves compatibility with different consuming application build systems.
 Covers:
 - `constr~typescript-library-package~1`
 
-Needs: impl, utest
+Needs: impl, utest, itest
 
 Tags: packaging
 
