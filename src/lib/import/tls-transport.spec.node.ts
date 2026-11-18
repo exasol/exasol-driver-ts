@@ -12,9 +12,13 @@ describe('tls-transport', () => {
       const publicKeyDer = certificate.publicKey.export({ type: 'spki', format: 'der' });
 
       expect(certificate.checkPrivateKey(createPrivateKey(result.key))).toBe(true);
+      expect(certificate.verify(certificate.publicKey)).toBe(true);
       expect(certificate.publicKey.asymmetricKeyDetails?.modulusLength).toBe(2048);
       expect(result.fingerprint).toBe(`sha256//${createHash('sha256').update(publicKeyDer).digest('base64')}`);
-      expect(certificate.signatureAlgorithm).toBe('sha256WithRSAEncryption');
+      // signatureAlgorithm is available starting with Node.js 24.9.0.
+      if (certificate.signatureAlgorithm !== undefined) {
+        expect(certificate.signatureAlgorithm).toBe('sha256WithRSAEncryption');
+      }
     });
 
     it('should generate unique certificates on each call', async () => {
