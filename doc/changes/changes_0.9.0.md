@@ -39,5 +39,5 @@ Update tests and specification traceability.
 * Updated `@vitest/coverage-v8:^5.0.3` to `^5.1.0`
 * Added `esbuild:^0.27.7`
 * Updated `typescript-eslint:^8.71.0` to `^8.73.0`
+* Removed `@typescript/native:npm:typescript@^7.0.2`
 * Removed `@types/node-forge:^1.3.14`
-* Removed unused `@typescript/native:npm:typescript@^7.0.2` to keep clean installs reproducible
