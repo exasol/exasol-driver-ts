@@ -1,4 +1,4 @@
-import { AbortQueryCommand } from './commands';
+import { AbortQueryCommand, Commands } from './commands';
 import { Connection, ExaWebsocket } from './connection';
 import { Logger } from './logger/logger';
 import { MockExaWebSocket } from './mock-socket';
@@ -43,6 +43,39 @@ describe('connection', () => {
   });
 
   describe('sendCommand()', () => {
+    // [utest->dsn~runtime-trace-command-metadata~1]
+    it('passes command names without credentials or SQL to trace callbacks', async () => {
+      const mockSocket = createManualMockSocket();
+      const trace = jest.fn();
+      const logger = new Logger();
+      Object.defineProperty(logger, 'trace', { value: trace });
+      const connection = new Connection(mockSocket, logger, 'test');
+      const cases: { command: Commands; name: string; secret: string }[] = [
+        { command: { username: 'alice-secret', password: 'basic-secret' } as Commands, name: 'loginCredentials', secret: 'basic-secret' },
+        { command: { accessToken: 'access-secret', refreshToken: 'refresh-secret' } as Commands, name: 'loginCredentials', secret: 'access-secret' },
+        { command: { command: 'execute', sqlText: "select 'sql-secret'" }, name: 'execute', secret: 'sql-secret' },
+        {
+          command: { command: 'executePreparedStatement', statementHandle: 1, numColumns: 1, numRows: 1, columns: [], data: [['parameter-secret']] },
+          name: 'executePreparedStatement',
+          secret: 'parameter-secret',
+        },
+      ];
+
+      for (const { command, name, secret } of cases) {
+        const result = connection.sendCommand(command);
+        expect(trace).toHaveBeenLastCalledWith('[Connection:test] Send request:', name);
+        expect(JSON.stringify(trace.mock.calls)).not.toContain(secret);
+        expect(JSON.stringify(trace.mock.calls)).not.toContain('alice-secret');
+        expect(JSON.stringify(trace.mock.calls)).not.toContain('refresh-secret');
+        mockSocket.callOnMessage({ data: JSON.stringify({ status: 'ok' }) });
+        await result;
+      }
+
+      await connection.sendCommandWithNoResult(new AbortQueryCommand());
+      expect(trace).toHaveBeenLastCalledWith('[WebSQL]: Send request with no result:', 'abortQuery');
+      expect(trace.mock.calls.every((call: unknown[]) => call.every((value: unknown) => typeof value === 'string'))).toBe(true);
+    });
+
     it('rejects when the socket is closing', async () => {
       const sendFunction = jest.fn();
       const mockSocket = {
