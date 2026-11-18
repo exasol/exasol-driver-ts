@@ -42,7 +42,6 @@
     "@types/pako": "^3.0.0",
     "@types/tar-stream": "^3.1.5",
     "@types/ws": "^8.18.2",
-    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/browser-playwright": "^5.1.0",
     "@vitest/coverage-v8": "^5.1.0",
     "audit-ci": "^7.1.0",

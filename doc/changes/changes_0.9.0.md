@@ -40,3 +40,4 @@ Update tests and specification traceability.
 * Added `esbuild:^0.27.7`
 * Updated `typescript-eslint:^8.71.0` to `^8.73.0`
 * Removed `@types/node-forge:^1.3.14`
+* Removed unused `@typescript/native:npm:typescript@^7.0.2` to keep clean installs reproducible
