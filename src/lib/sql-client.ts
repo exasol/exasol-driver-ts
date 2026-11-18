@@ -1,5 +1,3 @@
-import forge from 'node-forge';
-
 import { Attributes, Commands, CommandsNoResult, OIDCSQLCommand, SQLBatchCommand, SQLSingleCommand } from './commands';
 import { Connection, ExaWebsocket } from './connection';
 import {
@@ -16,6 +14,7 @@ import {
 } from './errors/errors';
 import { fetchData } from './fetch';
 import { ILogger, Logger, LogLevel } from './logger/logger';
+import { encryptPassword } from './login-encryption';
 import { createLoginOptions } from './login-options';
 import { ConnectionPool } from './pool/pool';
 import { QueryResult } from './query-result';
@@ -482,15 +481,9 @@ export class BaseExasolDriver implements IExasolClient {
         throw new Error(errorString);
       }
 
-      const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);
-      const e = new forge.jsbn.BigInteger(response.responseData.publicKeyExponent, 16);
-
-      const pubKey = forge.pki.rsa.setPublicKey(n, e);
-      const password = pubKey.encrypt(this.config.password ?? '');
-
       return this.sendCommand({
         username: this.config.user ?? '',
-        password: forge.util.encode64(password),
+        password: encryptPassword(this.config.password ?? '', response.responseData.publicKeyModulus, response.responseData.publicKeyExponent),
         ...createLoginOptions(this.config),
       });
     });

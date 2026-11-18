@@ -64,7 +64,8 @@ export async function importLocalFile({
     unencryptedSocket = tunnel.socket;
     throwIfAborted(options?.signal, newAbortedError);
 
-    const cert = generateAdHocCertificate();
+    const cert = await Promise.race([generateAdHocCertificate(), abortPromise]);
+    throwIfAborted(options?.signal, newAbortedError);
     secureSocket = wrapWithTls(unencryptedSocket, cert.key, cert.cert);
     queryStarted = true;
     const sqlPromise = executeSql(buildImportSql(tunnel.internalAddress, cert.fingerprint));

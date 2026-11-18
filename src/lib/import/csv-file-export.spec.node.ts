@@ -36,7 +36,7 @@ describe('csv-file-export', () => {
       socket: { destroy: jest.fn() } as never,
       internalAddress: { host: '127.0.0.1', port: 8563 },
     });
-    mockedGenerateAdHocCertificate.mockReturnValue({ key: {} as never, cert: {} as never, fingerprint: 'fingerprint' });
+    mockedGenerateAdHocCertificate.mockResolvedValue({ key: 'key', cert: 'cert', fingerprint: 'fingerprint' });
     mockedWrapWithTls.mockReturnValue({
       destroy: jest.fn(),
       write: jest.fn((_data: string, callback: (error?: Error | null) => void) => callback(null)),
@@ -84,6 +84,27 @@ describe('csv-file-export', () => {
       await expect(readFile(destination)).rejects.toMatchObject({ code: 'ENOENT' });
       expect(mockedCreateTunnel).not.toHaveBeenCalled();
       expect(executeSql).not.toHaveBeenCalled();
+    });
+
+    it('removes the destination and releases the tunnel when cancelled during certificate generation', async () => {
+      const controller = new AbortController();
+      const socket = { destroy: jest.fn() };
+      let certificateRequested!: () => void;
+      const requested = new Promise<void>((resolve) => { certificateRequested = resolve; });
+      mockedCreateTunnel.mockResolvedValue({ socket: socket as never, internalAddress: { host: '127.0.0.1', port: 8563 } });
+      mockedGenerateAdHocCertificate.mockImplementation(() => {
+        certificateRequested();
+        return new Promise(() => undefined);
+      });
+
+      const operation = exportFile({ options: { signal: controller.signal } });
+      await requested;
+      controller.abort();
+
+      await expect(operation).rejects.toMatchObject({ name: 'AbortError' });
+      expect(socket.destroy).toHaveBeenCalled();
+      expect(executeSql).not.toHaveBeenCalled();
+      await expect(readFile(destination)).rejects.toMatchObject({ code: 'ENOENT' });
     });
 
     it('rejects promptly and cleans up when the destination is created after cancellation', async () => {

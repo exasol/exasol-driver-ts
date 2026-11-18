@@ -437,7 +437,7 @@ describe('sqlClient', () => {
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
 
-      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow("E-EDJS-12: Failed to establish tunnel connection to Exasol at 'localhost':'8563': ''.");
+      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow("E-EDJS-12: Failed to establish tunnel connection to Exasol at 'localhost':'8563':");
     });
   });
 

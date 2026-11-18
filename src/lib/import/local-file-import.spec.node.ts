@@ -28,7 +28,7 @@ describe('local-file-import', () => {
       socket: unencryptedSocket as never,
       internalAddress: { host: '127.0.0.1', port: 8563 },
     });
-    mockedGenerateAdHocCertificate.mockReturnValue({ key: {} as never, cert: {} as never, fingerprint: 'fingerprint' });
+    mockedGenerateAdHocCertificate.mockResolvedValue({ key: 'key', cert: 'cert', fingerprint: 'fingerprint' });
     mockedWrapWithTls.mockReturnValue(secureSocket as never);
     mockedServeFileRequests.mockResolvedValue(3);
 
@@ -64,5 +64,31 @@ describe('local-file-import', () => {
     })).rejects.toThrow('aborted');
 
     expect(mockedCreateTunnel).not.toHaveBeenCalled();
+  });
+
+  // [utest->dsn~runtime-csv-import-cancellation~1]
+  it('releases the tunnel when cancelled during certificate generation', async () => {
+    const controller = new AbortController();
+    const socket = { destroy: jest.fn() };
+    const executeSql = jest.fn();
+    let certificateRequested!: () => void;
+    const requested = new Promise<void>((resolve) => { certificateRequested = resolve; });
+    mockedCreateTunnel.mockResolvedValue({ socket: socket as never, internalAddress: { host: '127.0.0.1', port: 8563 } });
+    mockedGenerateAdHocCertificate.mockImplementation(() => {
+      certificateRequested();
+      return new Promise(() => undefined);
+    });
+
+    const operation = importLocalFile({
+      host: 'localhost', port: 8563, filePath: 'README.md', executeSql,
+      buildImportSql: jest.fn(), options: { signal: controller.signal },
+      newAbortedError: () => new DOMException('aborted', 'AbortError'),
+    });
+    await requested;
+    controller.abort();
+
+    await expect(operation).rejects.toMatchObject({ name: 'AbortError' });
+    expect(socket.destroy).toHaveBeenCalled();
+    expect(executeSql).not.toHaveBeenCalled();
   });
 });

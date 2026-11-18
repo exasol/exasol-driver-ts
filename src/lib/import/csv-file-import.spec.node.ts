@@ -88,7 +88,7 @@ describe('csv-file-import', () => {
           socket: unencryptedSocket as never,
           internalAddress: { host: '127.0.0.1', port: 8563 },
         });
-        mockedGenerateAdHocCertificate.mockReturnValue({ key: {} as never, cert: {} as never, fingerprint: 'fingerprint' });
+        mockedGenerateAdHocCertificate.mockResolvedValue({ key: 'key', cert: 'cert', fingerprint: 'fingerprint' });
         mockedWrapWithTls.mockReturnValue(secureSocket as never);
         mockedServeFileRequests.mockImplementation((_socket, _filePath, _sqlPromise, options) => {
           options?.onFileStream?.(fileStream as never);

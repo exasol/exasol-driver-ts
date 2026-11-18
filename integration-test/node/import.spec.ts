@@ -71,12 +71,23 @@ describeImportWhenSupported("Node Import", () => {
       const tableName = `${schemaName}.TEST_TABLE`;
       await driver.execute(`CREATE TABLE ${tableName} (X VARCHAR(2000000))`);
 
+      const csvFilePath = await createFile('cancel.csv', 'value\n');
       const controller = new AbortController();
-      const importPromise = driver.importFromCsvFile(tableName, '/dev/zero', undefined, { signal: controller.signal });
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      controller.abort();
+      const execute = driver.execute.bind(driver);
+      const executeSpy = jest.spyOn(driver, 'execute').mockImplementation((sql, attributes, getCancel, responseType) => {
+        const result = execute(sql, attributes, getCancel, responseType);
+        if (sql.startsWith('IMPORT INTO')) {
+          controller.abort();
+        }
+        return result;
+      });
 
-      await expect(importPromise).rejects.toThrow("E-EDJS-20: The CSV import was aborted.");
+      try {
+        await expect(driver.importFromCsvFile(tableName, csvFilePath, undefined, { signal: controller.signal }))
+          .rejects.toThrow("E-EDJS-20: The CSV import was aborted.");
+      } finally {
+        executeSpy.mockRestore();
+      }
     });
 
     it('fails when target table does not exist', async () => {
@@ -197,12 +208,24 @@ describeImportWhenSupported("Node Import", () => {
       const tableName = `${schemaName}.TEST_TABLE`;
       await driver.execute(`CREATE TABLE ${tableName} (X VARCHAR(2000000))`);
 
+      const parquetFilePath = join(tempDirectory, 'cancel.parquet');
+      await createMinimalParquetFile(parquetFilePath);
       const controller = new AbortController();
-      const importPromise = driver.importFromParquetFile(tableName, '/dev/zero', undefined, { signal: controller.signal });
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      controller.abort();
+      const execute = driver.execute.bind(driver);
+      const executeSpy = jest.spyOn(driver, 'execute').mockImplementation((sql, attributes, getCancel, responseType) => {
+        const result = execute(sql, attributes, getCancel, responseType);
+        if (sql.startsWith('IMPORT INTO')) {
+          controller.abort();
+        }
+        return result;
+      });
 
-      await expect(importPromise).rejects.toThrow('E-EDJS-37: The Parquet import was aborted.');
+      try {
+        await expect(driver.importFromParquetFile(tableName, parquetFilePath, undefined, { signal: controller.signal }))
+          .rejects.toThrow('E-EDJS-37: The Parquet import was aborted.');
+      } finally {
+        executeSpy.mockRestore();
+      }
     });
 
     it('imports a Parquet file into a table', async () => {

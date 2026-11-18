@@ -39,7 +39,7 @@ Tests should cover protocol command handling, driver behavior, pool behavior, CS
 
 ## Dependency Policy
 
-Runtime dependencies are listed in `package.json` and documented in `dependencies.md` with license information. The current runtime dependencies are `generic-pool`, `node-forge`, and `pako`.
+Runtime dependencies are listed in `package.json` and documented in `dependencies.md` with license information. The current runtime dependencies are `generic-pool`, `node-rsa`, `pako`, and `selfsigned`.
 
 Dependency changes must keep `package-lock.json` consistent. Production dependencies must not have npm audit findings. Development dependency findings may be handled through `audit-ci.jsonc` when justified.
 
