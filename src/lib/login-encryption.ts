@@ -8,7 +8,7 @@ function hexToBytes(hex: string): Uint8Array {
   return Uint8Array.from(padded.match(/.{2}/g) ?? [], (byte) => Number.parseInt(byte, 16));
 }
 
-export function encryptPassword(password: string, modulus: string, exponent: string): string {
+export function encryptPasswordBrowser(password: string, modulus: string, exponent: string): string {
   const key = new NodeRSA(undefined, { encryptionScheme: 'pkcs1' });
   key.importKey({ n: hexToBytes(modulus), e: hexToBytes(exponent) }, 'components-public');
   return key.encrypt(password, 'base64');

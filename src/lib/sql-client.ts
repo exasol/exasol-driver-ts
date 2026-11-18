@@ -14,7 +14,7 @@ import {
 } from './errors/errors';
 import { fetchData } from './fetch';
 import { ILogger, Logger, LogLevel } from './logger/logger';
-import { encryptPassword } from './login-encryption';
+import { encryptPasswordBrowser } from './login-encryption';
 import { createLoginOptions } from './login-options';
 import { ConnectionPool } from './pool/pool';
 import { QueryResult } from './query-result';
@@ -81,7 +81,12 @@ export class BaseExasolDriver implements IExasolClient {
 
   private readonly pool: ConnectionPool<Connection>;
 
-  protected constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
+  protected constructor(
+    websocketFactory: WebsocketFactory,
+    config: Partial<Config>,
+    protected readonly encryptPassword: (password: string, modulus: string, exponent: string) => string,
+    logger: ILogger = new Logger(LogLevel.Off),
+  ) {
     // Used internally to avoid parallel execution
     this.pool = new ConnectionPool<Connection>(1, logger);
     this.config = {
@@ -483,7 +488,7 @@ export class BaseExasolDriver implements IExasolClient {
 
       return this.sendCommand({
         username: this.config.user ?? '',
-        password: encryptPassword(this.config.password ?? '', response.responseData.publicKeyModulus, response.responseData.publicKeyExponent),
+        password: this.encryptPassword(this.config.password ?? '', response.responseData.publicKeyModulus, response.responseData.publicKeyExponent),
         ...createLoginOptions(this.config),
       });
     });
@@ -520,6 +525,6 @@ export class BaseExasolDriver implements IExasolClient {
 export class ExasolDriver extends BaseExasolDriver {
   // [impl->dsn~runtime-browser-websocket~2]
   constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) {
-    super(websocketFactory, config, logger);
+    super(websocketFactory, config, encryptPasswordBrowser, logger);
   }
 }

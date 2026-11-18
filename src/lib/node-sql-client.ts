@@ -4,6 +4,7 @@ import { importCsvFile } from './import/csv-file-import';
 import { CsvExportFormatOptions, CsvExportOptions, CsvFormatOptions, CsvImportOptions, FileImportOptions, ParquetImportOptions } from './import/types';
 import { importParquetFile } from './import/parquet-file-import';
 import { ILogger } from './logger/logger';
+import { encryptPasswordNode } from './login-encryption-node';
 import { BaseExasolDriver, Config, WebsocketFactory } from './sql-client';
 import { IExasolDriver } from './sql-client.interface';
 
@@ -11,7 +12,7 @@ import { IExasolDriver } from './sql-client.interface';
 export class NodeExasolDriver extends BaseExasolDriver implements IExasolDriver {
   // [impl->dsn~runtime-node-websocket~2]
   constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) {
-    super(websocketFactory, config, logger);
+    super(websocketFactory, config, encryptPasswordNode, logger);
   }
 
   public async importFromCsvFile(

@@ -1,5 +1,7 @@
 import { createHash, createPrivateKey, X509Certificate } from 'node:crypto';
 import * as tls from 'node:tls';
+import * as net from 'node:net';
+import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
 
@@ -14,6 +16,8 @@ describe('tls-transport', () => {
       expect(certificate.checkPrivateKey(createPrivateKey(result.key))).toBe(true);
       expect(certificate.verify(certificate.publicKey)).toBe(true);
       expect(certificate.publicKey.asymmetricKeyDetails?.modulusLength).toBe(2048);
+      expect(Date.parse(certificate.validFrom)).toBeLessThanOrEqual(Date.now());
+      expect(Date.parse(certificate.validTo)).toBeGreaterThan(Date.now());
       expect(result.fingerprint).toBe(`sha256//${createHash('sha256').update(publicKeyDer).digest('base64')}`);
       // signatureAlgorithm is available starting with Node.js 24.9.0.
       if (certificate.signatureAlgorithm !== undefined) {
@@ -38,6 +42,27 @@ describe('tls-transport', () => {
 
       expect(tlsSocket).toBeInstanceOf(tls.TLSSocket);
       tlsSocket.destroy();
+    });
+
+    // [utest->dsn~runtime-node-local-transfer-tls~1]
+    it('completes a TLS handshake with the generated certificate and matching SPKI pin', async () => {
+      const { key, cert, fingerprint } = await generateAdHocCertificate();
+      const server = tls.createServer({ key, cert }, (socket) => socket.end('ok'));
+      server.listen(0, '127.0.0.1');
+      await once(server, 'listening');
+      const address = server.address() as net.AddressInfo;
+
+      try {
+        const client = tls.connect({ host: '127.0.0.1', port: address.port, rejectUnauthorized: false });
+        await once(client, 'secureConnect');
+        const peer = new X509Certificate(client.getPeerCertificate(true).raw);
+        const spki = peer.publicKey.export({ type: 'spki', format: 'der' });
+        expect(`sha256//${createHash('sha256').update(spki).digest('base64')}`).toBe(fingerprint);
+        client.destroy();
+      } finally {
+        server.close();
+        await once(server, 'close');
+      }
     });
   });
 });
