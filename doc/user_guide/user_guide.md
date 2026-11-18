@@ -2,11 +2,12 @@
 
 ### Introduction
 
-`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes. Use the package root `@exasol/exasol-driver-ts` in Node.js. In browser applications use `@exasol/exasol-driver-ts/browser`.
+<!-- [uman->scn~node-connection-uses-injected-websocket~2] -->
+`@exasol/exasol-driver-ts` supports both browser and Node.js runtimes. In Node.js, import the package root `@exasol/exasol-driver-ts` and supply a compatible WebSocket implementation such as `ws`.
 
 For the complete public API, see the [API reference](https://exasol.github.io/exasol-driver-ts/api/).
 
-Both entry points require an explicit WebSocket factory. In a browser, use the runtime-native `WebSocket`; in Node.js, provide a compatible implementation such as `ws`. The browser entry excludes the Node.js-only local file import and export APIs.
+The browser entry point is `@exasol/exasol-driver-ts/browser`; use the browser's native `WebSocket`. Both entry points support password and token authentication. Local CSV and Parquet import and CSV export are available only through the Node.js entry point.
 
 The following sections show the runtime-specific setup for both environments.
 
@@ -112,6 +113,7 @@ Do not use `rejectUnauthorized: false`: it accepts any server certificate. When 
 ### Browser
 
 <!-- [uman->scn~browser-connection-uses-native-websocket~2] -->
+Import `@exasol/exasol-driver-ts/browser` and pass a factory that returns the browser's native `WebSocket`. The browser supports both user/password login and access or refresh token login.
 
 Install the following dependencies from the [npm](https://www.npmjs.com/) package registry
 

@@ -39,7 +39,7 @@ Tests should cover protocol command handling, driver behavior, pool behavior, CS
 
 ## Dependency Policy
 
-Runtime dependencies are listed in `package.json` and documented in `dependencies.md` with license information. The current runtime dependencies are `generic-pool`, `node-rsa`, `pako`, and `selfsigned`.
+Runtime dependencies are listed in `package.json` and documented in `dependencies.md` with license information. The current runtime dependencies are `generic-pool`, `node-rsa`, and `pako`.
 
 Dependency changes must keep `package-lock.json` consistent. Production dependencies must not have npm audit findings. Development dependency findings may be handled through `audit-ci.jsonc` when justified.
 
@@ -54,7 +54,7 @@ The repository defines the following verification commands:
 * `npm run test:package` for built Node.js and browser package-entry smoke tests.
 * `npm run itest` for Node.js and browser integration tests with coverage, including packed-package consumer scenarios that run against Exasol.
 * `npm run audit` for production and full audit checks.
-* `npm run build` for Rollup packaging.
+* `npm run build` for Rollup packaging and complete-bundle Node/browser size checks (at most 400000 raw and 110000 gzip bytes per bundle).
 
 SonarCloud consumes `coverage/lcov.info`, analyzes `src/`, excludes generated JavaScript and spec files from source analysis, and treats tests from `src/` and `integration-test/` as test input. The Sonar quality gate enforces minimum coverage for new code; new code must have at least 80% test coverage.
 
@@ -67,6 +67,16 @@ The system defines quality gates through npm scripts, Jest project configuration
 
 Covers:
 - `constr~automated-quality-gates~1`
+
+### Complete Bundle Budgets
+`dsn~runtime-bundle-budgets~1`
+
+The build bundles each source entry point and all npm runtime dependencies into a minified ESM consumer bundle. Node built-ins are external for the Node bundle. It fails when either bundle exceeds 400000 raw or 110000 gzip bytes; outputs are temporary and not published.
+
+Covers:
+- `constr~automated-quality-gates~1`
+
+Needs: impl
 
 ## Testability and Coverage
 

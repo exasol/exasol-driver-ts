@@ -181,9 +181,9 @@ Needs: impl, itest
 
 ### Separate Login Encryption from File-Transfer Certificates
 
-The shared Node.js and browser login path uses `node-rsa` to encrypt passwords with the modulus and exponent returned by Exasol, explicitly selecting the protocol's PKCS #1 v1.5 padding. Node.js local file transfers use `selfsigned` to create a fresh TLS certificate. The driver computes the `sha256//` fingerprint from that certificate's public key and passes it to Exasol for the transfer.
+The Node.js login path imports the modulus and exponent returned by Exasol into `node:crypto` and encrypts passwords with RSAES-PKCS1-v1_5. The browser path retains `node-rsa` for that protocol requirement. Node.js local file transfers use `node:crypto` to create a fresh, self-signed RSA TLS certificate. The driver computes the `sha256//` fingerprint from that certificate's SPKI public key bytes and passes it to Exasol for the transfer.
 
-This split keeps certificate generation out of the browser entry point and reuses maintained cryptography implementations. The database WebSocket connection continues to verify Exasol's server certificate independently of the local file-transfer certificate.
+The browser entry point cannot resolve `node:crypto` or other Node-only modules. The database WebSocket connection continues to verify Exasol's server certificate independently of the local file-transfer certificate.
 
 ## Packaging
 

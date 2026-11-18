@@ -36,6 +36,8 @@ FileImport --> Exasol
 
 `ExasolDriver` is the primary facade for connecting, authenticating, querying, executing commands, preparing statements, cancelling work, closing sessions, and starting CSV and Parquet imports. Parquet import reserves a dedicated options argument for future format-specific settings, separate from import control options. It supports asynchronous disposal by delegating `Symbol.asyncDispose` to `close()`.
 
+The shared core accepts an internal password-encryption function from each runtime facade. The Node facade supplies `node:crypto`; the browser facade supplies `node-rsa`. This keeps Node cryptography out of the browser entry point without changing public constructors.
+
 Covers:
 - `scn~connect-with-basic-authentication~1`
 - `scn~reject-missing-credentials~1`

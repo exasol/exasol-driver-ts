@@ -601,7 +601,7 @@ Needs: dsn, uman
 
 **Given** a browser application with native `WebSocket`
 **When** the application imports `@exasol/exasol-driver-ts/browser` and creates a driver or pool with a factory returning `new WebSocket(url)`
-**Then** the driver can use the browser WebSocket implementation without resolving Node.js file or TLS modules
+**Then** the driver can use the browser WebSocket implementation without resolving Node.js file, TLS, or cryptography modules
 
 Covers:
 - `req~run-in-browser~2`
@@ -618,7 +618,7 @@ Needs: dsn, uman
 Covers:
 - `req~run-in-nodejs~2`
 
-Needs: dsn
+Needs: dsn, uman
 
 ### Pool Reuses Drivers for Queries
 `scn~pool-reuses-drivers-for-queries~1`

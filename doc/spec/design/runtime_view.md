@@ -35,6 +35,30 @@ Covers:
 
 Needs: impl, itest
 
+### Node Password Encryption
+`dsn~runtime-node-password-encryption~1`
+
+**Given** a Node.js basic-auth login and Exasol RSA modulus and exponent
+**When** the driver encrypts the UTF-8 password
+**Then** it uses `node:crypto` with RSAES-PKCS1-v1_5 padding and sends Base64 ciphertext
+
+Covers:
+- `scn~connect-with-basic-authentication~1`
+
+Needs: impl, utest
+
+### Node Local-Transfer TLS
+`dsn~runtime-node-local-transfer-tls~1`
+
+**Given** a Node.js local-file transfer
+**When** the driver creates its temporary TLS identity
+**Then** it generates a fresh 2048-bit RSA key and self-signed SHA-256 certificate, supplies PEM key and certificate to TLS, and sends a `sha256//` pin of the certificate public key's SPKI bytes to Exasol
+
+Covers:
+- `scn~csv-import-succeeds~1`
+
+Needs: impl, utest
+
 ### Login Metadata
 `dsn~runtime-login-metadata~1`
 
