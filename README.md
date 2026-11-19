@@ -26,7 +26,7 @@ Check out the [user guide](doc/user_guide/user_guide.md) for more details.
 3. Works in Node.js and the browser
 4. Supports importing local CSV and Parquet files into a table from Node.js (Parquet requires Exasol 2025.1.9 or later)
 
-Browser applications should import the browser-safe entry point, `@exasol/exasol-driver-ts/browser`. It provides the driver and pool APIs without the Node.js-only local file import/export modules; both entry points require an explicit WebSocket factory.
+Node.js applications import `@exasol/exasol-driver-ts` and supply a compatible WebSocket implementation such as `ws`. Browser applications import `@exasol/exasol-driver-ts/browser` and supply the native `WebSocket`. Both support password and token authentication. Local CSV and Parquet import and CSV export are available only in Node.js.
 
 ## Information for Users
 

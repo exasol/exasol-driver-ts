@@ -64,6 +64,37 @@ describe('http-protocol', () => {
       expect(socket.isPaused()).toBe(true);
     });
 
+    // [utest->dsn~runtime-bounded-tunnel-headers~1]
+    it('accepts headers ending at the 64 KiB boundary', async () => {
+      const socket = new PassThrough();
+      const headers = `GET / HTTP/1.1\r\nX-Padding: ${'a'.repeat(65536 - 'GET / HTTP/1.1\r\nX-Padding: '.length - 4)}\r\n\r\n`;
+      const requestPromise = readHttpRequest(socket as never);
+      socket.push(headers);
+      await expect(requestPromise).resolves.toEqual({ headers, initialBody: Buffer.alloc(0) });
+    });
+
+    // [utest->dsn~runtime-bounded-tunnel-headers~1]
+    it('rejects oversized headers and removes its listeners', async () => {
+      const socket = new PassThrough();
+      const requestPromise = readHttpRequest(socket as never);
+      socket.push(`GET / HTTP/1.1\r\nX-Padding: ${'a'.repeat(65536)}`);
+
+      await expect(requestPromise).rejects.toThrow('E-EDJS-39: HTTP request headers exceed 65536 bytes.');
+      expect(socket.isPaused()).toBe(true);
+      for (const event of ['data', 'end', 'error']) {
+        expect(socket.listenerCount(event)).toBe(0);
+      }
+      socket.destroy();
+    });
+
+    // [utest->dsn~runtime-bounded-tunnel-headers~1]
+    it('rejects oversized headers already buffered by a previous request', async () => {
+      const socket = new PassThrough();
+      await expect(readHttpRequest(socket as never, Buffer.from(`${'a'.repeat(65536)}\r\n\r\n`))).rejects.toThrow('E-EDJS-39');
+      expect(socket.listenerCount('data')).toBe(0);
+      socket.destroy();
+    });
+
     it('should reject with E-EDJS-17 if socket emits error', async () => {
       const socket = new PassThrough();
       const requestPromise = readHttpRequest(socket as never);

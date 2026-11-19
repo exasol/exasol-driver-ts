@@ -2,5 +2,27 @@
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   "moderate": true,
   "package-manager": "npm",
-  "allowlist": []
+  "allowlist": [
+    {
+      "GHSA-g3hv-75wg-m249": {
+        "active": true,
+        "notes": "Development tools ESLint, TypeDoc, and Jest constrain vulnerable transitive minimatch majors. Review by 2027-02-06; remove when upstream dependencies support a patched version.",
+        "expiry": "2027-02-06"
+      }
+    },
+    {
+      "GHSA-3g3m-2fjr-6pw4": {
+        "active": true,
+        "notes": "Development tools Jest and Testcontainers constrain vulnerable transitive glob majors. Review by 2027-02-06; remove when upstream dependencies support a patched version.",
+        "expiry": "2027-02-06"
+      }
+    },
+    {
+      "GHSA-fc5q-39xc-vjpf": {
+        "active": true,
+        "notes": "Development-only picomatch is pulled in by Jest, Vite, and build tools. No patched npm release exists as of 2026-11-18; this repository uses fixed, developer-controlled glob patterns. Review by 2026-12-18 and remove when a patched release or advisory correction is available.",
+        "expiry": "2026-12-18"
+      }
+    }
+  ]
 }

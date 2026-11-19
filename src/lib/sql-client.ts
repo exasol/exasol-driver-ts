@@ -1,5 +1,3 @@
-import forge from 'node-forge';
-
 import { Attributes, Commands, CommandsNoResult, OIDCSQLCommand, SQLBatchCommand, SQLSingleCommand } from './commands';
 import { Connection, ExaWebsocket } from './connection';
 import {
@@ -16,6 +14,7 @@ import {
 } from './errors/errors';
 import { fetchData } from './fetch';
 import { ILogger, Logger, LogLevel } from './logger/logger';
+import { encryptPasswordBrowser } from './login-encryption';
 import { createLoginOptions } from './login-options';
 import { ConnectionPool } from './pool/pool';
 import { QueryResult } from './query-result';
@@ -82,7 +81,12 @@ export class BaseExasolDriver implements IExasolClient {
 
   private readonly pool: ConnectionPool<Connection>;
 
-  protected constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger: ILogger = new Logger(LogLevel.Off)) {
+  protected constructor(
+    websocketFactory: WebsocketFactory,
+    config: Partial<Config>,
+    protected readonly encryptPassword: (password: string, modulus: string, exponent: string) => string,
+    logger: ILogger = new Logger(LogLevel.Off),
+  ) {
     // Used internally to avoid parallel execution
     this.pool = new ConnectionPool<Connection>(1, logger);
     this.config = {
@@ -482,15 +486,9 @@ export class BaseExasolDriver implements IExasolClient {
         throw new Error(errorString);
       }
 
-      const n = new forge.jsbn.BigInteger(response.responseData.publicKeyModulus, 16);
-      const e = new forge.jsbn.BigInteger(response.responseData.publicKeyExponent, 16);
-
-      const pubKey = forge.pki.rsa.setPublicKey(n, e);
-      const password = pubKey.encrypt(this.config.password ?? '');
-
       return this.sendCommand({
         username: this.config.user ?? '',
-        password: forge.util.encode64(password),
+        password: this.encryptPassword(this.config.password ?? '', response.responseData.publicKeyModulus, response.responseData.publicKeyExponent),
         ...createLoginOptions(this.config),
       });
     });
@@ -527,6 +525,6 @@ export class BaseExasolDriver implements IExasolClient {
 export class ExasolDriver extends BaseExasolDriver {
   // [impl->dsn~runtime-browser-websocket~2]
   constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) {
-    super(websocketFactory, config, logger);
+    super(websocketFactory, config, encryptPasswordBrowser, logger);
   }
 }

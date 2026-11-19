@@ -177,6 +177,14 @@ Covers:
 
 Needs: impl, itest
 
+## Cryptography Dependencies
+
+### Separate Login Encryption from File-Transfer Certificates
+
+The Node.js login path imports the modulus and exponent returned by Exasol into `node:crypto` and encrypts passwords with RSAES-PKCS1-v1_5. The browser path retains `node-rsa` for that protocol requirement. Node.js local file transfers use `node:crypto` to create a fresh, self-signed RSA TLS certificate. The driver computes the `sha256//` fingerprint from that certificate's SPKI public key bytes and passes it to Exasol for the transfer.
+
+The browser entry point cannot resolve `node:crypto` or other Node-only modules. The database WebSocket connection continues to verify Exasol's server certificate independently of the local file-transfer certificate.
+
 ## Packaging
 
 ### Build CommonJS and ES Module Outputs

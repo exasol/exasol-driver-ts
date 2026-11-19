@@ -7,7 +7,9 @@ import { ExaErrorBuilder } from '../errors/error-reporting';
 import { decodeChunkedHttpBody } from './chunked-http-body';
 
 // [impl->dsn~runtime-csv-import-file-stream~1]
+// [impl->dsn~runtime-bounded-tunnel-headers~1]
 const HEADER_TERMINATOR = '\r\n\r\n';
+const MAX_REQUEST_HEADER_BYTES = 64 * 1024;
 
 export interface HttpRequest {
   headers: string;
@@ -24,9 +26,13 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket, initialBuffe
     let buffer = initialBuffer;
 
     function onData(chunk: Buffer) {
-      buffer = Buffer.concat([buffer, chunk]);
-      const headerEnd = buffer.indexOf(HEADER_TERMINATOR);
+      const preview = Buffer.concat([
+        buffer.subarray(0, MAX_REQUEST_HEADER_BYTES),
+        chunk.subarray(0, Math.max(0, MAX_REQUEST_HEADER_BYTES - buffer.length)),
+      ]);
+      const headerEnd = preview.indexOf(HEADER_TERMINATOR);
       if (headerEnd !== -1) {
+        buffer = chunk.length > 0 ? Buffer.concat([buffer, chunk]) : buffer;
         socket.pause();
         cleanup();
         const bodyStart = headerEnd + HEADER_TERMINATOR.length;
@@ -34,6 +40,12 @@ export function readHttpRequest(socket: net.Socket | tls.TLSSocket, initialBuffe
           headers: buffer.subarray(0, bodyStart).toString(),
           initialBody: buffer.subarray(bodyStart),
         });
+      } else if (buffer.length + chunk.length >= MAX_REQUEST_HEADER_BYTES) {
+        socket.pause();
+        cleanup();
+        reject(new ExaErrorBuilder('E-EDJS-39').message('HTTP request headers exceed 65536 bytes.').error());
+      } else {
+        buffer = preview;
       }
     }
 

@@ -400,7 +400,53 @@ Covers:
 
 Needs: scn
 
+### Keep Command Payloads Out of Trace Logs
+`req~protect-command-trace-logs~1`
+
+The driver passes only protocol command names to trace logger callbacks, keeping credentials, SQL text, and parameters out of command traces.
+
+Covers:
+- `feat~secure-configurable-sessions~1`
+
+Needs: scn
+
+### Bound File Transfer Request Headers
+`req~bound-file-transfer-request-headers~1`
+
+The Node.js file-transfer tunnel rejects HTTP request headers larger than 64 KiB and releases its request listeners.
+
+Covers:
+- `feat~csv-file-import~1`
+- `feat~parquet-file-import~1`
+- `feat~csv-file-export~1`
+
+Needs: scn
+
 ## Acceptance Scenarios
+
+### Trace Logs Omit Command Payloads
+`scn~trace-logs-omit-command-payloads~1`
+
+**Given** a trace-enabled logger
+**When** the driver sends basic or token login, SQL, or cancellation commands
+**Then** its trace callback receives command names without credentials, SQL text, or parameter values
+
+Covers:
+- `req~protect-command-trace-logs~1`
+
+Needs: dsn
+
+### Reject Oversized Tunnel Headers
+`scn~reject-oversized-tunnel-headers~1`
+
+**Given** a Node.js file-transfer tunnel receiving an HTTP request
+**When** the header terminator has not arrived within 64 KiB
+**Then** the driver rejects the request with E-EDJS-39 and releases its request listeners
+
+Covers:
+- `req~bound-file-transfer-request-headers~1`
+
+Needs: dsn
 
 ### Connect With Basic Authentication
 `scn~connect-with-basic-authentication~1`
@@ -555,7 +601,7 @@ Needs: dsn, uman
 
 **Given** a browser application with native `WebSocket`
 **When** the application imports `@exasol/exasol-driver-ts/browser` and creates a driver or pool with a factory returning `new WebSocket(url)`
-**Then** the driver can use the browser WebSocket implementation without resolving Node.js file or TLS modules
+**Then** the driver can use the browser WebSocket implementation without resolving Node.js file, TLS, or cryptography modules
 
 Covers:
 - `req~run-in-browser~2`
@@ -572,7 +618,7 @@ Needs: dsn, uman
 Covers:
 - `req~run-in-nodejs~2`
 
-Needs: dsn
+Needs: dsn, uman
 
 ### Pool Reuses Drivers for Queries
 `scn~pool-reuses-drivers-for-queries~1`

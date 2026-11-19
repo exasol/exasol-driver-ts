@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import packageMetadata from '../../package.json';
 import { WebSocket } from 'ws';
-import { ExasolPool } from '../../src/lib/exasol-pool';
+import { NodeExasolPool as ExasolPool } from '../../src/lib/node-sql-pool';
 import { ExaWebsocket } from '../../src/lib/connection';
 import { Logger, LogLevel } from '../../src/lib/logger/logger';
-import { ExasolDriver } from '../../src/lib/sql-client';
+import { NodeExasolDriver as ExasolDriver } from '../../src/lib/node-sql-client';
 import { startNewDockerContainer } from '../exasolContainer';
 import { IntegrationTestRuntime, TestApi } from '../testcases/runtime';
 

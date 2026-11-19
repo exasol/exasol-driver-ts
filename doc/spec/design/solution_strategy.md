@@ -23,7 +23,7 @@ The implementation reuses:
 * WebSocket implementations supplied by applications.
 * `generic-pool` for pooling.
 * `pako` for optional compression and decompression.
-* `node-forge` for password encryption and CSV import certificate generation.
+* Node.js `crypto` for password encryption and local file transfer certificates, with `node-rsa` retained only for browser password encryption.
 * Node.js `fs`, `net`, `tls`, and `path` modules for CSV import.
 * Jest, Vitest Browser Mode with the Playwright Chromium provider, ts-jest, ESLint, Prettier, npm audit, and SonarCloud for verification.
 

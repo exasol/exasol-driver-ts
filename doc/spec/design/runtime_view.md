@@ -6,6 +6,18 @@ Terms use the definitions from [System Requirements](../system_requirements.md).
 
 ## Connection and Authentication
 
+### Command Trace Metadata
+`dsn~runtime-trace-command-metadata~1`
+
+**Given** a connection with trace logging enabled
+**When** it sends a response-producing command or a command without a response
+**Then** it passes only the protocol command name, or `loginCredentials` for credential-bearing login payloads, to the logger callback
+
+Covers:
+- `scn~trace-logs-omit-command-payloads~1`
+
+Needs: impl, utest
+
 The connection, login, command, result, fetch, and cancellation flows are based on the [Exasol WebSocket API](https://github.com/exasol/websocket-api).
 
 ### Connect with Basic Authentication
@@ -22,6 +34,30 @@ Covers:
 - `constr~exasol-websocket-sql-protocol~1`
 
 Needs: impl, itest
+
+### Node Password Encryption
+`dsn~runtime-node-password-encryption~1`
+
+**Given** a Node.js basic-auth login and Exasol RSA modulus and exponent
+**When** the driver encrypts the UTF-8 password
+**Then** it uses `node:crypto` with RSAES-PKCS1-v1_5 padding and sends Base64 ciphertext
+
+Covers:
+- `scn~connect-with-basic-authentication~1`
+
+Needs: impl, utest
+
+### Node Local-Transfer TLS
+`dsn~runtime-node-local-transfer-tls~1`
+
+**Given** a Node.js local-file transfer
+**When** the driver creates its temporary TLS identity
+**Then** it generates a fresh 2048-bit RSA key and self-signed SHA-256 certificate, supplies PEM key and certificate to TLS, and sends a `sha256//` pin of the certificate public key's SPKI bytes to Exasol
+
+Covers:
+- `scn~csv-import-succeeds~1`
+
+Needs: impl, utest
 
 ### Login Metadata
 `dsn~runtime-login-metadata~1`
@@ -263,6 +299,18 @@ Covers:
 Needs: impl, utest, itest
 
 ## CSV Import
+
+### Bounded Tunnel Request Headers
+`dsn~runtime-bounded-tunnel-headers~1`
+
+**Given** a file-transfer tunnel reading an HTTP request
+**When** its header exceeds 64 KiB without a terminator
+**Then** it rejects with E-EDJS-39, pauses the socket, and removes request listeners while retaining body bytes when a valid header arrives with them
+
+Covers:
+- `scn~reject-oversized-tunnel-headers~1`
+
+Needs: impl, utest
 
 ### CSV Import File Readability Check
 `dsn~runtime-csv-import-file-readability-check~1`

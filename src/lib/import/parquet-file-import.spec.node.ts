@@ -36,7 +36,7 @@ describe('parquet-file-import', () => {
     const executeSql = jest.fn().mockResolvedValue(3);
 
     mockedCreateTunnel.mockResolvedValue({ socket: unencryptedSocket as never, internalAddress: { host: '127.0.0.1', port: 8563 } });
-    mockedGenerateAdHocCertificate.mockReturnValue({ key: {} as never, cert: {} as never, fingerprint: 'fingerprint' });
+    mockedGenerateAdHocCertificate.mockResolvedValue({ key: 'key', cert: 'cert', fingerprint: 'fingerprint' });
     mockedWrapWithTls.mockReturnValue(secureSocket as never);
     mockedServeFileRequests.mockResolvedValue(3);
 

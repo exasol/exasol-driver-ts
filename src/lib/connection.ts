@@ -40,12 +40,13 @@ export enum ReadyState {
   CLOSED = 3
 }
 
+// [impl->dsn~runtime-trace-command-metadata~1]
 export class Connection implements PoolItem {
   private isBroken = false;
   private readonly protocol: WebsocketProtocol;
   private readonly commandQueue = new ResponseCommandQueue(
     (command) => {
-      this.logger.trace(`[Connection:${this.name}] Send request:`, command);
+      this.logger.trace(`[Connection:${this.name}] Send request:`, commandName(command));
       this.protocol.sendCommand(command);
     },
     (cause) => this.breakConnection(newSocketError(cause)),
@@ -125,7 +126,7 @@ export class Connection implements PoolItem {
       return Promise.reject(ErrClosed);
     }
 
-    this.logger.trace('[WebSQL]: Send request with no result:', cmd);
+    this.logger.trace('[WebSQL]: Send request with no result:', commandName(cmd));
     try {
       this.protocol.sendCommand(cmd);
     } catch (error) {
@@ -185,4 +186,8 @@ export class Connection implements PoolItem {
     }
     return this.commandQueue.enqueue<T>(cmd);
   } //end of sendCommand
+}
+
+function commandName(command: Commands | CommandsNoResult): string {
+  return 'command' in command ? command.command : 'loginCredentials';
 }

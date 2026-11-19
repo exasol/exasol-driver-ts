@@ -90,7 +90,8 @@ class ExportOperation {
     ]);
     this.unencryptedSocket = tunnel.socket;
     throwIfAborted(this.parameters.options.signal);
-    const certificate = generateAdHocCertificate();
+    const certificate = await Promise.race([generateAdHocCertificate(), this.abortPromise]);
+    throwIfAborted(this.parameters.options.signal);
     this.secureSocket = wrapWithTls(this.unencryptedSocket, certificate.key, certificate.cert);
     const exportSql = buildCsvExportSql(
       this.parameters.source, tunnel.internalAddress, certificate.fingerprint, this.parameters.csvOptions, this.absoluteFilePath,

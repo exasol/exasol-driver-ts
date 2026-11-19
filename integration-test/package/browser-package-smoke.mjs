@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
+import { builtinModules, createRequire } from 'node:module';
 
-const forbiddenModules = ['node:fs', 'node:net', 'node:tls', 'node:path', 'node:stream'];
+const forbiddenModules = builtinModules.map((moduleName) => moduleName.startsWith('node:') ? moduleName : `node:${moduleName}`);
 
 const browserEsm = await readFile(new URL('../../dist/browser.esm.js', import.meta.url), 'utf8');
 const browserCjs = await readFile(new URL('../../dist/browser.cjs', import.meta.url), 'utf8');

@@ -39,7 +39,7 @@ Npm --> Driver : install package
 
 ## Deployment Strategy
 
-Users install the package from npm and select the root Node.js entry point or the `/browser` subpath. The package is built with Rollup into CommonJS and ES module outputs, and conditional exports route `import` and `require` consumers to the corresponding libraries. Releases are currently performed manually according to the developer guide, with GitHub release automation publishing to npm.
+Users install the package from npm and select the root Node.js entry point or the `/browser` subpath. The package is built with Rollup into CommonJS and ES module outputs, and conditional exports route `import` and `require` consumers to the corresponding libraries. Each build also bundles the complete runtime dependency graph for both entry points with esbuild into temporary files and enforces raw and gzip size budgets. Releases are currently performed manually according to the developer guide, with GitHub release automation publishing to npm.
 
 ## Open Issues
 
