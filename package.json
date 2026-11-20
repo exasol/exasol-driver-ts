@@ -1,6 +1,6 @@
 {
   "name": "@exasol/exasol-driver-ts",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Exasol SQL Driver",
   "type": "module",
   "scripts": {
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "generic-pool": "^3.9.0",
-    "node-forge": "^1.4.0",
+    "node-forge": "^1.4.3",
     "pako": "^3.0.2"
   },
   "devDependencies": {

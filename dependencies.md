@@ -11,7 +11,7 @@
 
 [0]: https://registry.npmjs.org/generic-pool/-/generic-pool-3.9.0.tgz
 [1]: https://github.com/coopernurse/node-pool
-[2]: https://registry.npmjs.org/node-forge/-/node-forge-1.4.0.tgz
+[2]: https://registry.npmjs.org/node-forge/-/node-forge-1.4.3.tgz
 [3]: https://github.com/digitalbazaar/forge
 [4]: https://registry.npmjs.org/pako/-/pako-3.0.2.tgz
 [5]: https://github.com/nodeca/pako

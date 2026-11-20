@@ -41,6 +41,42 @@ await driver.query("SELECT * FROM EXA_ALL_SCHEMAS");
 await driver.close();
 ```
 
+### Connecting to a Cluster With Multiple Hosts
+
+The `host` property accepts an Exasol connection string, using the same syntax as the other Exasol drivers:
+
+```
+host[..range][:port][,host[..range][:port]...]
+```
+
+<!-- [uman->scn~connection-string-hosts-expanded~1] -->
+* A range expands the last number of a host name: `10.0.0.10..12` means `10.0.0.10`, `10.0.0.11` and `10.0.0.12`; `exasol1..3.example.com` means `exasol1.example.com` to `exasol3.example.com`. Leading zeros are kept (`node08..10`).
+* Separate several hosts or ranges with commas: `exasol1..3,exasol10`.
+* Host names may contain letters, digits, `.`, `-` and `_`.
+* Enclose IPv6 addresses in brackets: `[2001:db8::1]:8563`.
+* A connection string may expand to at most 10000 hosts.
+* A port in the connection string takes precedence over the `port` property. It applies to its own part and all preceding parts without a port, so `exasol1,exasol2:8564` uses port 8564 for both hosts.
+
+<!-- [uman->scn~connection-string-failover~1] -->
+The driver tries the hosts in random order to spread the load across the cluster. If the WebSocket to a host cannot be opened, it tries the next host. Errors after the WebSocket is open, such as wrong credentials, are not retried on other hosts. If no host can be reached, `connect()` rejects with an error that lists every host and its cause. `ExasolPool` behaves the same way for each pooled connection.
+
+```ts
+const driver = new ExasolDriver((url) => new WebSocket(url) as ExaWebsocket, {
+  host: '10.0.0.10..12:8563',
+  user: 'sys',
+  password: 'exasol',
+  connectTimeout: 5000,
+});
+```
+
+<!-- [uman->scn~connection-string-connect-timeout~1] -->
+`connectTimeout` limits how long the driver waits for the WebSocket to a single host to open before it tries the next host, and separately how long it waits for the login. A login that times out is not retried on another host. The default is 20000 ms; `0` disables the timeout.
+
+<!-- [uman->scn~connection-string-fingerprint-rejected~1] -->
+Other Exasol drivers accept a certificate fingerprint after the host name (`host/fingerprint`). This driver does not validate fingerprints yet and rejects connection strings that contain one. Configure certificate validation in the WebSocket factory instead, as shown in [Connecting With a Self-signed Certificate](#connecting-with-a-self-signed-certificate).
+
+When the `url` property is set, the driver uses that URL and does not parse `host` as a connection string. Local file import and export then connect to the `host` and `port` properties.
+
 ### Automatic Resource Cleanup
 
 <!-- [uman->scn~async-dispose-driver~1] -->
@@ -414,8 +450,10 @@ await exportPromise;
 
 | Property           |       Value        |       Default       | Description                                                                                                                             |
 | :----------------- | :----------------: | :-----------------: | :-------------------------------------------------------------------------------------------------------------------------------------- |
-| `host`             |       string       |     'localhost'     | Host name or ip address.                                                                                                                |
-| `port`             |       number       |        8563         | Port number.                                                                                                                            |
+| `host`             |       string       |     'localhost'     | Host name, IP address or connection string, see [Connecting to a Cluster With Multiple Hosts](#connecting-to-a-cluster-with-multiple-hosts). |
+| `port`             |       number       |        8563         | Port number. A port in the connection string in `host` takes precedence.                                                                 |
+| `url`              |       string       |                     | WebSocket URL that replaces `wss://<host>:<port>`. `host` is not parsed as a connection string when set.                                 |
+| `connectTimeout`   |    number, >=0     |        20000        | Time in milliseconds to wait for the WebSocket to a single host to open before trying the next host, and separately for the login. `0` disables the timeout. |
 | `user`             |       string       |                     | Exasol username.                                                                                                                        |
 | `password`         |       string       |                     | Exasol password.                                                                                                                        |
 | `autocommit`       | false=off, true=on |        true         | Switch autocommit on or off.                                                                                                            |
@@ -431,6 +469,8 @@ await exportPromise;
 | `fetchSize`        |     number, >0     |    `1024*1024`      | Amount of data in bytes which should be obtained by Exasol during a fetch. The application can run out of memory if the value is too high. |
 | `resultSetMaxRows` |       number       |                     | Set the max amount of rows in the result set.                                                                                           |
 | `schema`           |       string       |                     | Exasol schema name.                                                                                                                     |
+| `onClose`          |      function      |                     | Called when an open WebSocket closes.                                                                                                   |
+| `onError`          |      function      |                     | Called on WebSocket errors: when an open WebSocket reports an error, or once per `connect()` when no WebSocket could be opened to any host. Not called for configuration errors such as an invalid connection string. |
 
 ### Connection Pool
 

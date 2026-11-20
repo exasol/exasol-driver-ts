@@ -50,8 +50,7 @@ describe('csv-file-export', () => {
 
   function exportFile(parameters: Partial<ExportParameters> = {}): Promise<number> {
     return exportCsvFile({
-      host: 'localhost',
-      port: 8563,
+      tunnelAddress: async () => ({ host: 'localhost', port: 8563 }),
       source: 'MYTABLE',
       filePath: destination,
       executeSql,

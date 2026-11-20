@@ -2,6 +2,7 @@ import { ExasolDriver } from '@exasol/exasol-driver-ts/browser';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { basicTests } from '../testcases/basic.spec';
 import { basicCompressionTests } from '../testcases/compression.basic.spec';
+import { connectionStringTests } from '../testcases/connection-string.spec';
 import { basicPoolTests } from '../testcases/pool.basic.spec';
 import { resourceManagementTests } from '../testcases/resource-management.spec';
 import { basicAuthConfig, connectionSettings, nativeWebSocketFactory } from './browser-test-support';
@@ -14,6 +15,7 @@ basicTests(createBrowserRuntime());
 basicPoolTests(createBrowserRuntime());
 basicCompressionTests(createBrowserRuntime());
 resourceManagementTests(createBrowserRuntime());
+connectionStringTests(createBrowserRuntime());
 
 describe('Browser native WebSocket integration', () => {
   const connection = connectionSettings();

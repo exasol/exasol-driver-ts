@@ -23,6 +23,17 @@ export interface InternalAddress {
   port: number;
 }
 
+/** Address of the Exasol node to open the tunnel to. */
+export interface TunnelAddress {
+  host: string;
+  port: number;
+}
+
+/**
+ * Resolves the tunnel address lazily, after the local checks passed, as resolving it may connect to the database.
+ */
+export type TunnelAddressProvider = () => Promise<TunnelAddress>;
+
 // Export function to allow unit testing
 export function parseResponse(data: Buffer): InternalAddress {
   const port = data.readInt32LE(PORT_OFFSET);

@@ -39,9 +39,24 @@ export class ConnectionPool<T extends PoolItem> {
     this.pool.clear();
   }
 
+  /** Removes the given connection; other connections with the same name are kept. */
+  remove(connection: T) {
+    const item = this.pool.get(connection.name);
+    if (item?.connection === connection) {
+      this.logger.debug(`[Pool:${connection.name}] Remove connection`);
+      this.pool.delete(connection.name);
+    }
+  }
+
+  /** Marks the given connection as free again. Connections that were removed in the meantime stay removed. */
   release(connection: T) {
+    const item = this.pool.get(connection.name);
+    if (item?.connection !== connection) {
+      this.logger.debug(`[Pool:${connection.name}] Ignore release of removed connection`);
+      return;
+    }
     this.logger.debug(`[Pool:${connection.name}] Release connection`);
-    this.pool.set(connection.name, { claimed: false, connection });
+    item.claimed = false;
   }
 
   acquire(): T | undefined {

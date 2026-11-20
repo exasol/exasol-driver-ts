@@ -22,7 +22,7 @@ describe('parquet-file-import', () => {
     const executeSql = jest.fn();
 
     await expect(importParquetFile({
-      host: 'localhost', port: 8563, tableName: 'TEST_TABLE', filePath: '/missing/test.parquet', executeSql,
+      tunnelAddress: async () => ({ host: 'localhost', port: 8563 }), tableName: 'TEST_TABLE', filePath: '/missing/test.parquet', executeSql,
     })).rejects.toThrow("E-EDJS-14: Import file not found: '/missing/test.parquet'. Verify the file path exists and is readable.");
 
     expect(mockedCreateTunnel).not.toHaveBeenCalled();
@@ -41,7 +41,7 @@ describe('parquet-file-import', () => {
     mockedServeFileRequests.mockResolvedValue(3);
 
     await expect(importParquetFile({
-      host: 'localhost', port: 8563, tableName: 'TEST_TABLE', filePath: 'README.md', executeSql,
+      tunnelAddress: async () => ({ host: 'localhost', port: 8563 }), tableName: 'TEST_TABLE', filePath: 'README.md', executeSql,
     })).resolves.toBe(3);
 
     expect(executeSql).toHaveBeenCalledWith("IMPORT INTO TEST_TABLE FROM PARQUET AT 'https://127.0.0.1:8563;MaxConcurrentReads=1' PUBLIC KEY 'fingerprint' FILE '001.parquet'");
@@ -55,7 +55,7 @@ describe('parquet-file-import', () => {
     mockedCreateTunnel.mockImplementation(() => new Promise(() => undefined));
 
     const importPromise = importParquetFile({
-      host: 'localhost', port: 8563, tableName: 'TEST_TABLE', filePath: 'README.md', executeSql: jest.fn(), options: { signal: controller.signal },
+      tunnelAddress: async () => ({ host: 'localhost', port: 8563 }), tableName: 'TEST_TABLE', filePath: 'README.md', executeSql: jest.fn(), options: { signal: controller.signal },
     });
     controller.abort();
 
