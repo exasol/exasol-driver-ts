@@ -96,6 +96,9 @@ export const newDsnFingerprintNotSupportedError = (host: string) =>
 export const newConnectTimeoutError = (url: string, timeoutMs: number) =>
   new ExaErrorBuilder('E-EDJS-41').message('Opening WebSocket {{url}} timed out after {{timeout}} ms.', url, timeoutMs).error();
 
+export const newLoginTimeoutError = (timeoutMs: number) =>
+  new ExaErrorBuilder('E-EDJS-44').message('Login timed out after {{timeout}} ms.', timeoutMs).error();
+
 export const newConnectionFailedError = (failures: Array<{ url: string; cause: unknown }>) =>
   new ExaErrorBuilder('E-EDJS-42')
     .message(

@@ -28,6 +28,17 @@ describe('connectionPool', () => {
     expect(connectionPool.getAll()).toEqual([]);
   });
 
+  it('should not add a removed connection again on release', async () => {
+    const connectionPool = new ConnectionPool<{ name: string }>(1, new Logger());
+    await connectionPool.add({ name: 'test' });
+    const connection = connectionPool.acquire() as PoolItem;
+
+    connectionPool.remove(connection);
+    connectionPool.release(connection);
+
+    expect(connectionPool.getAll()).toEqual([]);
+  });
+
   it('should work for multiple items in pool', async () => {
     const connectionPool = new ConnectionPool<{ name: string }>(2, new Logger());
     expect(connectionPool.acquire()).toBeUndefined();

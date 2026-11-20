@@ -12,6 +12,7 @@ import {
   newConnectionFailedError,
   newConnectTimeoutError,
   newDsnFingerprintNotSupportedError,
+  newLoginTimeoutError,
   newInvalidReturnValueResultSet,
   newInvalidReturnValueRowCount,
   newSocketClosedError,
@@ -40,8 +41,9 @@ export interface Config {
   /** Websocket URL. Default: `wss://<host>:<port>`. This allows overriding the default URL if necessary. When set, `host` is not parsed as a connection string. */
   url?: string;
   /**
-   * Timeout in milliseconds for opening the WebSocket to a single host before trying the next one.
-   * `0`, negative values and values above 2147483647 (the maximum timer delay) disable the timeout. Default: 10000
+   * Timeout in milliseconds, applied separately to opening the WebSocket to each host and to the login.
+   * When opening a WebSocket times out, the driver tries the next host; when the login times out, `connect()` rejects.
+   * `0`, negative values and values above 2147483647 (the maximum timer delay) disable the timeout. Default: 20000
    */
   connectTimeout?: number;
   user?: string;
@@ -81,7 +83,7 @@ interface InternalConfig {
 
 export { driverVersion } from './login-options';
 
-const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
+const DEFAULT_CONNECT_TIMEOUT_MS = 20_000;
 
 interface OpenedWebSocket {
   webSocket: ExaWebsocket;
@@ -162,7 +164,28 @@ export class BaseExasolDriver implements IExasolClient {
       webSocket.close();
       throw ErrClosed;
     }
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolveConnect, rejectConnect) => {
+      // [impl->dsn~runtime-dsn-connect-timeout~1]
+      // The login has its own timeout. When it runs out, the connection is broken (not closed gracefully, as the
+      // disconnect command would wait behind the pending login) and no other host is tried.
+      const timeoutMs = this.getConnectTimeout();
+      const loginTimer = isTimeoutEnabled(timeoutMs)
+        ? setTimeout(() => {
+            const error = newLoginTimeoutError(timeoutMs);
+            this.logger.debug('[SQLClient] Login timed out', error);
+            this.pool.remove(connection);
+            connection.breakConnection(error);
+            rejectConnect(error);
+          }, timeoutMs)
+        : undefined;
+      const resolve = () => {
+        clearTimeout(loginTimer);
+        resolveConnect();
+      };
+      const reject = (error: unknown) => {
+        clearTimeout(loginTimer);
+        rejectConnect(error);
+      };
       const connection = new Connection(webSocket, this.logger, Date.now() + '', (): void => {
         this.logger.debug('[SQLClient] Got close event');
         if (this.config.onClose) {
@@ -173,9 +196,7 @@ export class BaseExasolDriver implements IExasolClient {
       }, address);
       webSocket.onerror = (err) => {
         this.logger.debug('[SQLClient] OnError', err);
-        if (this.config.onError) {
-          this.config.onError();
-        }
+        this.notifyError();
         const error = newSocketError(err);
         connection.breakConnection(error);
         void this.close();
@@ -206,6 +227,19 @@ export class BaseExasolDriver implements IExasolClient {
           reject(err);
         });
     });
+  }
+
+  /** Calls the `onError` callback. An exception from the callback is logged and does not replace the driver's error. */
+  private notifyError() {
+    try {
+      this.config.onError?.();
+    } catch (callbackError) {
+      this.logger.warn('[SQLClient] onError callback failed', callbackError);
+    }
+  }
+
+  private getConnectTimeout(): number {
+    return this.config.connectTimeout ?? DEFAULT_CONNECT_TIMEOUT_MS;
   }
 
   /** Removes a connection that failed to log in from the pool and closes its WebSocket. */
@@ -253,15 +287,13 @@ export class BaseExasolDriver implements IExasolClient {
         failures.push({ url, cause });
       }
     }
-    if (this.config.onError) {
-      this.config.onError();
-    }
+    this.notifyError();
     throw newConnectionFailedError(failures);
   }
 
   private openWebSocket(url: string): Promise<ExaWebsocket> {
     // [impl->dsn~runtime-dsn-connect-timeout~1]
-    const timeoutMs = this.config.connectTimeout ?? DEFAULT_CONNECT_TIMEOUT_MS;
+    const timeoutMs = this.getConnectTimeout();
     return new Promise<ExaWebsocket>((resolve, reject) => {
       let webSocket: ExaWebsocket;
       try {
@@ -293,9 +325,9 @@ export class BaseExasolDriver implements IExasolClient {
         }
         reject(error);
       };
+      const timer = isTimeoutEnabled(timeoutMs) ? setTimeout(() => fail(newConnectTimeoutError(url, timeoutMs)), timeoutMs) : undefined;
       const abort = () => fail(ErrClosed);
       this.pendingOpenAborts.add(abort);
-      const timer = isTimeoutEnabled(timeoutMs) ? setTimeout(() => fail(newConnectTimeoutError(url, timeoutMs)), timeoutMs) : undefined;
       webSocket.onopen = () => {
         if (settled) {
           return;

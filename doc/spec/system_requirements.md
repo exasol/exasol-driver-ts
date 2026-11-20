@@ -446,7 +446,7 @@ Needs: dsn
 
 **Given** a driver or pool whose `host` is a connection string in the format `host[..range][/fingerprint][:port][,host...]`
 **When** the application connects
-**Then** the driver expands ranges of the last number in a host name (for example `10.0.0.10..12` or `exasol1..3`), splits comma-separated hosts, uses the port given in the connection string for its part and all preceding parts without a port, uses the configured `port` otherwise, accepts IPv6 addresses in brackets, and rejects invalid connection strings, descending ranges and connection strings that expand to more than 10000 hosts before opening a WebSocket
+**Then** the driver expands ranges of the last number in a host name (for example `10.0.0.10..12` or `exasol1..3`), splits comma-separated hosts, uses the port given in the connection string for its part and all preceding parts without a port, uses the configured `port` otherwise, accepts IPv6 addresses in brackets, and rejects invalid connection strings (including host names with characters other than letters, digits, `.`, `-` and `_`), descending ranges and connection strings that expand to more than 10000 hosts before opening a WebSocket
 
 Covers:
 - `req~connect-via-connection-string~1`
@@ -468,9 +468,9 @@ Needs: dsn, uman
 ### Connection String Connect Timeout
 `scn~connection-string-connect-timeout~1`
 
-**Given** a driver configured with `connectTimeout` (default 10000 ms) and a host whose WebSocket does not open within that time
+**Given** a driver configured with `connectTimeout` (default 20000 ms) and a host whose WebSocket does not open, or whose login does not complete, within that time
 **When** the application connects
-**Then** the driver abandons that host and tries the next host of the connection string
+**Then** the driver abandons a host whose WebSocket did not open and tries the next host of the connection string; when the login times out, it closes that connection and rejects without trying another host
 
 Covers:
 - `req~connect-via-connection-string~1`

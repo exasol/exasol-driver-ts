@@ -20,6 +20,7 @@ describe('utils', () => {
       ${'exasol1,,exasol2'}                | ${hosts(8563, 'exasol1', 'exasol2')}
       ${'[::1]'}                           | ${hosts(8563, '[::1]')}
       ${'[fe80::1],exasol1:8564'}          | ${hosts(8564, '[fe80::1]', 'exasol1')}
+      ${'my_host-1.example.com'}           | ${hosts(8563, 'my_host-1.example.com')}
     `('parses "$dsn"', ({ dsn, parsed }: { dsn: string; parsed: DsnHost[] }) => {
       expect(parseDsn(dsn, 8563)).toEqual(parsed);
     });
@@ -91,6 +92,11 @@ describe('utils', () => {
       ${'[::1'}                   | ${'[::1'}
       ${'[::1]..3'}               | ${'[::1]..3'}
       ${'exa[sol'}                | ${'exa[sol'}
+      ${'exasol1..3]'}            | ${'exasol1..3]'}
+      ${'host?x:8563'}            | ${'host?x:8563'}
+      ${'a@b:8563'}               | ${'a@b:8563'}
+      ${'exa sol'}                | ${'exa sol'}
+      ${'exa#sol'}                | ${'exa#sol'}
     `('throws E-EDJS-39 for invalid DSN "$dsn"', ({ dsn, part }: { dsn: string; part: string }) => {
       expect(() => parseDsn(dsn, 8563)).toThrow(`E-EDJS-39: Invalid connection string '${part}'.`);
     });

@@ -11,11 +11,13 @@ export interface DsnHost {
 
 // Same syntax as the other Exasol drivers (e.g. pyexasol):
 // host prefix, optional numeric range with optional suffix, optional fingerprint, optional port.
+// Host names may only contain letters, digits, `.`, `-` and `_`, so that the host and port end up in the WebSocket URL
+// exactly as written (pyexasol rejects other names when resolving them, which this driver does not do).
 // Groups: 1 bracketed IPv6 address, 2 host prefix, 3 range start, 4 range end, 5 host suffix, 6 fingerprint, 7 port.
 // The expression mirrors pyexasol's DSN regex so both can be compared directly. Its backtracking is acceptable because it
 // only parses the application's own connection configuration, one comma-separated part at a time.
 const dsnPartRegex =
-  /^(?:(\[[0-9a-f:.]+\])|([^:/[\]]+?)(?:(\d+)\.\.(\d+)([^:/]*?))?)(?:\/([0-9a-f]+|nocertcheck))?(?::(\d+)?)?$/i; // NOSONAR
+  /^(?:(\[[0-9a-f:.]+\])|([a-z0-9._-]+?)(?:(\d+)\.\.(\d+)([a-z0-9._-]*?))?)(?:\/([0-9a-f]+|nocertcheck))?(?::(\d+)?)?$/i; // NOSONAR
 
 const MAX_PORT = 65535;
 /** Upper limit for the number of hosts a connection string may expand to, protecting against typos in ranges. */

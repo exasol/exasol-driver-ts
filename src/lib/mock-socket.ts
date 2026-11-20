@@ -16,6 +16,10 @@ export class MockExaWebSocket implements ExaWebsocket {
   public send(data: string | Uint8Array): void {
     const command = JSON.parse(data.toString());
     this.sentCommands.push(command);
+    if (command.accessToken === 'silent-token') {
+      // Simulates a server that never answers the login.
+      return;
+    }
     if (command.accessToken === 'rejected-token') {
       setTimeout(() => {
         this.callOnMessage({

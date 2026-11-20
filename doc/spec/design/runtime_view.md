@@ -40,7 +40,7 @@ Needs: impl, utest, itest
 
 **Given** a driver without an explicit `url`
 **When** `connect()` is called
-**Then** the driver parses `host` as a connection string with the same grammar as pyexasol: each comma-separated part is `prefix[start..end[suffix]][/fingerprint][:port]`; a range expands to `prefix + n + suffix` keeping the zero padding of `start`; ports and fingerprints apply backwards to preceding parts without their own; a part can also be a bracketed IPv6 address `[address][/fingerprint][:port]` without range; invalid parts, ports outside 1-65535 and empty strings reject with `E-EDJS-39`, descending ranges with `E-EDJS-9`, and more than 10000 expanded hosts with `E-EDJS-43`. Host names are not resolved to IP addresses, so that TLS host name verification and browser runtimes keep working.
+**Then** the driver parses `host` as a connection string with the same grammar as pyexasol: each comma-separated part is `prefix[start..end[suffix]][/fingerprint][:port]`; a range expands to `prefix + n + suffix` keeping the zero padding of `start`; ports and fingerprints apply backwards to preceding parts without their own; host names may only contain letters, digits, `.`, `-` and `_`, so that the host and port end up in the WebSocket URL exactly as written (pyexasol rejects other names when it resolves them); a part can also be a bracketed IPv6 address `[address][/fingerprint][:port]` without range; invalid parts, ports outside 1-65535 and empty strings reject with `E-EDJS-39`, descending ranges with `E-EDJS-9`, and more than 10000 expanded hosts with `E-EDJS-43`. Host names are not resolved to IP addresses, so that TLS host name verification and browser runtimes keep working.
 
 Covers:
 - `scn~connection-string-hosts-expanded~1`
@@ -74,9 +74,13 @@ Needs: impl, utest
 ### Connect Timeout
 `dsn~runtime-dsn-connect-timeout~1`
 
-**Given** a configured `connectTimeout` greater than zero and at most 2147483647, the maximum `setTimeout` delay (default 10000 ms; other values disable the timeout)
-**When** a WebSocket does not open within that time
-**Then** the driver rejects that attempt with `E-EDJS-41`, closes the WebSocket, and replaces its event handlers with no-op handlers so that late events of abandoned WebSockets are ignored
+**Given** a configured `connectTimeout` greater than zero and at most 2147483647, the maximum `setTimeout` delay (default 20000 ms; other values disable the timeout)
+**When** a WebSocket does not open within that time, or the login on an open WebSocket does not complete within that time
+**Then** for the WebSocket, the driver rejects that attempt with `E-EDJS-41`, closes the WebSocket, and replaces its event handlers with no-op handlers so that late events of abandoned WebSockets are ignored; for the login, the driver removes the connection from its internal pool, breaks it (a graceful disconnect would wait behind the pending login command), and rejects `connect()` with `E-EDJS-44` without trying another host
+
+Rationale:
+
+pyexasol uses `connection_timeout` (default 10 s) for opening the WebSocket and `socket_timeout` (default 30 s) for every request, including the login. The driver uses one timeout for both phases, because a timeout for every request would also abort long-running queries
 
 Covers:
 - `scn~connection-string-connect-timeout~1`

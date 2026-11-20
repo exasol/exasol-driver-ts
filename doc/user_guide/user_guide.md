@@ -52,6 +52,7 @@ host[..range][:port][,host[..range][:port]...]
 <!-- [uman->scn~connection-string-hosts-expanded~1] -->
 * A range expands the last number of a host name: `10.0.0.10..12` means `10.0.0.10`, `10.0.0.11` and `10.0.0.12`; `exasol1..3.example.com` means `exasol1.example.com` to `exasol3.example.com`. Leading zeros are kept (`node08..10`).
 * Separate several hosts or ranges with commas: `exasol1..3,exasol10`.
+* Host names may contain letters, digits, `.`, `-` and `_`.
 * Enclose IPv6 addresses in brackets: `[2001:db8::1]:8563`.
 * A connection string may expand to at most 10000 hosts.
 * A port in the connection string takes precedence over the `port` property. It applies to its own part and all preceding parts without a port, so `exasol1,exasol2:8564` uses port 8564 for both hosts.
@@ -69,7 +70,7 @@ const driver = new ExasolDriver((url) => new WebSocket(url) as ExaWebsocket, {
 ```
 
 <!-- [uman->scn~connection-string-connect-timeout~1] -->
-`connectTimeout` limits how long the driver waits for the WebSocket to a single host to open before it tries the next host. The default is 10000 ms; `0` disables the timeout.
+`connectTimeout` limits how long the driver waits for the WebSocket to a single host to open before it tries the next host, and separately how long it waits for the login. A login that times out is not retried on another host. The default is 20000 ms; `0` disables the timeout.
 
 <!-- [uman->scn~connection-string-fingerprint-rejected~1] -->
 Other Exasol drivers accept a certificate fingerprint after the host name (`host/fingerprint`). This driver does not validate fingerprints yet and rejects connection strings that contain one. Configure certificate validation in the WebSocket factory instead, as shown in [Connecting With a Self-signed Certificate](#connecting-with-a-self-signed-certificate).
@@ -452,7 +453,7 @@ await exportPromise;
 | `host`             |       string       |     'localhost'     | Host name, IP address or connection string, see [Connecting to a Cluster With Multiple Hosts](#connecting-to-a-cluster-with-multiple-hosts). |
 | `port`             |       number       |        8563         | Port number. A port in the connection string in `host` takes precedence.                                                                 |
 | `url`              |       string       |                     | WebSocket URL that replaces `wss://<host>:<port>`. `host` is not parsed as a connection string when set.                                 |
-| `connectTimeout`   |    number, >=0     |        10000        | Time in milliseconds to wait for the WebSocket to a single host to open before trying the next host. `0` disables the timeout.          |
+| `connectTimeout`   |    number, >=0     |        20000        | Time in milliseconds to wait for the WebSocket to a single host to open before trying the next host, and separately for the login. `0` disables the timeout. |
 | `user`             |       string       |                     | Exasol username.                                                                                                                        |
 | `password`         |       string       |                     | Exasol password.                                                                                                                        |
 | `autocommit`       | false=off, true=on |        true         | Switch autocommit on or off.                                                                                                            |

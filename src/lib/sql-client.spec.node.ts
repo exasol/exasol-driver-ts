@@ -490,6 +490,48 @@ describe('sqlClient', () => {
       expect(factory.urls).toEqual(['wss://exasol1:8563']);
     });
 
+    // [utest->dsn~runtime-dsn-connect-timeout~1]
+    it('rejects without trying another host when the login times out', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'silent-token', host: 'exasol1,exasol2', connectTimeout: 20 });
+
+      await expect(driver.connect()).rejects.toThrow("E-EDJS-44: Login timed out after '20' ms.");
+
+      expect(factory.urls).toEqual(['wss://exasol1:8563']);
+      expect(factory.sockets[0].closed).toBe(true);
+      await expect(driver.cancel()).rejects.toThrow('E-EDJS-1: Invalid connection.');
+    });
+
+    // [utest->dsn~runtime-dsn-connect-timeout~1]
+    it('does not time out a login that completes in time', async () => {
+      jest.useFakeTimers();
+      try {
+        const factory = new MultiHostMockWebsocketFactory({}, 'open');
+        driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+        const connectPromise = driver.connect();
+        await jest.advanceTimersByTimeAsync(10);
+        await expect(connectPromise).resolves.toBeUndefined();
+
+        await jest.advanceTimersByTimeAsync(60_000);
+        expect(factory.sockets[0].closed).toBe(false);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('rejects with the connection error when the onError callback throws', async () => {
+      const onError = jest.fn(() => {
+        throw new Error('callback failed');
+      });
+      const factory = new MultiHostMockWebsocketFactory({}, 'error');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1', onError });
+
+      await expect(driver.connect()).rejects.toThrow('E-EDJS-42');
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
     // [utest->dsn~runtime-discard-failed-login-connection~1]
     it('closes the WebSocket and discards the connection when login fails', async () => {
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
@@ -626,15 +668,15 @@ describe('sqlClient', () => {
     });
 
     // [utest->dsn~runtime-dsn-connect-timeout~1]
-    it('uses a default connect timeout of 10000 ms', async () => {
+    it('uses a default connect timeout of 20000 ms', async () => {
       jest.useFakeTimers();
       try {
         const factory = new MultiHostMockWebsocketFactory({}, 'hang');
         driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
         const connectPromise = driver.connect();
-        const assertion = expect(connectPromise).rejects.toThrow("timed out after '10000' ms");
+        const assertion = expect(connectPromise).rejects.toThrow("timed out after '20000' ms");
 
-        await jest.advanceTimersByTimeAsync(9999);
+        await jest.advanceTimersByTimeAsync(19999);
         expect(factory.sockets[0].closed).toBe(false);
         await jest.advanceTimersByTimeAsync(1);
         await assertion;
