@@ -20,8 +20,7 @@ describe('csv-file-import', () => {
       const mockExecuteSql = jest.fn();
 
       await expect(importCsvFile({
-        host: 'localhost',
-        port: 8563,
+        tunnelAddress: async () => ({ host: 'localhost', port: 8563 }),
         tableName: 'test_table',
         filePath: '/nonexistent/path/test.csv',
         executeSql: mockExecuteSql,
@@ -38,8 +37,7 @@ describe('csv-file-import', () => {
 
       try {
         await importCsvFile({
-          host: 'localhost',
-          port: 8563,
+          tunnelAddress: async () => ({ host: 'localhost', port: 8563 }),
           tableName: 'test_table',
           filePath: '/another/missing/file.csv',
           executeSql: mockExecuteSql,
@@ -56,8 +54,7 @@ describe('csv-file-import', () => {
 
       mockedCreateTunnel.mockRejectedValue(new Error('mocked error'));
       await expect(importCsvFile({
-        host: 'localhost',
-        port: 8563,
+        tunnelAddress: async () => ({ host: 'localhost', port: 8563 }),
         tableName: 'test_table',
         filePath: 'README.md',
         executeSql: mockExecuteSql,
@@ -96,8 +93,7 @@ describe('csv-file-import', () => {
         });
 
         const importPromise = importCsvFile({
-          host: 'localhost',
-          port: 8563,
+          tunnelAddress: async () => ({ host: 'localhost', port: 8563 }),
           tableName: 'test_table',
           filePath: 'README.md',
           executeSql: mockExecuteSql,
@@ -121,8 +117,7 @@ describe('csv-file-import', () => {
         mockedCreateTunnel.mockImplementation(() => new Promise(() => undefined));
 
         const importPromise = importCsvFile({
-          host: 'localhost',
-          port: 8563,
+          tunnelAddress: async () => ({ host: 'localhost', port: 8563 }),
           tableName: 'test_table',
           filePath: 'README.md',
           executeSql,

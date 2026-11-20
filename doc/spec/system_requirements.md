@@ -153,6 +153,21 @@ Covers:
 
 Needs: scn
 
+#### Connect via a Connection String
+`req~connect-via-connection-string~1`
+
+The application developer configures the driver or pool with an Exasol connection string that lists several cluster nodes as host ranges and comma-separated hosts, using the same syntax as the other Exasol drivers. The driver distributes connections across the nodes and fails over to another node when one is unreachable.
+
+Rationale:
+
+Clusters such as Exasol SaaS private endpoints require load distribution and failover across nodes.
+
+Covers:
+- `feat~sql-connectivity~1`
+- `feat~connection-pooling~1`
+
+Needs: scn
+
 #### Execute SQL Queries
 `req~execute-sql-queries~1`
 
@@ -423,6 +438,70 @@ Needs: dsn
 
 Covers:
 - `req~connect-to-exasol~1`
+
+Needs: dsn
+
+### Connection String Hosts Expanded
+`scn~connection-string-hosts-expanded~1`
+
+**Given** a driver or pool whose `host` is a connection string in the format `host[..range][/fingerprint][:port][,host...]`
+**When** the application connects
+**Then** the driver expands ranges of the last number in a host name (for example `10.0.0.10..12` or `exasol1..3`), splits comma-separated hosts, uses the port given in the connection string for its part and all preceding parts without a port, uses the configured `port` otherwise, accepts IPv6 addresses in brackets, and rejects invalid connection strings, descending ranges and connection strings that expand to more than 10000 hosts before opening a WebSocket
+
+Covers:
+- `req~connect-via-connection-string~1`
+
+Needs: dsn, uman
+
+### Connection String Failover
+`scn~connection-string-failover~1`
+
+**Given** a driver or pool whose connection string lists several hosts of which at least one is unreachable
+**When** the application connects
+**Then** the driver tries the hosts once each in random order until a WebSocket opens, authenticates on that host without trying other hosts on login errors (closing the WebSocket of a failed login), and, if no WebSocket opens, rejects with an error that lists every host with its cause
+
+Covers:
+- `req~connect-via-connection-string~1`
+
+Needs: dsn, uman
+
+### Connection String Connect Timeout
+`scn~connection-string-connect-timeout~1`
+
+**Given** a driver configured with `connectTimeout` (default 10000 ms) and a host whose WebSocket does not open within that time
+**When** the application connects
+**Then** the driver abandons that host and tries the next host of the connection string
+
+Covers:
+- `req~connect-via-connection-string~1`
+
+Needs: dsn, uman
+
+### Connection String Fingerprint Rejected
+`scn~connection-string-fingerprint-rejected~1`
+
+**Given** a connection string that contains a certificate fingerprint for any host
+**When** the application connects
+**Then** the driver rejects the connection with an error stating that fingerprint validation is not supported yet, without opening a WebSocket
+
+Rationale:
+
+Connecting without validating a fingerprint the user asked for would silently weaken security.
+
+Covers:
+- `req~connect-via-connection-string~1`
+
+Needs: dsn, uman
+
+### Local File Transfer Uses Connected Host
+`scn~local-file-transfer-uses-connected-host~1`
+
+**Given** a Node.js driver whose `host` is a connection string with several hosts
+**When** the application imports or exports a local file
+**Then** the driver opens the file transfer tunnel to the host and port of a live WebSocket connection, reconnecting first if the connection to the previous host broke
+
+Covers:
+- `req~connect-via-connection-string~1`
 
 Needs: dsn
 

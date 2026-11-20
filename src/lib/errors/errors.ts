@@ -74,3 +74,34 @@ export const newInvalidReturnValueRowCount = new ExaErrorBuilder('E-EDJS-11')
   .error();
 
 export const newMalformedWebsocketResponseError = () => new ExaErrorBuilder('E-EDJS-38').message('Malformed WebSocket response.').error();
+
+export const newInvalidDsnError = (dsn: string) =>
+  new ExaErrorBuilder('E-EDJS-39')
+    .message('Invalid connection string {{dsn}}.', dsn)
+    .mitigation('Use the format host[..range][/fingerprint][:port][,host...], e.g. exasol1..3:8563.')
+    .error();
+
+export const newTooManyDsnHostsError = (dsn: string, max: number) =>
+  new ExaErrorBuilder('E-EDJS-43')
+    .message('Connection string {{dsn}} expands to more than {{max}} hosts.', dsn, max)
+    .mitigation('Check the host ranges in the connection string.')
+    .error();
+
+export const newDsnFingerprintNotSupportedError = (host: string) =>
+  new ExaErrorBuilder('E-EDJS-40')
+    .message('Connection string contains a certificate fingerprint for host {{host}}, but fingerprint validation is not supported yet.', host)
+    .mitigation('Remove the fingerprint and configure certificate validation in the WebSocket factory instead.')
+    .error();
+
+export const newConnectTimeoutError = (url: string, timeoutMs: number) =>
+  new ExaErrorBuilder('E-EDJS-41').message('Opening WebSocket {{url}} timed out after {{timeout}} ms.', url, timeoutMs).error();
+
+export const newConnectionFailedError = (failures: Array<{ url: string; cause: unknown }>) =>
+  new ExaErrorBuilder('E-EDJS-42')
+    .message(
+      'Could not connect to Exasol. Tried {{count}} host(s): {{failures}}.',
+      failures.length,
+      failures.map(({ url, cause }) => `${url}: ${cause instanceof Error ? cause.message : String(cause)}`).join('; '),
+    )
+    .mitigation('Check that the hosts are reachable and the port is correct.')
+    .error();

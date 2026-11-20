@@ -5,13 +5,12 @@ import * as tls from 'node:tls';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 import { buildCsvExportSql } from './export-sql-builder';
 import { readHttpRequest, receiveHttpRequestBody } from './http-protocol';
-import { createTunnel } from './http-transport';
+import { createTunnel, TunnelAddressProvider } from './http-transport';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
 import { CsvExportFormatOptions, CsvExportOptions } from './types';
 
 interface ExportCsvFileParameters {
-  host: string;
-  port: number;
+  tunnelAddress: TunnelAddressProvider;
   source: string;
   filePath: string;
   executeSql: (sql: string) => Promise<number>;
@@ -84,10 +83,10 @@ class ExportOperation {
     this.fileStream = fileHandle.createWriteStream();
     throwIfAborted(this.parameters.options.signal);
 
-    const tunnel = await Promise.race([
-      createTunnel(this.parameters.host, this.parameters.port, this.parameters.options.signal),
-      this.abortPromise,
-    ]);
+    // [impl->dsn~runtime-dsn-tunnel-address~1]
+    const { host, port } = await Promise.race([this.parameters.tunnelAddress(), this.abortPromise]);
+    throwIfAborted(this.parameters.options.signal);
+    const tunnel = await Promise.race([createTunnel(host, port, this.parameters.options.signal), this.abortPromise]);
     this.unencryptedSocket = tunnel.socket;
     throwIfAborted(this.parameters.options.signal);
     const certificate = generateAdHocCertificate();

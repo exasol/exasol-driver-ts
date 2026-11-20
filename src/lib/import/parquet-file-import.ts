@@ -1,11 +1,11 @@
 import { ExaErrorBuilder } from '../errors/error-reporting';
 import { buildParquetImportSql } from './import-sql-builder';
+import { TunnelAddressProvider } from './http-transport';
 import { importLocalFile } from './local-file-import';
 import { FileImportOptions, ParquetImportOptions } from './types';
 
 interface ImportParquetFileParameters {
-  host: string;
-  port: number;
+  tunnelAddress: TunnelAddressProvider;
   tableName: string;
   filePath: string;
   // Reserved for future Parquet format options; local-file serving does not consume it yet.

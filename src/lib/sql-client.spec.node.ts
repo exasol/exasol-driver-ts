@@ -1,7 +1,8 @@
 import { WebSocket } from 'ws';
 import { ExaWebsocket, ReadyState } from './connection';
-import { createMockWebsocketFactory, MockWebsocketFactory } from './mock-socket';
+import { createMockWebsocketFactory, MockWebsocketFactory, MultiHostMockWebsocketFactory } from './mock-socket';
 import { NodeExasolDriver as ExasolDriver } from './node-sql-client';
+import { NodeExasolPool } from './node-sql-pool';
 import { IExasolDriver } from './sql-client.interface';
 
 describe('sqlClient', () => {
@@ -392,6 +393,389 @@ describe('sqlClient', () => {
       };
 
       await expect(driver.execute('invalid sql')).rejects.toThrow(expectedMessage);
+    });
+  });
+
+  describe('connect with connection string', () => {
+    const keepDsnOrder = () => jest.spyOn(Math, 'random').mockReturnValue(0.999);
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    // [utest->dsn~runtime-dsn-parsing~1]
+    it('uses the port from the connection string instead of the configured port', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1:8888', port: 8563 });
+
+      await driver.connect();
+
+      expect(factory.urls).toEqual(['wss://exasol1:8888']);
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('tries the hosts in turn until one opens', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({ 'wss://exasol3:8563': 'open' });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1..4' });
+
+      await driver.connect();
+
+      expect(factory.urls).toEqual(['wss://exasol1:8563', 'wss://exasol2:8563', 'wss://exasol3:8563']);
+      await expect(driver.query('select 1')).resolves.toBeDefined();
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('tries the hosts in random order', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1..3' });
+
+      await driver.connect();
+
+      expect(factory.urls).toEqual(['wss://exasol2:8563']);
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('fails with all hosts and their causes when no host can be opened', async () => {
+      keepDsnOrder();
+      const onError = jest.fn();
+      const factory = new MultiHostMockWebsocketFactory({ 'wss://exasol2:8563': 'close' });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1,exasol2', onError });
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-42: Could not connect to Exasol. Tried '2' host(s): " +
+          "'wss://exasol1:8563: E-EDJS-16: Socket error: 'connection refused'; " +
+          "wss://exasol2:8563: E-EDJS-36: Socket closed: code '1006', reason 'abnormal closure'.'.",
+      );
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('treats an exception from the WebSocket factory as a failed host', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver((url) => {
+        if (url.includes('exasol1')) {
+          throw new Error('invalid URL');
+        }
+        return factory.factory(url);
+      }, { accessToken: 'access-token', host: 'exasol1,exasol2' });
+
+      await driver.connect();
+
+      expect(factory.urls).toEqual(['wss://exasol2:8563']);
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('allows connecting again after all hosts failed', async () => {
+      const behaviors: Record<string, 'open' | 'error'> = { 'wss://exasol1:8563': 'error' };
+      const factory = new MultiHostMockWebsocketFactory(behaviors);
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+      await expect(driver.connect()).rejects.toThrow('E-EDJS-42');
+
+      behaviors['wss://exasol1:8563'] = 'open';
+
+      await expect(driver.connect()).resolves.toBeUndefined();
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('does not try another host when login fails', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'invalid-token', host: 'exasol1,exasol2' });
+
+      await expect(driver.connect()).rejects.toThrow();
+
+      expect(factory.urls).toEqual(['wss://exasol1:8563']);
+    });
+
+    // [utest->dsn~runtime-discard-failed-login-connection~1]
+    it('closes the WebSocket and discards the connection when login fails', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'rejected-token', host: 'exasol1' });
+
+      await expect(driver.connect()).rejects.toEqual({ sqlCode: '08004', text: 'authentication failed' });
+
+      expect(factory.sockets[0].closed).toBe(true);
+      await expect(driver.cancel()).rejects.toThrow('E-EDJS-1: Invalid connection.');
+    });
+
+    // [utest->dsn~runtime-discard-failed-login-connection~1]
+    it('closes the WebSocket when the connection cannot be added to the pool', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+      await driver.connect();
+
+      await expect(driver.connect()).rejects.toThrow('E-EDJS-8');
+
+      expect(factory.sockets[1].closed).toBe(true);
+      expect(factory.sockets[0].closed).toBe(false);
+      await expect(driver.query('select 1')).resolves.toBeDefined();
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it.each([20, 0])('stops trying hosts when the driver is closed while connecting (connectTimeout %p)', async (connectTimeout) => {
+      keepDsnOrder();
+      const onError = jest.fn();
+      const factory = new MultiHostMockWebsocketFactory({ 'wss://exasol1:8563': 'hang', 'wss://exasol2:8563': 'open' });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1,exasol2', connectTimeout, onError });
+
+      const connectPromise = driver.connect();
+      await driver.close();
+
+      await expect(connectPromise).rejects.toThrow('E-EDJS-2: Connection was closed.');
+      expect(factory.urls).toEqual(['wss://exasol1:8563']);
+      expect(factory.sockets[0].closed).toBe(true);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('does not log in when the driver is closed after the WebSocket opened', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'hang');
+      driver = new ExasolDriver((url) => {
+        const socket = factory.factory(url);
+        setTimeout(() => {
+          socket.onopen?.(undefined);
+          // close() runs before connect() continues after the open event
+          void driver.close();
+        }, 0);
+        return socket;
+      }, { accessToken: 'access-token', host: 'exasol1' });
+
+      await expect(driver.connect()).rejects.toThrow('E-EDJS-2: Connection was closed.');
+      expect(factory.sockets[0].closed).toBe(true);
+      expect(factory.sockets[0].sentCommands).toEqual([]);
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('does not open a WebSocket when connecting a closed driver', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+      await driver.close();
+
+      await expect(driver.connect()).rejects.toThrow('E-EDJS-2: Connection was closed.');
+      expect(factory.urls).toEqual([]);
+    });
+
+    // [utest->dsn~runtime-dsn-tunnel-address~1]
+    it('checks the import file before connecting', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'error');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1..3' });
+
+      await expect(driver.importFromCsvFile('targetTable', '/tmp/missing')).rejects.toThrow('E-EDJS-14');
+      expect(factory.urls).toEqual([]);
+    });
+
+    // [utest->dsn~runtime-dsn-tunnel-address~1]
+    it('checks the abort signal before connecting', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+      const controller = new AbortController();
+      controller.abort();
+
+      await expect(driver.importFromCsvFile('targetTable', 'README.md', undefined, { signal: controller.signal })).rejects.toThrow('E-EDJS-20');
+      await expect(driver.exportToCsvFile('TARGET_TABLE', '/tmp/never-created.csv', undefined, { signal: controller.signal })).rejects.toThrow();
+      expect(factory.urls).toEqual([]);
+    });
+
+    // [utest->dsn~runtime-dsn-tunnel-address~1]
+    it('stops waiting for the connection when the import is aborted', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'hang');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1', connectTimeout: 0 });
+      const controller = new AbortController();
+
+      const importPromise = driver.importFromCsvFile('targetTable', 'README.md', undefined, { signal: controller.signal });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      controller.abort();
+
+      await expect(importPromise).rejects.toThrow('E-EDJS-20');
+      await driver.close();
+      expect(factory.sockets[0].closed).toBe(true);
+    });
+
+    // [utest->dsn~runtime-dsn-parsing~1]
+    it('rejects an explicitly undefined host with E-EDJS-39', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: undefined });
+
+      await expect(driver.connect()).rejects.toThrow("E-EDJS-39: Invalid connection string 'undefined'.");
+      expect(factory.urls).toEqual([]);
+    });
+
+    // [utest->dsn~runtime-dsn-connect-timeout~1]
+    it('tries the next host when opening the WebSocket times out', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({ 'wss://exasol1:8563': 'hang', 'wss://exasol2:8563': 'open' });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1,exasol2', connectTimeout: 20 });
+
+      await driver.connect();
+
+      expect(factory.urls).toEqual(['wss://exasol1:8563', 'wss://exasol2:8563']);
+      expect(factory.sockets[0].closed).toBe(true);
+    });
+
+    // [utest->dsn~runtime-dsn-connect-timeout~1]
+    it('reports the timeout in the connection error', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'hang');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1', connectTimeout: 20 });
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://exasol1:8563: E-EDJS-41: Opening WebSocket 'wss://exasol1:8563' timed out after '20' ms.'.",
+      );
+    });
+
+    // [utest->dsn~runtime-dsn-connect-timeout~1]
+    it('uses a default connect timeout of 10000 ms', async () => {
+      jest.useFakeTimers();
+      try {
+        const factory = new MultiHostMockWebsocketFactory({}, 'hang');
+        driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+        const connectPromise = driver.connect();
+        const assertion = expect(connectPromise).rejects.toThrow("timed out after '10000' ms");
+
+        await jest.advanceTimersByTimeAsync(9999);
+        expect(factory.sockets[0].closed).toBe(false);
+        await jest.advanceTimersByTimeAsync(1);
+        await assertion;
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    // [utest->dsn~runtime-dsn-connect-timeout~1]
+    it.each([0, -1, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER, 2_147_483_648])('disables the connect timeout for %p', async (connectTimeout) => {
+      jest.useFakeTimers();
+      try {
+        const factory = new MultiHostMockWebsocketFactory({}, 'hang');
+        driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1', connectTimeout });
+        const connectPromise = driver.connect();
+        let settled = false;
+        connectPromise.then(() => (settled = true), () => (settled = true));
+
+        await jest.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
+
+        expect(settled).toBe(false);
+        expect(factory.sockets[0].closed).toBe(false);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    // [utest->dsn~runtime-dsn-parsing~1]
+    it('connects to an IPv6 address in brackets', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: '[::1]', port: 8563 });
+
+      await driver.connect();
+
+      expect(factory.urls).toEqual(['wss://[::1]:8563']);
+    });
+
+    // [utest->dsn~runtime-dsn-reject-fingerprint~1]
+    it('rejects a connection string with a fingerprint before opening a WebSocket', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: '10.0.0.11/135a1d2dce10,exasol2' });
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-40: Connection string contains a certificate fingerprint for host '10.0.0.11', but fingerprint validation is not supported yet.",
+      );
+      expect(factory.urls).toEqual([]);
+    });
+
+    // [utest->dsn~runtime-dsn-parsing~1]
+    it('rejects an invalid connection string before opening a WebSocket', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol3..1' });
+
+      await expect(driver.connect()).rejects.toThrow("E-EDJS-9: Invalid host range limits: 'exasol3..1'.");
+      expect(factory.urls).toEqual([]);
+    });
+
+    it('uses the configured URL without parsing the host', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol3..1', url: 'wss://exasol:8563' });
+
+      await driver.connect();
+
+      expect(factory.urls).toEqual(['wss://exasol:8563']);
+    });
+
+    // [utest->dsn~runtime-dsn-tunnel-address~1]
+    it('opens the import tunnel to the connected host', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({ 'wss://127.0.0.1:1': 'open' });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'unreachable.invalid,127.0.0.1:1' });
+
+      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow(
+        "E-EDJS-12: Failed to establish tunnel connection to Exasol at '127.0.0.1':'1'",
+      );
+      expect(factory.urls).toEqual(['wss://unreachable.invalid:1', 'wss://127.0.0.1:1']);
+    });
+
+    // [utest->dsn~runtime-dsn-tunnel-address~1]
+    it('opens the import tunnel to the host of the live connection without reconnecting', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({ 'wss://127.0.0.1:1': 'open' });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1,127.0.0.1:1' });
+      await driver.connect();
+
+      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow(
+        "E-EDJS-12: Failed to establish tunnel connection to Exasol at '127.0.0.1':'1'",
+      );
+      expect(factory.urls).toEqual(['wss://exasol1:1', 'wss://127.0.0.1:1']);
+    });
+
+    // [utest->dsn~runtime-dsn-tunnel-address~1]
+    it('reconnects before opening the import tunnel when the connection to the previous host broke', async () => {
+      keepDsnOrder();
+      const behaviors: Record<string, 'open' | 'error'> = { 'wss://exasol1:1': 'open', 'wss://127.0.0.1:1': 'open' };
+      const factory = new MultiHostMockWebsocketFactory(behaviors);
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1,127.0.0.1:1' });
+      await driver.connect();
+      expect(factory.urls).toEqual(['wss://exasol1:1']);
+
+      behaviors['wss://exasol1:1'] = 'error';
+      factory.sockets[0].callOnClose({ code: 1006, reason: 'node down' });
+
+      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow(
+        "E-EDJS-12: Failed to establish tunnel connection to Exasol at '127.0.0.1':'1'",
+      );
+      expect(factory.urls).toEqual(['wss://exasol1:1', 'wss://exasol1:1', 'wss://127.0.0.1:1']);
+    });
+
+    // [utest->dsn~runtime-dsn-tunnel-address~1]
+    it('removes the IPv6 brackets of the configured host for the import tunnel when a URL is configured', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: '[::1]', port: 1, url: 'wss://[::1]:8563' });
+
+      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow(
+        "E-EDJS-12: Failed to establish tunnel connection to Exasol at '::1':'1'",
+      );
+    });
+
+    // [utest->dsn~runtime-dsn-tunnel-address~1]
+    it('opens the import tunnel to the configured host and port when a URL is configured', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: '127.0.0.1', port: 1, url: 'wss://gateway:8563/exasol' });
+
+      await expect(driver.importFromCsvFile('targetTable', 'README.md')).rejects.toThrow(
+        "E-EDJS-12: Failed to establish tunnel connection to Exasol at '127.0.0.1':'1'",
+      );
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
+    it('fails over in each connection of a pool', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({ 'wss://exasol2:8563': 'open' });
+      const pool = new NodeExasolPool(factory.factory, { accessToken: 'access-token', host: 'exasol1,exasol2' });
+      try {
+        await expect(pool.query('select 1')).resolves.toBeDefined();
+        expect(factory.urls).toEqual(['wss://exasol1:8563', 'wss://exasol2:8563']);
+      } finally {
+        await pool.drain();
+        await pool.clear();
+      }
     });
   });
 

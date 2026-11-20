@@ -33,8 +33,7 @@ describe('local-file-import', () => {
     mockedServeFileRequests.mockResolvedValue(3);
 
     await expect(importLocalFile({
-      host: 'localhost',
-      port: 8563,
+      tunnelAddress: async () => ({ host: 'localhost', port: 8563 }),
       filePath: 'README.md',
       executeSql,
       buildImportSql,
@@ -54,8 +53,7 @@ describe('local-file-import', () => {
     controller.abort();
 
     await expect(importLocalFile({
-      host: 'localhost',
-      port: 8563,
+      tunnelAddress: async () => ({ host: 'localhost', port: 8563 }),
       filePath: 'README.md',
       executeSql: jest.fn(),
       buildImportSql: jest.fn(),

@@ -40,6 +40,12 @@ export enum ReadyState {
   CLOSED = 3
 }
 
+/** Host and port of the Exasol node a WebSocket is connected to. */
+export interface ConnectionAddress {
+  host: string;
+  port: number;
+}
+
 export class Connection implements PoolItem {
   private isBroken = false;
   private readonly protocol: WebsocketProtocol;
@@ -70,6 +76,8 @@ export class Connection implements PoolItem {
     private readonly logger: ILogger,
     public name: string,
     private readonly onClose?: (event: unknown) => void,
+    /** Node this connection's WebSocket is connected to; undefined when the WebSocket URL was configured explicitly. */
+    public readonly address?: ConnectionAddress,
   ) {
     this.websocket = websocket;
     this.logger = logger;

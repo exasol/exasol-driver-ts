@@ -1,6 +1,6 @@
 {
   "name": "@exasol/exasol-driver-ts",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Exasol SQL Driver",
   "type": "module",
   "scripts": {

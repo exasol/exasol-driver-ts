@@ -4,14 +4,13 @@ import * as path from 'node:path';
 import * as tls from 'node:tls';
 import { ExaErrorBuilder } from '../errors/error-reporting';
 import { FileServingOptions, serveFileRequests } from './http-protocol';
-import { createTunnel, InternalAddress } from './http-transport';
+import { createTunnel, InternalAddress, TunnelAddressProvider } from './http-transport';
 import { generateAdHocCertificate, wrapWithTls } from './tls-transport';
 import { FileImportOptions } from './types';
 
 /** Parameters for streaming a local file through an Exasol import tunnel. */
 export interface ImportLocalFileParameters {
-  host: string;
-  port: number;
+  tunnelAddress: TunnelAddressProvider;
   filePath: string;
   executeSql: (sql: string) => Promise<number>;
   buildImportSql: (internalAddress: InternalAddress, fingerprint: string) => string;
@@ -23,8 +22,7 @@ export interface ImportLocalFileParameters {
 
 /** Imports a local file by executing format-specific SQL and streaming its bytes through the tunnel. */
 export async function importLocalFile({
-  host,
-  port,
+  tunnelAddress,
   filePath,
   executeSql,
   buildImportSql,
@@ -60,6 +58,9 @@ export async function importLocalFile({
   }
 
   try {
+    // [impl->dsn~runtime-dsn-tunnel-address~1]
+    const { host, port } = await Promise.race([tunnelAddress(), abortPromise]);
+    throwIfAborted(options?.signal, newAbortedError);
     const tunnel = await Promise.race([createTunnel(host, port, options?.signal), abortPromise]);
     unencryptedSocket = tunnel.socket;
     throwIfAborted(options?.signal, newAbortedError);

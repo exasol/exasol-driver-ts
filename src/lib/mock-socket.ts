@@ -16,6 +16,14 @@ export class MockExaWebSocket implements ExaWebsocket {
   public send(data: string | Uint8Array): void {
     const command = JSON.parse(data.toString());
     this.sentCommands.push(command);
+    if (command.accessToken === 'rejected-token') {
+      setTimeout(() => {
+        this.callOnMessage({
+          data: JSON.stringify({ status: 'error', exception: { sqlCode: '08004', text: 'authentication failed' } }),
+        });
+      }, 0);
+      return;
+    }
     const responseData = this.getResponseForCommand(command);
     if (responseData === undefined) {
       return;
@@ -159,4 +167,42 @@ export class MockWebsocketFactory {
 
 export function createMockWebsocketFactory(): MockWebsocketFactory {
   return new MockWebsocketFactory();
+}
+
+/** How a mocked WebSocket behaves after creation. `hang` never opens nor fails. */
+export type MockSocketBehavior = 'open' | 'error' | 'close' | 'hang';
+
+/**
+ * Mock factory that creates one {@link MockExaWebSocket} per URL and simulates opening or failing it asynchronously.
+ * Use it to test connecting to multiple hosts.
+ */
+export class MultiHostMockWebsocketFactory {
+  public readonly urls: string[] = [];
+  public readonly sockets: MockExaWebSocket[] = [];
+
+  constructor(
+    private readonly behaviors: Record<string, MockSocketBehavior>,
+    private readonly defaultBehavior: MockSocketBehavior = 'error',
+  ) {}
+
+  public get factory(): WebsocketFactory {
+    return (url: string) => {
+      const socket = new MockExaWebSocket();
+      this.urls.push(url);
+      this.sockets.push(socket);
+      const behavior = this.behaviors[url] ?? this.defaultBehavior;
+      if (behavior !== 'hang') {
+        setTimeout(() => {
+          if (behavior === 'open') {
+            socket.onopen?.(undefined);
+          } else if (behavior === 'error') {
+            socket.onerror?.({ message: 'connection refused' });
+          } else {
+            socket.onclose?.({ code: 1006, reason: 'abnormal closure' });
+          }
+        }, 0);
+      }
+      return socket;
+    };
+  }
 }

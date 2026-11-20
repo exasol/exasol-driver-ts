@@ -35,6 +35,82 @@ Covers:
 
 Needs: impl, utest, itest
 
+### Parse Connection String
+`dsn~runtime-dsn-parsing~1`
+
+**Given** a driver without an explicit `url`
+**When** `connect()` is called
+**Then** the driver parses `host` as a connection string with the same grammar as pyexasol: each comma-separated part is `prefix[start..end[suffix]][/fingerprint][:port]`; a range expands to `prefix + n + suffix` keeping the zero padding of `start`; ports and fingerprints apply backwards to preceding parts without their own; a part can also be a bracketed IPv6 address `[address][/fingerprint][:port]` without range; invalid parts, ports outside 1-65535 and empty strings reject with `E-EDJS-39`, descending ranges with `E-EDJS-9`, and more than 10000 expanded hosts with `E-EDJS-43`. Host names are not resolved to IP addresses, so that TLS host name verification and browser runtimes keep working.
+
+Covers:
+- `scn~connection-string-hosts-expanded~1`
+
+Needs: impl, utest, itest
+
+### Connection String Failover
+`dsn~runtime-dsn-failover~1`
+
+**Given** a parsed connection string with one or more hosts
+**When** `connect()` opens the WebSocket
+**Then** the driver shuffles the hosts and creates a WebSocket for each in turn until one fires `open`; an `error` or `close` event before `open`, a timeout, or an exception from the WebSocket factory counts as a failed host. Once a WebSocket is open, the driver creates the `Connection` and logs in without failover. If all hosts fail, the driver calls `onError` once (and not `onClose`, as no WebSocket was open) and rejects with `E-EDJS-42` listing each WebSocket URL with its cause; the driver stays usable for another `connect()`. `connect()` on a closed driver rejects with `ErrClosed` without opening a WebSocket. `close()` aborts a WebSocket that is still opening and stops trying further hosts; if a WebSocket opened just before `close()`, the driver closes it instead of logging in. In both cases `connect()` rejects with `ErrClosed` and `onError` is not called. Pools get failover because every pooled driver connects independently. An explicit `url` is used as the only target.
+
+Covers:
+- `scn~connection-string-failover~1`
+
+Needs: impl, utest, itest
+
+### Discard Connection After Failed Login
+`dsn~runtime-discard-failed-login-connection~1`
+
+**Given** a WebSocket that opened
+**When** the login is rejected or the connection cannot be added to the driver's internal pool
+**Then** the driver removes exactly that connection from the pool, closes its WebSocket, and rejects `connect()`, so that no unauthenticated connection is reused or left open
+
+Covers:
+- `scn~connection-string-failover~1`
+
+Needs: impl, utest
+
+### Connect Timeout
+`dsn~runtime-dsn-connect-timeout~1`
+
+**Given** a configured `connectTimeout` greater than zero and at most 2147483647, the maximum `setTimeout` delay (default 10000 ms; other values disable the timeout)
+**When** a WebSocket does not open within that time
+**Then** the driver rejects that attempt with `E-EDJS-41`, closes the WebSocket, and replaces its event handlers with no-op handlers so that late events of abandoned WebSockets are ignored
+
+Covers:
+- `scn~connection-string-connect-timeout~1`
+
+Needs: impl, utest
+
+### Reject Connection String Fingerprint
+`dsn~runtime-dsn-reject-fingerprint~1`
+
+**Given** a connection string where any host has a fingerprint
+**When** `connect()` is called
+**Then** the driver rejects with `E-EDJS-40` before creating a WebSocket, until certificate fingerprint validation is implemented
+
+Covers:
+- `scn~connection-string-fingerprint-rejected~1`
+
+Needs: impl, utest
+
+### Tunnel Address of Local File Transfer
+`dsn~runtime-dsn-tunnel-address~1`
+
+**Given** a Node.js driver without an explicit `url`
+**When** a local file import or export starts
+**Then** the driver first checks the local file and the abort signal, then resolves the tunnel address lazily: it connects if it has no live connection (an abort stops waiting for that) and opens the tunnel to the host and port (without IPv6 brackets) that the live `Connection` recorded when its WebSocket opened. The address belongs to the `Connection`, so it cannot outlive its WebSocket. With an explicit `url` it uses the configured `host` (without IPv6 brackets) and `port` as before.
+
+Rationale:
+
+This follows pyexasol, which opens the tunnel to the node of the WebSocket (`ws_ipaddr`, `ws_port`). Unlike pyexasol, the driver records the host name from the connection string, not a resolved IP address: browsers cannot resolve host names, and the `ExaWebsocket` interface does not expose the remote address. If one host name resolves to several cluster nodes, the tunnel may therefore reach a different node than the WebSocket, which works as long as that node is reachable
+
+Covers:
+- `scn~local-file-transfer-uses-connected-host~1`
+
+Needs: impl, utest
+
 ### Reject Missing Credentials
 `dsn~runtime-reject-missing-credentials~1`
 

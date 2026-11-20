@@ -1,11 +1,11 @@
 import { ExaErrorBuilder } from '../errors/error-reporting';
 import { buildCsvImportSql } from './import-sql-builder';
+import { TunnelAddressProvider } from './http-transport';
 import { importLocalFile } from './local-file-import';
 import { CsvFormatOptions, CsvImportOptions } from './types';
 
 interface ImportCsvFileParameters {
-  host: string;
-  port: number;
+  tunnelAddress: TunnelAddressProvider;
   tableName: string;
   filePath: string;
   executeSql: (sql: string) => Promise<number>;
