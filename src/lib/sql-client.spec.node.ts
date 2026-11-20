@@ -591,6 +591,26 @@ describe('sqlClient', () => {
     });
 
     // [utest->dsn~runtime-dsn-failover~1]
+    it('rejects when the driver is closed during the login', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver((url) => {
+        const socket = factory.factory(url);
+        const send = socket.send.bind(socket);
+        socket.send = (data) => {
+          send(data);
+          // Close the driver after the last login command was sent, before its response arrives.
+          if (data.toString().includes('"accessToken"')) {
+            void driver.close();
+          }
+        };
+        return socket;
+      }, { accessToken: 'access-token', host: 'exasol1' });
+
+      await expect(driver.connect()).rejects.toThrow('E-EDJS-2: Connection was closed.');
+      expect(factory.sockets[0].sentCommands).toContainEqual(expect.objectContaining({ accessToken: 'access-token' }));
+    });
+
+    // [utest->dsn~runtime-dsn-failover~1]
     it('does not open a WebSocket when connecting a closed driver', async () => {
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
       driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });

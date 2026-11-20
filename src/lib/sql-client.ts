@@ -218,6 +218,12 @@ export class BaseExasolDriver implements IExasolClient {
             reject(data.exception);
             return;
           }
+          if (this.closed) {
+            // close() was called during the login: do not report a connection on a closed driver.
+            this.discardConnection(connection);
+            reject(ErrClosed);
+            return;
+          }
           //at this point the user should be logged in, asked for the Public Key and sent credentials and info in login...Auth() methods
           connection.setCompression(this.config.compression);
           resolve();
