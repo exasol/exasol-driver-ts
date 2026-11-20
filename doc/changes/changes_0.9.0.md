@@ -17,3 +17,13 @@ Connection strings with a certificate fingerprint (`host/fingerprint`) are rejec
 ## Features
 
 * #123: Added support for Exasol connection strings with host ranges, host lists and failover
+
+## Security
+
+* Updated `node-forge` to 1.4.3 to fix multiple vulnerabilities (e.g. GHSA-86w9-cpqp-85rv, GHSA-6qrw-m8cv-hcxf, GHSA-5cwg-6vw7-rj6p)
+
+## Dependency Updates
+
+### Compile Dependency Updates
+
+* Updated `node-forge:^1.4.0` to `^1.4.3`

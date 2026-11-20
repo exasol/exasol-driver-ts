@@ -12,8 +12,10 @@ export interface DsnHost {
 // Same syntax as the other Exasol drivers (e.g. pyexasol):
 // host prefix, optional numeric range with optional suffix, optional fingerprint, optional port.
 // Groups: 1 bracketed IPv6 address, 2 host prefix, 3 range start, 4 range end, 5 host suffix, 6 fingerprint, 7 port.
+// The expression mirrors pyexasol's DSN regex so both can be compared directly. Its backtracking is acceptable because it
+// only parses the application's own connection configuration, one comma-separated part at a time.
 const dsnPartRegex =
-  /^(?:(\[[0-9a-f:.]+\])|([^:/[\]]+?)(?:(\d+)\.\.(\d+)([^:/]*?))?)(?:\/([0-9a-f]+|nocertcheck))?(?::(\d+)?)?$/i;
+  /^(?:(\[[0-9a-f:.]+\])|([^:/[\]]+?)(?:(\d+)\.\.(\d+)([^:/]*?))?)(?:\/([0-9a-f]+|nocertcheck))?(?::(\d+)?)?$/i; // NOSONAR
 
 const MAX_PORT = 65535;
 /** Upper limit for the number of hosts a connection string may expand to, protecting against typos in ranges. */
@@ -42,23 +44,19 @@ export const parseDsn = (dsn: string | undefined, defaultPort: number): DsnHost[
   const result: DsnHost[] = [];
 
   // Port and fingerprint are applied backwards, so iterate the parts in reverse order.
-  const parts = dsn.split(',').map((part) => part.trim()).reverse();
+  const parts = dsn
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .reverse();
   for (const part of parts) {
-    if (part.length === 0) {
-      continue;
-    }
-    const match = dsnPartRegex.exec(part);
-    if (!match) {
-      throw newInvalidDsnError(part);
-    }
-    const [, ipv6Address, prefix, rangeStart, rangeEnd, suffix, fingerprint, port] = match;
+    const { hosts, fingerprint, port } = parsePart(part);
     if (port) {
       currentPort = parsePort(port, part);
     }
     if (fingerprint) {
       currentFingerprint = fingerprint.toUpperCase();
     }
-    const hosts = ipv6Address ? [ipv6Address] : rangeStart ? expandRange(part, prefix, rangeStart, rangeEnd, suffix) : [prefix];
     if (result.length + hosts.length > MAX_DSN_HOSTS) {
       throw newTooManyDsnHostsError(dsn, MAX_DSN_HOSTS);
     }
@@ -70,8 +68,22 @@ export const parseDsn = (dsn: string | undefined, defaultPort: number): DsnHost[
   return result;
 };
 
+/** Splits one part of a connection string into its expanded hosts, fingerprint and port. */
+const parsePart = (part: string): { hosts: string[]; fingerprint?: string; port?: string } => {
+  const match = dsnPartRegex.exec(part);
+  if (!match) {
+    throw newInvalidDsnError(part);
+  }
+  const [, ipv6Address, prefix, rangeStart, rangeEnd, suffix, fingerprint, port] = match;
+  if (ipv6Address) {
+    return { hosts: [ipv6Address], fingerprint, port };
+  }
+  const hosts = rangeStart ? expandRange(part, prefix, rangeStart, rangeEnd, suffix) : [prefix];
+  return { hosts, fingerprint, port };
+};
+
 const parsePort = (port: string, part: string): number => {
-  const value = parseInt(port, 10);
+  const value = Number.parseInt(port, 10);
   if (value < 1 || value > MAX_PORT) {
     throw newInvalidDsnError(part);
   }
@@ -79,8 +91,8 @@ const parsePort = (port: string, part: string): number => {
 };
 
 const expandRange = (part: string, prefix: string, rangeStart: string, rangeEnd: string, suffix: string = ''): string[] => {
-  const lower = parseInt(rangeStart, 10);
-  const upper = parseInt(rangeEnd, 10);
+  const lower = Number.parseInt(rangeStart, 10);
+  const upper = Number.parseInt(rangeEnd, 10);
   if (upper < lower) {
     throw newInvalidHostRangeLimits(part);
   }

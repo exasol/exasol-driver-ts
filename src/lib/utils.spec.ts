@@ -90,6 +90,7 @@ describe('utils', () => {
       ${':8563'}                  | ${':8563'}
       ${'[::1'}                   | ${'[::1'}
       ${'[::1]..3'}               | ${'[::1]..3'}
+      ${'exa[sol'}                | ${'exa[sol'}
     `('throws E-EDJS-39 for invalid DSN "$dsn"', ({ dsn, part }: { dsn: string; part: string }) => {
       expect(() => parseDsn(dsn, 8563)).toThrow(`E-EDJS-39: Invalid connection string '${part}'.`);
     });

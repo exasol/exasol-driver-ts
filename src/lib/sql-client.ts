@@ -335,7 +335,7 @@ export class BaseExasolDriver implements IExasolClient {
     this.closed = true;
     this.logger.debug('[SQLClient] Close all connections');
     // [impl->dsn~runtime-dsn-failover~1]
-    for (const abort of [...this.pendingOpenAborts]) {
+    for (const abort of this.pendingOpenAborts) {
       abort();
     }
 
