@@ -1,4 +1,8 @@
-import { newInvalidDsnError, newInvalidHostRangeLimits, newTooManyDsnHostsError } from './errors/errors';
+import { newInvalidDsnError, newInvalidFingerprintLengthError, newInvalidHostRangeLimits, newTooManyDsnHostsError } from './errors/errors';
+import { NO_CERTIFICATE_CHECK } from './server-certificate';
+
+/** Number of hexadecimal characters of a SHA-256 certificate fingerprint. */
+const SHA256_FINGERPRINT_LENGTH = 64;
 
 /** One connection target resolved from an Exasol connection string (DSN). */
 export interface DsnHost {
@@ -58,7 +62,7 @@ export const parseDsn = (dsn: string | undefined, defaultPort: number): DsnHost[
       currentPort = parsePort(port, part);
     }
     if (fingerprint) {
-      currentFingerprint = fingerprint.toUpperCase();
+      currentFingerprint = parseFingerprint(fingerprint);
     }
     if (result.length + hosts.length > MAX_DSN_HOSTS) {
       throw newTooManyDsnHostsError(dsn, MAX_DSN_HOSTS);
@@ -83,6 +87,15 @@ const parsePart = (part: string): { hosts: string[]; fingerprint?: string; port?
   }
   const hosts = rangeStart ? expandRange(part, prefix, rangeStart, rangeEnd, suffix) : [prefix];
   return { hosts, fingerprint, port };
+};
+
+/** Upper-cases a fingerprint and checks that it is `NOCERTCHECK` or has the length of a SHA-256 fingerprint. */
+const parseFingerprint = (fingerprint: string): string => {
+  const normalized = fingerprint.toUpperCase();
+  if (normalized !== NO_CERTIFICATE_CHECK && normalized.length !== SHA256_FINGERPRINT_LENGTH) {
+    throw newInvalidFingerprintLengthError(fingerprint, fingerprint.length);
+  }
+  return normalized;
 };
 
 const parsePort = (port: string, part: string): number => {

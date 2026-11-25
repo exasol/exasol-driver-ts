@@ -40,7 +40,7 @@ Needs: impl, utest, itest
 
 **Given** a driver without an explicit `url`
 **When** `connect()` is called
-**Then** the driver parses `host` as a connection string with the same grammar as pyexasol: each comma-separated part is `prefix[start..end[suffix]][/fingerprint][:port]`; a range expands to `prefix + n + suffix` keeping the zero padding of `start`; ports and fingerprints apply backwards to preceding parts without their own; host names may only contain letters, digits, `.`, `-` and `_`, so that the host and port end up in the WebSocket URL exactly as written (pyexasol rejects other names when it resolves them); a part can also be a bracketed IPv6 address `[address][/fingerprint][:port]` without range; invalid parts, ports outside 1-65535 and empty strings reject with `E-EDJS-39`, descending ranges with `E-EDJS-9`, and more than 10000 expanded hosts with `E-EDJS-43`. Host names are not resolved to IP addresses, so that TLS host name verification and browser runtimes keep working.
+**Then** the driver parses `host` as a connection string with the same grammar as pyexasol: each comma-separated part is `prefix[start..end[suffix]][/fingerprint][:port]`; a range expands to `prefix + n + suffix` keeping the zero padding of `start`; ports and fingerprints apply backwards to preceding parts without their own; host names may only contain letters, digits, `.`, `-` and `_`, so that the host and port end up in the WebSocket URL exactly as written (pyexasol rejects other names when it resolves them); a part can also be a bracketed IPv6 address `[address][/fingerprint][:port]` without range; invalid parts, ports outside 1-65535 and empty strings reject with `E-EDJS-39`, fingerprints other than `nocertcheck` that do not have the 64 hexadecimal characters of a SHA-256 fingerprint with `E-EDJS-48`, descending ranges with `E-EDJS-9`, and more than 10000 expanded hosts with `E-EDJS-43`. Host names are not resolved to IP addresses, so that TLS host name verification and browser runtimes keep working.
 
 Covers:
 - `scn~connection-string-hosts-expanded~1`
@@ -87,17 +87,43 @@ Covers:
 
 Needs: impl, utest
 
-### Reject Connection String Fingerprint
-`dsn~runtime-dsn-reject-fingerprint~1`
+### Select Server Certificate Mode
+`dsn~runtime-certificate-mode-selection~1`
 
-**Given** a connection string where any host has a fingerprint
-**When** `connect()` is called
-**Then** the driver rejects with `E-EDJS-40` before creating a WebSocket, until certificate fingerprint validation is implemented
+**Given** a driver about to open WebSockets
+**When** `connect()` determines the targets
+**Then** for each target the driver passes `{ rejectUnauthorized }` as second argument to the WebSocket factory: `false` for hosts with a fingerprint (including `NOCERTCHECK`) and, without fingerprint, when `validateServerCertificate` is `false` (also for an explicit `url`); `true` otherwise. When any target skips validation without a fingerprint, the driver logs a warning once per `connect()`. When any target skips validation and the factory declares fewer than two parameters (`Function.length`), the driver logs a warning that the factory probably ignores the options. One-argument factories keep working, because they only lose the option for modes they did not support before.
 
 Covers:
-- `scn~connection-string-fingerprint-rejected~1`
+- `scn~server-certificate-validation-disabled~1`
+- `scn~connection-string-fingerprint-validated~1`
 
-Needs: impl, utest
+Needs: impl, utest, itest
+
+### Verify Server Certificate Fingerprint
+`dsn~runtime-fingerprint-verification~1`
+
+**Given** a Node.js driver and a host with a hexadecimal fingerprint
+**When** the WebSocket to that host opens
+**Then** the driver listens for the `ws` `upgrade` event, reads the peer certificate's `fingerprint256`, removes the colons and compares it with the upper-cased fingerprint from the connection string. On a mismatch it closes the WebSocket in the listener and rejects `connect()` with `E-EDJS-46` (calling `onError`) without trying further hosts. If the WebSocket has no `once` method, the `upgrade` event has no peer certificate, or `open` fires before a successful check, it closes the WebSocket and treats the host as failed with `E-EDJS-47`. The login is only sent after a successful check; only the WebSocket upgrade request precedes it.
+
+Covers:
+- `scn~connection-string-fingerprint-validated~1`
+- `scn~fingerprint-mismatch-rejected~1`
+
+Needs: impl, utest, itest
+
+### Reject Certificate Modes in Browsers
+`dsn~runtime-browser-certificate-modes~1`
+
+**Given** a driver from the browser entry point, which has no server certificate verifier
+**When** `connect()` finds a target with a fingerprint or with disabled certificate validation
+**Then** the driver rejects with `E-EDJS-45` before creating a WebSocket. The Node.js driver provides the verifier by overriding a protected hook, so the browser bundle contains no Node.js certificate code.
+
+Covers:
+- `scn~certificate-modes-unsupported-in-browsers~1`
+
+Needs: impl, utest, itest
 
 ### Tunnel Address of Local File Transfer
 `dsn~runtime-dsn-tunnel-address~1`
@@ -293,6 +319,18 @@ Covers:
 - `scn~pool-enforces-configured-size-limits~1`
 
 Needs: impl, itest
+
+### Pool Driver Creation Failure
+`dsn~runtime-pool-create-failure~1`
+
+**Given** an `ExasolPool` with pending `acquire()` calls
+**When** creating a driver fails because `connect()` rejects
+**Then** the pool rejects the oldest pending `acquire()` with that error. `generic-pool` would otherwise create a new driver for the pending `acquire()` right away and retry forever, because the pool sets no acquire timeout. `generic-pool` has no public API for this, so the pool handles its `factoryCreateError` event and rejects a request from its internal queue of waiting clients; if that queue is missing, it logs a warning, and unit tests detect if a `generic-pool` update breaks this. `generic-pool` does not report which request a creation was for, so a failed refill of `minimumPoolSize` can also reject a waiting query.
+
+Covers:
+- `scn~pool-query-rejected-when-connection-fails~1`
+
+Needs: impl, utest
 
 ### Pooled Query Execution
 `dsn~runtime-pooled-query-execution~1`

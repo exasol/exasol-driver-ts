@@ -52,7 +52,32 @@ function getPool<Driver extends BaseExasolDriver>(
     testOnBorrow: true,
   };
   const tempPool = createPool(poolFactory, poolOpts);
+  // [impl->dsn~runtime-pool-create-failure~1]
+  tempPool.on('factoryCreateError', (error) => rejectNextWaitingClient(tempPool, error, logger));
   return tempPool;
+}
+
+/** The part of generic-pool's internal state that holds pending `acquire()` calls. */
+interface WaitingClientsQueue {
+  _waitingClientsQueue?: { dequeue(): { reject(reason: unknown): void } | null | undefined };
+}
+
+/**
+ * Rejects the oldest pending `acquire()` with the error of a failed driver creation. Without this, generic-pool
+ * creates a new driver for the pending `acquire()` right away and retries forever, so `query()` never settles.
+ * generic-pool has no public API for this, so this uses its internal queue of waiting clients.
+ *
+ * generic-pool does not tell which request a failed creation was meant for. When refilling `minimumPoolSize` fails,
+ * this therefore rejects a waiting query with that error, even though a later creation might have served it.
+ * @internal Exported for tests.
+ */
+export function rejectNextWaitingClient(pool: Pool<unknown>, error: unknown, logger: ILogger) {
+  const queue = (pool as unknown as WaitingClientsQueue)._waitingClientsQueue;
+  if (typeof queue?.dequeue !== 'function') {
+    logger.warn('[ExasolPool] Cannot reject waiting queries after a failed connection: unsupported generic-pool version.', error);
+    return;
+  }
+  queue.dequeue()?.reject(error);
 }
 /**
  * ExasolPool is a connection pool.

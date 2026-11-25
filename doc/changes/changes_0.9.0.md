@@ -1,6 +1,6 @@
 # Exasol Driver ts 0.9.0, released 2026-??-??
 
-Code name: Connection Strings with Failover
+Code name: Connection Strings with Failover and Certificate Fingerprints
 
 ## Summary
 
@@ -12,11 +12,20 @@ When no host can be reached, `connect()` now rejects with error `E-EDJS-42`, whi
 
 When the login fails, the driver now closes the WebSocket and discards the unauthenticated connection instead of leaving it open.
 
-Connection strings with a certificate fingerprint (`host/fingerprint`) are rejected with a clear error until fingerprint validation is implemented.
+The driver now supports the same server certificate modes as the other Exasol drivers. A SHA-256 certificate fingerprint in the connection string (`host/fingerprint`) makes the driver accept only that certificate and skip the certificate authority and host name checks, for example for Exasol SaaS private endpoints with self-signed certificates. Fingerprints must have the 64 hexadecimal characters of a SHA-256 fingerprint; others are rejected with `E-EDJS-48` before connecting. The driver verifies the fingerprint before sending credentials or any Exasol command; if it does not match, `connect()` rejects with `E-EDJS-46` without trying other hosts. The new `validateServerCertificate` property (default `true`) and the fingerprint `nocertcheck` accept any certificate and log a warning to the configured logger; use them instead of `NODE_TLS_REJECT_UNAUTHORIZED=0`. These modes require Node.js and a WebSocket factory that returns `ws` WebSockets; the browser entry point rejects them with `E-EDJS-45`.
+
+`ExasolPool` no longer retries forever when it cannot open a connection, for example because of wrong credentials, unreachable hosts or a fingerprint mismatch. The query now rejects with the connection error; the next query tries again.
+
+The WebSocket factory now receives a second argument `{ rejectUnauthorized }`, which it should pass on to `ws`. Existing factories keep working for the default certificate validation.
 
 ## Features
 
 * #123: Added support for Exasol connection strings with host ranges, host lists and failover
+* #41: Added server certificate fingerprint validation and the `validateServerCertificate` property
+
+## Bugfixes
+
+* #128: Fixed `ExasolPool` retrying forever when it cannot create a connection
 
 ## Security
 

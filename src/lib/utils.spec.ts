@@ -1,5 +1,6 @@
 import { DsnHost, MAX_DSN_HOSTS, parseDsn, shuffle, stripIpv6Brackets } from './utils';
 
+const FINGERPRINT = '135a1d2dce10'.padEnd(64, '0');
 const hosts = (port: number, ...names: string[]): DsnHost[] => names.map((host) => ({ host, port, fingerprint: undefined }));
 
 describe('utils', () => {
@@ -40,20 +41,37 @@ describe('utils', () => {
     // [utest->dsn~runtime-dsn-parsing~1]
     it.each`
       dsn                                    | fingerprint
-      ${'10.0.0.11/135a1d2dce10:8563'}       | ${'135A1D2DCE10'}
+      ${`10.0.0.11/${FINGERPRINT}:8563`}     | ${FINGERPRINT.toUpperCase()}
       ${'10.0.0.11/nocertcheck'}             | ${'NOCERTCHECK'}
+      ${'10.0.0.11/NoCertCheck'}             | ${'NOCERTCHECK'}
     `('parses fingerprint in "$dsn"', ({ dsn, fingerprint }: { dsn: string; fingerprint: string }) => {
       expect(parseDsn(dsn, 8563)).toEqual([{ host: '10.0.0.11', port: 8563, fingerprint }]);
     });
 
     // [utest->dsn~runtime-dsn-parsing~1]
     it('applies a fingerprint to all hosts of a range', () => {
-      expect(parseDsn('exasol1..2/abc', 8563).map((host) => host.fingerprint)).toEqual(['ABC', 'ABC']);
+      expect(parseDsn(`exasol1..2/${FINGERPRINT}`, 8563).map((host) => host.fingerprint)).toEqual([
+        FINGERPRINT.toUpperCase(),
+        FINGERPRINT.toUpperCase(),
+      ]);
+    });
+
+    // [utest->dsn~runtime-dsn-parsing~1]
+    it.each([
+      ['a truncated fingerprint', '135a1d2dce10', 12],
+      ['a SHA-1 fingerprint', 'a'.repeat(40), 40],
+      ['a too long fingerprint', 'a'.repeat(65), 65],
+    ])('rejects %s', (_description, fingerprint, length) => {
+      expect(() => parseDsn(`exasol1/${fingerprint},exasol2`, 8563)).toThrow(
+        `E-EDJS-48: Certificate fingerprint '${fingerprint}' in the connection string has '${length}' characters, but a SHA-256 fingerprint has 64 hexadecimal characters.`,
+      );
     });
 
     // [utest->dsn~runtime-dsn-parsing~1]
     it('parses an IPv6 address with port and fingerprint', () => {
-      expect(parseDsn('[2001:db8::1]/abc:8888', 8563)).toEqual([{ host: '[2001:db8::1]', port: 8888, fingerprint: 'ABC' }]);
+      expect(parseDsn(`[2001:db8::1]/${FINGERPRINT}:8888`, 8563)).toEqual([
+        { host: '[2001:db8::1]', port: 8888, fingerprint: FINGERPRINT.toUpperCase() },
+      ]);
     });
 
     // [utest->dsn~runtime-dsn-parsing~1]

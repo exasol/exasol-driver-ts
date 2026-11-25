@@ -1,7 +1,7 @@
 export { NodeExasolDriver as ExasolDriver } from './lib/node-sql-client';
 export { NodeExasolPool as ExasolPool } from './lib/node-sql-pool';
 export { driverVersion } from './lib/sql-client';
-export type { Config, WebsocketFactory } from './lib/sql-client';
+export type { Config, WebsocketFactory, WebsocketOptions } from './lib/sql-client';
 export type { ClientPoolConfig } from './lib/exasol-pool';
 export * from './lib/errors/errors';
 export * from './lib/types';

@@ -11,7 +11,8 @@ import {
   GeneralSqlError,
   newConnectionFailedError,
   newConnectTimeoutError,
-  newDsnFingerprintNotSupportedError,
+  newCertificateModeNotSupportedError,
+  newFingerprintNotVerifiableError,
   newLoginTimeoutError,
   newInvalidReturnValueResultSet,
   newInvalidReturnValueRowCount,
@@ -27,13 +28,19 @@ import { QueryResult } from './query-result';
 import { CetCancelFunction, IExasolClient, IStatement } from './sql-client.interface';
 import { Statement } from './statement';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
+import { CertificateCheckFailure, NO_CERTIFICATE_CHECK, ServerCertificateVerifier } from './server-certificate';
 import { DsnHost, parseDsn, shuffle } from './utils';
 
 export interface Config {
   /**
-   * Host name, IP address or Exasol connection string (DSN) in the format `host[..range][:port][,host...]`,
+   * Host name, IP address or Exasol connection string (DSN) in the format `host[..range][/fingerprint][:port][,host...]`,
    * e.g. `exasol1..3:8563` or `10.0.0.10..12,10.0.0.20`. The driver connects to one of the hosts in random order
    * and tries the next host if opening the WebSocket fails.
+   *
+   * A fingerprint is the SHA-256 hash of the server certificate in hexadecimal. With a fingerprint, the driver accepts
+   * only the certificate with this fingerprint and skips the certificate authority and host name checks.
+   * The fingerprint `nocertcheck` disables the certificate check for its hosts. Fingerprints require Node.js and a
+   * `websocketFactory` that creates `ws` WebSockets.
    */
   host: string;
   /** Exasol port, e.g. 8563. A port in the connection string in `host` takes precedence. */
@@ -51,6 +58,14 @@ export interface Config {
   accessToken?: string;
   refreshToken?: string;
   autocommit: boolean;
+  /**
+   * Validate the server certificate: it must be issued by a trusted certificate authority and match the host name.
+   * Setting this to `false` accepts any certificate and logs a warning (visible with a logger at level `Warn` or
+   * higher); it makes the connection vulnerable to man-in-the-middle attacks. A fingerprint in the connection string
+   * takes precedence for its hosts.
+   * Only `true` is supported in browsers. Default: true
+   */
+  validateServerCertificate?: boolean;
   /** Disable encryption. @deprecated Exasol only supports encrypted connections. Setting this to `false` has no effect. */
   encryption?: boolean;
   clientName: string;
@@ -94,7 +109,30 @@ interface OpenedWebSocket {
 const MAX_TIMER_DELAY_MS = 2_147_483_647;
 const isTimeoutEnabled = (timeoutMs: number): boolean => Number.isFinite(timeoutMs) && timeoutMs > 0 && timeoutMs <= MAX_TIMER_DELAY_MS;
 
-export type WebsocketFactory = (url: string) => ExaWebsocket;
+/** TLS options for a WebSocket created by a {@link WebsocketFactory}. */
+export interface WebsocketOptions {
+  /**
+   * Whether the WebSocket must reject a server certificate that is not issued by a trusted certificate authority or
+   * does not match the host name. `false` when the connection string contains a fingerprint for the host or
+   * `validateServerCertificate` is `false`. Pass it on to the WebSocket implementation, e.g. as the `ws` option of the same name.
+   */
+  rejectUnauthorized: boolean;
+}
+
+/**
+ * Creates a WebSocket for the given URL. The driver always passes `options`; they are optional so that existing
+ * factories keep working. Factories may ignore them when only the default certificate validation is used.
+ */
+export type WebsocketFactory = (url: string, options?: WebsocketOptions) => ExaWebsocket;
+
+/** A WebSocket to open, with the server certificate check to apply. */
+interface ConnectTarget {
+  url: string;
+  address?: DsnHost;
+  rejectUnauthorized: boolean;
+  /** Expected server certificate fingerprint, upper-case hexadecimal. */
+  fingerprint?: string;
+}
 
 export class BaseExasolDriver implements IExasolClient {
   private readonly defaultConfig: Config & InternalConfig = {
@@ -105,6 +143,7 @@ export class BaseExasolDriver implements IExasolClient {
     clientVersion: '1',
     autocommit: true,
     encryption: true,
+    validateServerCertificate: true,
     compression: false,
     connectTimeout: DEFAULT_CONNECT_TIMEOUT_MS,
     apiVersion: 3,
@@ -115,6 +154,8 @@ export class BaseExasolDriver implements IExasolClient {
   protected closed = false;
   /** Aborts WebSockets that are still opening, so that `close()` stops pending connection attempts. */
   private readonly pendingOpenAborts = new Set<() => void>();
+  /** Errors of WebSockets that failed to open, after which no further hosts are tried. */
+  private readonly fatalOpenErrors = new WeakSet<Error>();
 
   protected readonly pool: ConnectionPool<Connection>;
 
@@ -256,54 +297,113 @@ export class BaseExasolDriver implements IExasolClient {
   }
 
   /**
+   * Returns the check for server certificate fingerprints, or `undefined` if the runtime cannot read the server
+   * certificate. Then only the default certificate validation is supported.
+   * @internal
+   */
+  protected getServerCertificateVerifier(): ServerCertificateVerifier | undefined {
+    return undefined;
+  }
+
+  /**
    * Opens a WebSocket to the configured `url` or to one of the hosts of the connection string in `host`.
    * Hosts are tried once each in random order until a WebSocket opens.
    */
   private async openFirstAvailableWebSocket(): Promise<OpenedWebSocket> {
     // [impl->dsn~runtime-dsn-failover~1]
     // [impl->req~do-not-allow-disabling-encryption~1]
-    if (this.config.url) {
-      return this.openWebSocketOrFail([{ url: this.config.url }]);
+    const targets = this.getConnectTargets();
+    // [impl->dsn~runtime-certificate-mode-selection~1]
+    // [impl->dsn~runtime-browser-certificate-modes~1]
+    const skipsValidation = targets.some((target) => !target.rejectUnauthorized);
+    if (skipsValidation && this.getServerCertificateVerifier() === undefined) {
+      throw newCertificateModeNotSupportedError();
     }
-    const hosts = parseDsn(this.config.host, this.config.port);
-    // [impl->dsn~runtime-dsn-reject-fingerprint~1]
-    const hostWithFingerprint = hosts.find((host) => host.fingerprint !== undefined);
-    if (hostWithFingerprint) {
-      throw newDsnFingerprintNotSupportedError(hostWithFingerprint.host);
+    if (targets.some((target) => !target.rejectUnauthorized && target.fingerprint === undefined)) {
+      this.logger.warn(
+        '[SQLClient] Server certificate validation is disabled. The connection is vulnerable to man-in-the-middle attacks.',
+      );
     }
-    return this.openWebSocketOrFail(
-      shuffle(hosts).map((address) => ({ url: `wss://${address.host}:${address.port}`, address })),
-    );
+    if (skipsValidation && this.config.websocketFactory.length < 2) {
+      this.logger.warn(
+        '[SQLClient] The WebSocket factory does not declare the options parameter. Pass options.rejectUnauthorized on to ' +
+          'the WebSocket, otherwise fingerprints and validateServerCertificate: false have no effect.',
+      );
+    }
+    return this.openWebSocketOrFail(targets);
   }
 
-  private async openWebSocketOrFail(targets: Array<{ url: string; address?: DsnHost }>): Promise<OpenedWebSocket> {
+  private getConnectTargets(): ConnectTarget[] {
+    const validate = this.config.validateServerCertificate !== false;
+    if (this.config.url) {
+      return [{ url: this.config.url, rejectUnauthorized: validate }];
+    }
+    const hosts = parseDsn(this.config.host, this.config.port);
+    return shuffle(hosts).map((address) => {
+      const url = `wss://${address.host}:${address.port}`;
+      if (address.fingerprint === undefined) {
+        return { url, address, rejectUnauthorized: validate };
+      }
+      if (address.fingerprint === NO_CERTIFICATE_CHECK) {
+        return { url, address, rejectUnauthorized: false };
+      }
+      return { url, address, rejectUnauthorized: false, fingerprint: address.fingerprint };
+    });
+  }
+
+  /** Starts the fingerprint check for a WebSocket that is opening. Returns whether the certificate was verified. */
+  private attachCertificateCheck(
+    webSocket: ExaWebsocket,
+    host: string,
+    fingerprint: string | undefined,
+    fail: CertificateCheckFailure,
+  ): () => boolean {
+    if (fingerprint === undefined) {
+      return () => true;
+    }
+    const verifier = this.getServerCertificateVerifier();
+    if (verifier === undefined) {
+      // Unreachable: openFirstAvailableWebSocket() rejects fingerprints when the runtime has no verifier.
+      return () => false;
+    }
+    return verifier(webSocket, host, fingerprint, fail);
+  }
+
+  private async openWebSocketOrFail(targets: ConnectTarget[]): Promise<OpenedWebSocket> {
     const failures: Array<{ url: string; cause: unknown }> = [];
-    for (const { url, address } of targets) {
+    for (const target of targets) {
       if (this.closed) {
         throw ErrClosed;
       }
       try {
-        const webSocket = await this.openWebSocket(url);
+        const webSocket = await this.openWebSocket(target);
+        const { address } = target;
         return { webSocket, address: address ? { host: address.host, port: address.port } : undefined };
       } catch (cause) {
         if (this.closed) {
           throw ErrClosed;
         }
-        this.logger.debug(`[SQLClient] Failed to open WebSocket ${url}`, cause);
-        failures.push({ url, cause });
+        this.logger.debug(`[SQLClient] Failed to open WebSocket ${target.url}`, cause);
+        // [impl->dsn~runtime-fingerprint-verification~1]
+        if (cause instanceof Error && this.fatalOpenErrors.has(cause)) {
+          this.notifyError();
+          throw cause;
+        }
+        failures.push({ url: target.url, cause });
       }
     }
     this.notifyError();
     throw newConnectionFailedError(failures);
   }
 
-  private openWebSocket(url: string): Promise<ExaWebsocket> {
+  private openWebSocket(target: ConnectTarget): Promise<ExaWebsocket> {
     // [impl->dsn~runtime-dsn-connect-timeout~1]
+    const { url, rejectUnauthorized, fingerprint } = target;
     const timeoutMs = this.getConnectTimeout();
     return new Promise<ExaWebsocket>((resolve, reject) => {
       let webSocket: ExaWebsocket;
       try {
-        webSocket = this.config.websocketFactory(url);
+        webSocket = this.config.websocketFactory(url, { rejectUnauthorized });
       } catch (error) {
         reject(error instanceof Error ? error : newSocketError(error));
         return;
@@ -331,11 +431,27 @@ export class BaseExasolDriver implements IExasolClient {
         }
         reject(error);
       };
+      const failCertificateCheck: CertificateCheckFailure = (error, retryOtherHosts) => {
+        if (!retryOtherHosts) {
+          this.fatalOpenErrors.add(error);
+        }
+        fail(error);
+      };
       const timer = isTimeoutEnabled(timeoutMs) ? setTimeout(() => fail(newConnectTimeoutError(url, timeoutMs)), timeoutMs) : undefined;
       const abort = () => fail(ErrClosed);
       this.pendingOpenAborts.add(abort);
+      const host = target.address?.host ?? url;
+      const isCertificateVerified = this.attachCertificateCheck(webSocket, host, fingerprint, failCertificateCheck);
+      if (settled) {
+        return;
+      }
       webSocket.onopen = () => {
         if (settled) {
+          return;
+        }
+        if (!isCertificateVerified()) {
+          // The WebSocket opened without reporting its certificate, so the fingerprint was not checked.
+          fail(newFingerprintNotVerifiableError(host));
           return;
         }
         settle();

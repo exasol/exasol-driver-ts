@@ -32,4 +32,15 @@ describe('Browser native WebSocket integration', () => {
     await driver.connect();
     expect(nativeWebSocket.urls).toEqual([`wss://${connection.host}:${connection.port}`]);
   });
+
+  // [itest->dsn~runtime-browser-certificate-modes~1]
+  test.each([
+    ['a fingerprint', (host: string) => ({ host: `${host}/${'ab'.repeat(32)}` })],
+    ['validateServerCertificate false', (host: string) => ({ host, validateServerCertificate: false })],
+  ])('rejects %s without opening a WebSocket', async (_description, certificateConfig) => {
+    const webSocket = nativeWebSocketFactory();
+    driver = new ExasolDriver(webSocket.factory, { ...basicAuthConfig(connection), ...certificateConfig(connection.host) });
+    await expect(driver.connect()).rejects.toThrow('E-EDJS-45');
+    expect(webSocket.urls).toEqual([]);
+  });
 });

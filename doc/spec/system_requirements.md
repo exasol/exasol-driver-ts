@@ -405,6 +405,20 @@ Covers:
 
 Needs: impl
 
+### Configure Server Certificate Validation
+`req~configurable-server-certificate-validation~1`
+
+The application developer chooses per connection how the driver checks the server certificate, like in the other Exasol drivers: validate it against trusted certificate authorities and the host name (the default), accept only the certificate with a given SHA-256 fingerprint, or accept any certificate.
+
+Rationale:
+
+Exasol SaaS private endpoints and on-premise clusters often use self-signed certificates. Without these options, applications have to disable certificate validation for the whole process with `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+
+Covers:
+- `feat~secure-configurable-sessions~1`
+
+Needs: scn
+
 ### Configure Session Attributes
 `req~configure-session-attributes~2`
 
@@ -446,7 +460,7 @@ Needs: dsn
 
 **Given** a driver or pool whose `host` is a connection string in the format `host[..range][/fingerprint][:port][,host...]`
 **When** the application connects
-**Then** the driver expands ranges of the last number in a host name (for example `10.0.0.10..12` or `exasol1..3`), splits comma-separated hosts, uses the port given in the connection string for its part and all preceding parts without a port, uses the configured `port` otherwise, accepts IPv6 addresses in brackets, and rejects invalid connection strings (including host names with characters other than letters, digits, `.`, `-` and `_`), descending ranges and connection strings that expand to more than 10000 hosts before opening a WebSocket
+**Then** the driver expands ranges of the last number in a host name (for example `10.0.0.10..12` or `exasol1..3`), splits comma-separated hosts, uses the port given in the connection string for its part and all preceding parts without a port, uses the configured `port` otherwise, accepts IPv6 addresses in brackets, and rejects invalid connection strings (including host names with characters other than letters, digits, `.`, `-` and `_`, and fingerprints that are neither `nocertcheck` nor 64 hexadecimal characters), descending ranges and connection strings that expand to more than 10000 hosts before opening a WebSocket
 
 Covers:
 - `req~connect-via-connection-string~1`
@@ -477,19 +491,60 @@ Covers:
 
 Needs: dsn, uman
 
-### Connection String Fingerprint Rejected
-`scn~connection-string-fingerprint-rejected~1`
+### Connection String Fingerprint Validated
+`scn~connection-string-fingerprint-validated~1`
 
-**Given** a connection string that contains a certificate fingerprint for any host
-**When** the application connects
-**Then** the driver rejects the connection with an error stating that fingerprint validation is not supported yet, without opening a WebSocket
+**Given** a Node.js driver or pool whose connection string contains the SHA-256 fingerprint of the server certificate for a host, and a WebSocket factory that creates `ws` WebSockets with the passed `rejectUnauthorized` option
+**When** the application connects to that host
+**Then** the driver skips the certificate authority and host name checks and connects only after the server certificate's fingerprint matched, ignoring the case of the fingerprint
+
+Covers:
+- `req~configurable-server-certificate-validation~1`
+- `req~connect-via-connection-string~1`
+
+Needs: dsn, uman
+
+### Fingerprint Mismatch Rejected
+`scn~fingerprint-mismatch-rejected~1`
+
+**Given** a Node.js driver whose connection string contains a fingerprint for a host
+**When** the server certificate of that host has a different fingerprint, or the WebSocket does not expose the server certificate
+**Then** the driver closes the WebSocket before sending credentials or any Exasol command (only the WebSocket upgrade request has been sent); on a different fingerprint it rejects with an error showing both fingerprints without trying other hosts, while a WebSocket without certificate counts as a failed host
 
 Rationale:
 
-Connecting without validating a fingerprint the user asked for would silently weaken security.
+A different certificate may indicate a man-in-the-middle attack, so the driver stops like pyexasol does instead of trying the next host.
 
 Covers:
-- `req~connect-via-connection-string~1`
+- `req~configurable-server-certificate-validation~1`
+
+Needs: dsn, uman
+
+### Server Certificate Validation Disabled
+`scn~server-certificate-validation-disabled~1`
+
+**Given** a Node.js driver or pool configured with `validateServerCertificate: false`, or a connection string with the fingerprint `nocertcheck` for a host
+**When** the application connects
+**Then** the driver accepts any server certificate of the affected hosts and logs a warning, and it logs another warning if the WebSocket factory does not declare the options parameter
+
+Covers:
+- `req~configurable-server-certificate-validation~1`
+
+Needs: dsn, uman
+
+### Certificate Modes Unsupported in Browsers
+`scn~certificate-modes-unsupported-in-browsers~1`
+
+**Given** a driver or pool from the browser entry point with a fingerprint in the connection string or `validateServerCertificate: false`
+**When** the application connects
+**Then** the driver rejects the connection with an error stating that only the default certificate validation is supported in browsers, without opening a WebSocket
+
+Rationale:
+
+Browsers neither expose the server certificate nor allow skipping its validation.
+
+Covers:
+- `req~configurable-server-certificate-validation~1`
 
 Needs: dsn, uman
 
@@ -676,6 +731,22 @@ Covers:
 - `req~manage-connection-pool~1`
 
 Needs: dsn
+
+### Pool Query Rejected When Connection Fails
+`scn~pool-query-rejected-when-connection-fails~1`
+
+**Given** an `ExasolPool` that cannot create a driver, for example because of wrong credentials, unreachable hosts or a server certificate that does not match the fingerprint
+**When** the application runs a query through the pool
+**Then** the query rejects with the connection error instead of the pool retrying forever, and later queries try to create a driver again
+
+Comment:
+
+When refilling the configured minimum pool size fails, a waiting query may be rejected with that error, because the pool cannot tell which request a failed creation was meant for.
+
+Covers:
+- `req~manage-connection-pool~1`
+
+Needs: dsn, uman
 
 ### Pool Shutdown
 `scn~pool-shutdown~1`

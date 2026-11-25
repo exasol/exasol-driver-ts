@@ -1,6 +1,7 @@
 import { WebSocket } from 'ws';
 import { ExaWebsocket, ReadyState } from './connection';
-import { createMockWebsocketFactory, MockWebsocketFactory, MultiHostMockWebsocketFactory } from './mock-socket';
+import { createMockWebsocketFactory, MockCertificate, MockExaWebSocket, MockWebsocketFactory, MultiHostMockWebsocketFactory } from './mock-socket';
+import { ILogger } from './logger/logger';
 import { NodeExasolDriver as ExasolDriver } from './node-sql-client';
 import { NodeExasolPool } from './node-sql-pool';
 import { IExasolDriver } from './sql-client.interface';
@@ -455,11 +456,11 @@ describe('sqlClient', () => {
     it('treats an exception from the WebSocket factory as a failed host', async () => {
       keepDsnOrder();
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
-      driver = new ExasolDriver((url) => {
+      driver = new ExasolDriver((url, options) => {
         if (url.includes('exasol1')) {
           throw new Error('invalid URL');
         }
-        return factory.factory(url);
+        return factory.factory(url, options);
       }, { accessToken: 'access-token', host: 'exasol1,exasol2' });
 
       await driver.connect();
@@ -575,8 +576,8 @@ describe('sqlClient', () => {
     // [utest->dsn~runtime-dsn-failover~1]
     it('does not log in when the driver is closed after the WebSocket opened', async () => {
       const factory = new MultiHostMockWebsocketFactory({}, 'hang');
-      driver = new ExasolDriver((url) => {
-        const socket = factory.factory(url);
+      driver = new ExasolDriver((url, options) => {
+        const socket = factory.factory(url, options);
         setTimeout(() => {
           socket.onopen?.(undefined);
           // close() runs before connect() continues after the open event
@@ -593,8 +594,8 @@ describe('sqlClient', () => {
     // [utest->dsn~runtime-dsn-failover~1]
     it('rejects when the driver is closed during the login', async () => {
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
-      driver = new ExasolDriver((url) => {
-        const socket = factory.factory(url);
+      driver = new ExasolDriver((url, options) => {
+        const socket = factory.factory(url, options);
         const send = socket.send.bind(socket);
         socket.send = (data) => {
           send(data);
@@ -734,17 +735,6 @@ describe('sqlClient', () => {
       expect(factory.urls).toEqual(['wss://[::1]:8563']);
     });
 
-    // [utest->dsn~runtime-dsn-reject-fingerprint~1]
-    it('rejects a connection string with a fingerprint before opening a WebSocket', async () => {
-      const factory = new MultiHostMockWebsocketFactory({}, 'open');
-      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: '10.0.0.11/135a1d2dce10,exasol2' });
-
-      await expect(driver.connect()).rejects.toThrow(
-        "E-EDJS-40: Connection string contains a certificate fingerprint for host '10.0.0.11', but fingerprint validation is not supported yet.",
-      );
-      expect(factory.urls).toEqual([]);
-    });
-
     // [utest->dsn~runtime-dsn-parsing~1]
     it('rejects an invalid connection string before opening a WebSocket', async () => {
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
@@ -838,6 +828,179 @@ describe('sqlClient', () => {
         await pool.drain();
         await pool.clear();
       }
+    });
+  });
+
+  describe('server certificate', () => {
+    const fingerprint = 'ab'.repeat(32);
+    const fingerprint256 = Array(32).fill('AB').join(':');
+    const otherFingerprint256 = Array(32).fill('CD').join(':');
+    const keepDsnOrder = () => jest.spyOn(Math, 'random').mockReturnValue(0.999);
+    const createLogger = (): jest.Mocked<ILogger> => ({
+      error: jest.fn(),
+      warn: jest.fn(),
+      info: jest.fn(),
+      log: jest.fn(),
+      debug: jest.fn(),
+      trace: jest.fn(),
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    // [utest->dsn~runtime-certificate-mode-selection~1]
+    it('requires certificate validation by default', async () => {
+      const logger = createLogger();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' }, logger);
+
+      await driver.connect();
+
+      expect(factory.options).toEqual([{ rejectUnauthorized: true }]);
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    // [utest->dsn~runtime-certificate-mode-selection~1]
+    it('disables certificate validation and warns when validateServerCertificate is false', async () => {
+      const logger = createLogger();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1', validateServerCertificate: false }, logger);
+
+      await driver.connect();
+
+      expect(factory.options).toEqual([{ rejectUnauthorized: false }]);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Server certificate validation is disabled'));
+    });
+
+    // [utest->dsn~runtime-certificate-mode-selection~1]
+    it('warns when the factory does not declare the options parameter', async () => {
+      const logger = createLogger();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      const oneParameterFactory = (url: string) => factory.factory(url, { rejectUnauthorized: false });
+      driver = new ExasolDriver(oneParameterFactory, { accessToken: 'access-token', host: 'exasol1/nocertcheck' }, logger);
+
+      await driver.connect();
+
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('does not declare the options parameter'));
+    });
+
+    // [utest->dsn~runtime-certificate-mode-selection~1]
+    it('does not warn about the factory with the default certificate validation', async () => {
+      const logger = createLogger();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      const oneParameterFactory = (url: string) => factory.factory(url, { rejectUnauthorized: true });
+      driver = new ExasolDriver(oneParameterFactory, { accessToken: 'access-token', host: 'exasol1' }, logger);
+
+      await driver.connect();
+
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    // [utest->dsn~runtime-certificate-mode-selection~1]
+    it('disables certificate validation for the configured URL when validateServerCertificate is false', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', url: 'wss://exasol:8563', validateServerCertificate: false });
+
+      await driver.connect();
+
+      expect(factory.options).toEqual([{ rejectUnauthorized: false }]);
+    });
+
+    // [utest->dsn~runtime-certificate-mode-selection~1]
+    it('disables certificate validation and warns for hosts with fingerprint nocertcheck', async () => {
+      keepDsnOrder();
+      const logger = createLogger();
+      const factory = new MultiHostMockWebsocketFactory({ 'wss://exasol2:8563': 'open' });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1/nocertcheck,exasol2' }, logger);
+
+      await driver.connect();
+
+      expect(factory.options).toEqual([{ rejectUnauthorized: false }, { rejectUnauthorized: true }]);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Server certificate validation is disabled'));
+    });
+
+    // [utest->dsn~runtime-certificate-mode-selection~1]
+    // [utest->dsn~runtime-fingerprint-verification~1]
+    it('connects when the server certificate matches the fingerprint', async () => {
+      const logger = createLogger();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open', { 'wss://exasol1:8563': fingerprint256 });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: `exasol1/${fingerprint}` }, logger);
+
+      await driver.connect();
+
+      expect(factory.options).toEqual([{ rejectUnauthorized: false }]);
+      expect(logger.warn).not.toHaveBeenCalled();
+      await expect(driver.query('select 1')).resolves.toBeDefined();
+    });
+
+    // [utest->dsn~runtime-fingerprint-verification~1]
+    it('rejects a different server certificate without sending data or trying other hosts', async () => {
+      keepDsnOrder();
+      const onError = jest.fn();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open', {
+        'wss://exasol1:8563': otherFingerprint256,
+        'wss://exasol2:8563': fingerprint256,
+      });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: `exasol1,exasol2/${fingerprint}`, onError });
+
+      await expect(driver.connect()).rejects.toThrow(
+        `E-EDJS-46: Provided fingerprint '${fingerprint.toUpperCase()}' did not match server fingerprint '${'CD'.repeat(32)}' of host 'exasol1'.`,
+      );
+      expect(factory.urls).toEqual(['wss://exasol1:8563']);
+      const socket = factory.sockets[0] as MockExaWebSocket;
+      expect(socket.closed).toBe(true);
+      expect(socket.sentCommands).toEqual([]);
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    // [utest->dsn~runtime-fingerprint-verification~1]
+    // [utest->dsn~runtime-pool-create-failure~1]
+    it('rejects a pool query on a different server certificate without retrying', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open', { 'wss://exasol1:8563': otherFingerprint256 });
+      const pool = new NodeExasolPool(factory.factory, { accessToken: 'access-token', host: `exasol1/${fingerprint}` });
+
+      await expect(pool.query('select 1')).rejects.toThrow('E-EDJS-46');
+      expect(factory.urls).toEqual(['wss://exasol1:8563']);
+    });
+
+    // [utest->dsn~runtime-fingerprint-verification~1]
+    it('fails over when the WebSocket does not expose the server certificate', async () => {
+      keepDsnOrder();
+      const factory = new MultiHostMockWebsocketFactory({}, 'open', { 'wss://exasol2:8563': fingerprint256 });
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: `exasol1,exasol2/${fingerprint}` });
+
+      await driver.connect();
+
+      expect(factory.urls).toEqual(['wss://exasol1:8563', 'wss://exasol2:8563']);
+      expect(factory.sockets[0].closed).toBe(true);
+      expect(factory.sockets[0].sentCommands).toEqual([]);
+    });
+
+    // [utest->dsn~runtime-dsn-parsing~1]
+    it('rejects a fingerprint with a wrong length before opening a WebSocket', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'open');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1/135a1d2dce10' });
+
+      await expect(driver.connect()).rejects.toThrow('E-EDJS-48');
+      expect(factory.urls).toEqual([]);
+    });
+
+    // [utest->dsn~runtime-fingerprint-verification~1]
+    it.each([
+      ['has no event emitter', undefined],
+      ['never emits upgrade', null],
+      ['emits upgrade without certificate', ''],
+    ])('rejects a fingerprint when the WebSocket %s', async (_description, certificate) => {
+      const certificates: Record<string, MockCertificate> = certificate === undefined ? {} : { 'wss://exasol1:8563': certificate };
+      const factory = new MultiHostMockWebsocketFactory({}, 'open', certificates);
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: `exasol1/${fingerprint}` });
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://exasol1:8563: E-EDJS-47: Cannot verify the certificate fingerprint of host 'exasol1'",
+      );
+      expect(factory.sockets[0].closed).toBe(true);
+      expect(factory.sockets[0].sentCommands).toEqual([]);
     });
   });
 
