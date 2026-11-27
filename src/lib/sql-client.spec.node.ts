@@ -176,19 +176,6 @@ describe('sqlClient', () => {
       });
     });
 
-    function failFetchCommands(response: object) {
-      const originalSend = mockSocketFactory.mockSocket.send.bind(mockSocketFactory.mockSocket);
-      mockSocketFactory.mockSocket.send = (data: string | Uint8Array) => {
-        const command = JSON.parse(data.toString());
-        if (command.command === 'fetch') {
-          mockSocketFactory.mockSocket.sentCommands.push(command);
-          setTimeout(() => mockSocketFactory.mockSocket.callOnMessage({ data: JSON.stringify(response) }), 0);
-          return;
-        }
-        originalSend(data);
-      };
-    }
-
     it.each([
       ['an exception', { status: 'error', exception: { sqlCode: '42000', text: 'Resultset handle 17 is unknown' } },
         "E-EDJS-25: SQL error: code: '42000', message: 'Resultset handle 17 is unknown'"],
@@ -197,7 +184,7 @@ describe('sqlClient', () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
-      failFetchCommands(response);
+      mockSocketFactory.mockSocket.respondTo('fetch', response);
 
       await expect(driver.query('select with multiple rows')).rejects.toThrow(expectedError);
       expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
@@ -210,49 +197,43 @@ describe('sqlClient', () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
-      failFetchCommands({ status: 'error' });
       const resultSet = (resultSetHandle: number) => ({
         resultType: 'resultSet',
         resultSet: { resultSetHandle, numColumns: 1, numRows: 2, numRowsInMessage: 1, columns: [], data: [[1]] },
       });
-      const failingSend = mockSocketFactory.mockSocket.send.bind(mockSocketFactory.mockSocket);
-      mockSocketFactory.mockSocket.send = (data: string | Uint8Array) => {
-        const command = JSON.parse(data.toString());
-        if (command.command === 'executeBatch') {
-          mockSocketFactory.mockSocket.sentCommands.push(command);
-          const responseData = { numResults: 2, results: [resultSet(17), resultSet(18)] };
-          setTimeout(() => mockSocketFactory.mockSocket.callOnMessage({ data: JSON.stringify({ status: 'ok', responseData }) }), 0);
-          return;
-        }
-        failingSend(data);
-      };
+      mockSocketFactory.mockSocket.respondTo('executeBatch', {
+        status: 'ok',
+        responseData: { numResults: 2, results: [resultSet(17), resultSet(18)] },
+      });
+      mockSocketFactory.mockSocket.respondTo('fetch', { status: 'error' });
 
-      await expect(driver.executeBatch(['first', 'second'])).rejects.toThrow();
+      await expect(driver.executeBatch(['first', 'second'])).rejects.toThrow('E-EDJS-27');
       const closeCommands = mockSocketFactory.mockSocket.sentCommands.filter(
         (command) => (command as { command: string }).command === 'closeResultSet',
       );
       expect(closeCommands).toEqual([{ command: 'closeResultSet', resultSetHandles: [17, 18] }]);
     });
 
+    it('should keep all fields of the raw response, such as attributes', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      mockSocketFactory.mockSocket.respondTo('execute', {
+        status: 'ok',
+        attributes: { autocommit: false },
+        responseData: { numResults: 1, results: [{ resultType: 'rowCount', rowCount: 1 }] },
+      });
+
+      const response = await driver.execute('create table test (id int)', undefined, undefined, 'raw');
+
+      expect(response).toEqual(expect.objectContaining({ status: 'ok', attributes: { autocommit: false } }));
+    });
+
     it('should return fetched rows when closing the result set fails', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
-
-      const originalSend = mockSocketFactory.mockSocket.send.bind(mockSocketFactory.mockSocket);
-      mockSocketFactory.mockSocket.send = (data: string | Uint8Array) => {
-        const command = JSON.parse(data.toString());
-        if (command.command === 'closeResultSet') {
-          mockSocketFactory.mockSocket.sentCommands.push(command);
-          setTimeout(() => {
-            mockSocketFactory.mockSocket.callOnMessage({
-              data: JSON.stringify({ status: 'error' }),
-            });
-          }, 0);
-          return;
-        }
-        originalSend(data);
-      };
+      mockSocketFactory.mockSocket.respondTo('closeResultSet', { status: 'error' });
 
       const result = await driver.query('select with multiple rows');
 
@@ -313,7 +294,6 @@ describe('sqlClient', () => {
 
       expect(result).toStrictEqual({
         status: 'ok',
-        exception: undefined,
         responseData: {
           numResults: 1,
           results: [{
@@ -415,7 +395,6 @@ describe('sqlClient', () => {
 
       expect(result).toStrictEqual({
         status: 'ok',
-        exception: undefined,
         responseData: {
           numResults: 1,
           results: [{ resultType: 'rowCount', rowCount: 1 }],

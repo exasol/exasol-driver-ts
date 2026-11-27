@@ -303,7 +303,7 @@ Needs: impl, utest, itest
 **Then** the driver creates a prepared statement, validates that supplied positional values align with parameter columns, sends the positional values as column-oriented data to Exasol, fetches additional result-set pages and closes remote result sets in the same way as `query()`, and releases the connection when the statement is closed
 
 Covers:
-- `scn~prepared-statement-execution~1`
+- `scn~prepared-statement-execution~2`
 
 Needs: impl, utest, itest
 

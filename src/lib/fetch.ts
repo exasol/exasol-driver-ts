@@ -68,9 +68,8 @@ export const fetchData = async (
     await closeResultSets(resultSetHandles, connection, logger);
   }
   return {
+    ...rawData,
     responseData: batchResponse,
-    status: rawData.status,
-    exception: rawData.exception,
   };
 };
 
