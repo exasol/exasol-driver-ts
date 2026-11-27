@@ -30,7 +30,7 @@ The WebSocket factory now receives a second argument `{ rejectUnauthorized }`, w
 ## Security
 
 * Updated `node-forge` to 1.4.3 to fix multiple vulnerabilities (e.g. GHSA-86w9-cpqp-85rv, GHSA-6qrw-m8cv-hcxf, GHSA-5cwg-6vw7-rj6p)
-* #126: Fixed security advisories in development dependencies, e.g. `handlebars`, `markdown-it`, `source-map-js`, `undici`, `vite`, `@vitest/browser`, `glob` (GHSA-3g3m-2fjr-6pw4) and `minimatch` (GHSA-g3hv-75wg-m249). `package.json` now overrides `glob` to 14 and `minimatch` to 11 for dependents that have no fixed release yet. `typedoc` 0.28 does not work with `minimatch` 11, so `audit-ci.jsonc` allows GHSA-g3hv-75wg-m249 for `typedoc` only
+* #126: Fixed security advisories in development dependencies
 
 ## Dependency Updates
 
@@ -40,8 +40,8 @@ The WebSocket factory now receives a second argument `{ rejectUnauthorized }`, w
 
 ### Development Dependency Updates
 
-* Updated `@vitest/browser-playwright:^5.0.3` to `^5.1.2`
-* Updated `@vitest/coverage-v8:^5.0.3` to `^5.1.2`
-* Updated `typescript-eslint:^8.71.0` to `~8.72.2` (8.73 and later declare `@typescript/native` 7.1 prereleases as optional peer, which makes `npm ci` with npm 10 fail)
 * Updated `vite:^8.3.1` to `^8.4.0`
 * Updated `vitest:^5.0.3` to `^5.1.2`
+* Updated `@vitest/browser-playwright:^5.0.3` to `^5.1.2`
+* Updated `@vitest/coverage-v8:^5.0.3` to `^5.1.2`
+* Updated `typescript-eslint:^8.71.0` to `~8.72.2`
