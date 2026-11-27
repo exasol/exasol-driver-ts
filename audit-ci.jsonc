@@ -5,7 +5,7 @@
   "allowlist": [
     // minimatch < 11.0.1 (ReDoS via globparts amplification). typedoc 0.28.20 calls `Minimatch#matchOne()`,
     // which minimatch 11 removed, so the overrides in package.json leave typedoc on minimatch 10. typedoc only matches the
-    // patterns from our own typedoc.json. Remove this entry once typedoc supports minimatch >= 11.0.1.
+    // patterns from our own typedoc.json. Remove this entry once typedoc supports minimatch >= 11.0.1 (see #141).
     "GHSA-g3hv-75wg-m249|typedoc>minimatch",
   ],
 }
