@@ -1,5 +1,4 @@
 import js from "@eslint/js";
-import tsParser from "@typescript-eslint/parser";
 import jest from "eslint-plugin-jest";
 import { defineConfig } from "eslint/config";
 import globals from "globals";
@@ -24,7 +23,7 @@ export default defineConfig([
                 ...globals.node,
             },
 
-            parser: tsParser,
+            parser: tseslint.parser,
             ecmaVersion: "latest",
             sourceType: "module",
         },
