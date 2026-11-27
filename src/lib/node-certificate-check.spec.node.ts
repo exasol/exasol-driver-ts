@@ -9,6 +9,8 @@ import { normalizeFingerprint } from './node-certificate-check';
 import { NodeExasolDriver } from './node-sql-client';
 import { WebsocketFactory } from './sql-client';
 
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /** Exercises the fingerprint check with real `ws` WebSockets against a local server with a self-signed certificate. */
 describe('server certificate check with ws', () => {
   let server: Server;
@@ -76,12 +78,22 @@ describe('server certificate check with ws', () => {
   it('rejects a self-signed certificate by default with a hint to the fingerprint', async () => {
     const driver = createDriver(`127.0.0.1:${port}`);
 
+    // Newer Node.js versions append advice to the TLS error, e.g. "; if the root CA is installed locally, try ...".
     await expect(driver.connect()).rejects.toThrow(
-      `E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://127.0.0.1:${port}: ` +
-        "E-EDJS-49: Server certificate of host '127.0.0.1' is not trusted: 'self-signed certificate'. " +
-        'Use a server certificate from a trusted certificate authority that covers the host name. ' +
-        'Alternatively add the SHA-256 fingerprint of the server certificate to the connection string as host/fingerprint, e.g. exasol1/<fingerprint>:8563.\'. ' +
-        'Check that the hosts are reachable and the port is correct.',
+      new RegExp(
+        '^' +
+          escapeRegExp(
+            `E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://127.0.0.1:${port}: ` +
+              "E-EDJS-49: Server certificate of host '127.0.0.1' is not trusted: 'self-signed certificate",
+          ) +
+          '.*' +
+          escapeRegExp(
+            "'. Use a server certificate from a trusted certificate authority that covers the host name. " +
+              'Alternatively add the SHA-256 fingerprint of the server certificate to the connection string as host/fingerprint, e.g. exasol1/<fingerprint>:8563.\'. ' +
+              'Check that the hosts are reachable and the port is correct.',
+          ) +
+          '$',
+      ),
     );
     expect(receivedMessages).toEqual([]);
   });
