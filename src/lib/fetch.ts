@@ -41,14 +41,17 @@ export const fetchData = async (
   // [impl->dsn~runtime-query-execution~3]
   const batchResponse = rawData.responseData;
 
-  const numResults = batchResponse?.numResults ?? 0;
-  for (let index = 0; index < numResults; index++) {
-    const response = batchResponse.results[index];
-    logger.debug('[WebSQL]: Fetch more data for: ', response?.resultSet?.resultSetHandle);
+  const results = (batchResponse?.results ?? []).slice(0, batchResponse?.numResults ?? 0);
+  const resultSetHandles = results
+    .map((response) => response?.resultSet?.resultSetHandle)
+    .filter((handle): handle is number => !!handle);
 
-    if (response?.resultType === 'resultSet' && response.resultSet) {
-      try {
-        batchResponse.results[index].resultSet = await fetchMoreData(
+  try {
+    for (const response of results) {
+      if (response?.resultType === 'resultSet' && response.resultSet) {
+        logger.debug('[WebSQL]: Fetch more data for: ', response.resultSet.resultSetHandle);
+        // Result sets are fetched one after another on purpose: they share one connection, whose commands run in order.
+        response.resultSet = await fetchMoreData( // NOSONAR
           response.resultSet,
           response.resultSet.numRowsInMessage,
           Math.min(response.resultSet.numRows, resultSetMaxRows ?? response.resultSet.numRows),
@@ -57,17 +60,12 @@ export const fetchData = async (
           fetchSizeBytes,
           logger
         );
-      } catch (error) {
-        // Close this and all remaining result sets, they would otherwise stay open until the session ends.
-        for (let remaining = index; remaining < numResults; remaining++) {
-          await closeResultSet(batchResponse.results[remaining]?.resultSet?.resultSetHandle, connection, logger);
-        }
-        throw error;
       }
-
-      await closeResultSet(response.resultSet.resultSetHandle, connection, logger);
-      logger.debug('[WebSQL]: Loaded all data');
     }
+    logger.debug('[WebSQL]: Loaded all data');
+  } finally {
+    // Also when fetching fails: open result sets would otherwise stay open until the session ends.
+    await closeResultSets(resultSetHandles, connection, logger);
   }
   return {
     responseData: batchResponse,
@@ -76,15 +74,15 @@ export const fetchData = async (
   };
 };
 
-const closeResultSet = async (resultSetHandle: number | undefined, connection: Connection, logger: ILogger) => {
-  if (!resultSetHandle) {
+const closeResultSets = async (resultSetHandles: number[], connection: Connection, logger: ILogger) => {
+  if (resultSetHandles.length === 0) {
     return;
   }
-  logger.debug('[WebSQL]: Closing ResultSet', resultSetHandle);
+  logger.debug('[WebSQL]: Closing ResultSets', resultSetHandles);
   try {
-    await connection.sendCommand(new CloseResultSetCommand([resultSetHandle]));
+    await connection.sendCommand(new CloseResultSetCommand(resultSetHandles));
   } catch (error) {
-    logger.warn('[WebSQL]: Closing ResultSet failed', error);
+    logger.warn('[WebSQL]: Closing ResultSets failed', error);
   }
 };
 

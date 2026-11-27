@@ -206,7 +206,7 @@ describe('sqlClient', () => {
       });
     });
 
-    it('should close the failed and all remaining result sets of a batch when fetching fails', async () => {
+    it('should close all result sets of a batch in one command when fetching fails', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
@@ -231,10 +231,7 @@ describe('sqlClient', () => {
       const closeCommands = mockSocketFactory.mockSocket.sentCommands.filter(
         (command) => (command as { command: string }).command === 'closeResultSet',
       );
-      expect(closeCommands).toEqual([
-        { command: 'closeResultSet', resultSetHandles: [17] },
-        { command: 'closeResultSet', resultSetHandles: [18] },
-      ]);
+      expect(closeCommands).toEqual([{ command: 'closeResultSet', resultSetHandles: [17, 18] }]);
     });
 
     it('should return fetched rows when closing the result set fails', async () => {
