@@ -48,6 +48,18 @@ export class ExasolContainer {
     return await this.certProvider.readCertificate();
   }
 
+  /**
+   * Returns the SHA-256 fingerprint of the database's TLS certificate as 64 upper-case hexadecimal characters, the format
+   * of a fingerprint in a connection string.
+   */
+  public async getTlsCertificateFingerprint(): Promise<string> {
+    const fingerprint = await this.certProvider.getTlsCertificateFingerprint();
+    if (fingerprint === undefined) {
+      throw new Error('The test database has no TLS certificate.');
+    }
+    return fingerprint.toUpperCase();
+  }
+
   public async loadCA() {
     return await this.certProvider.readCA();
   }

@@ -7,6 +7,8 @@ import { importParquetFile } from './import/parquet-file-import';
 import { ILogger } from './logger/logger';
 import { BaseExasolDriver, Config, WebsocketFactory } from './sql-client';
 import { IExasolDriver } from './sql-client.interface';
+import { verifyServerCertificateFingerprint } from './node-certificate-check';
+import { ServerCertificateVerifier } from './server-certificate';
 import { stripIpv6Brackets } from './utils';
 
 /** Node.js driver with local CSV import and export support. */
@@ -14,6 +16,11 @@ export class NodeExasolDriver extends BaseExasolDriver implements IExasolDriver 
   // [impl->dsn~runtime-node-websocket~2]
   constructor(websocketFactory: WebsocketFactory, config: Partial<Config>, logger?: ILogger) {
     super(websocketFactory, config, logger);
+  }
+
+  /** @internal Node.js `ws` WebSockets expose the server certificate, so fingerprints can be verified. */
+  protected override getServerCertificateVerifier(): ServerCertificateVerifier {
+    return verifyServerCertificateFingerprint;
   }
 
   /**

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ExaWebsocket, ReadyState } from "./connection";
-import { WebsocketFactory } from "./sql-client";
+import { WebsocketFactory, WebsocketOptions } from "./sql-client";
 import { SQLQueriesResponse } from "./types";
 
 
@@ -173,34 +173,83 @@ export function createMockWebsocketFactory(): MockWebsocketFactory {
   return new MockWebsocketFactory();
 }
 
-/** How a mocked WebSocket behaves after creation. `hang` never opens nor fails. */
-export type MockSocketBehavior = 'open' | 'error' | 'close' | 'hang';
+/**
+ * How a mocked WebSocket behaves after creation. `hang` never opens nor fails. `untrusted-certificate` fails with an
+ * error event like `ws` does when Node.js rejects a self-signed server certificate.
+ */
+export type MockSocketBehavior = 'open' | 'error' | 'untrusted-certificate' | 'expired-certificate' | 'close' | 'hang';
+
+/**
+ * Mock of a `ws` WebSocket that reports the server certificate in its `upgrade` event, like `ws` does after the
+ * TLS handshake.
+ */
+export class MockWsWebSocket extends MockExaWebSocket {
+  private readonly upgradeListeners: Array<(response: unknown) => void> = [];
+
+  public once(event: string, listener: (response: unknown) => void): this {
+    if (event === 'upgrade') {
+      this.upgradeListeners.push(listener);
+    }
+    return this;
+  }
+
+  /** Emits `upgrade` with a TLS socket whose certificate has the given `fingerprint256`, or no certificate. */
+  public emitUpgrade(fingerprint256: string | undefined) {
+    const certificate = fingerprint256 === undefined ? {} : { fingerprint256 };
+    const listeners = this.upgradeListeners.splice(0);
+    listeners.forEach((listener) => listener({ socket: { getPeerCertificate: () => certificate } }));
+  }
+}
+
+/**
+ * Server certificate of a mocked `ws` WebSocket: a `fingerprint256` (`AB:CD:...`) reported in the `upgrade` event,
+ * `''` for an `upgrade` event without certificate, or `null` for a WebSocket that never emits `upgrade`.
+ */
+export type MockCertificate = string | null;
 
 /**
  * Mock factory that creates one {@link MockExaWebSocket} per URL and simulates opening or failing it asynchronously.
- * Use it to test connecting to multiple hosts.
+ * Use it to test connecting to multiple hosts. URLs with a certificate get a {@link MockWsWebSocket}.
  */
 export class MultiHostMockWebsocketFactory {
   public readonly urls: string[] = [];
+  public readonly options: WebsocketOptions[] = [];
   public readonly sockets: MockExaWebSocket[] = [];
 
   constructor(
     private readonly behaviors: Record<string, MockSocketBehavior>,
     private readonly defaultBehavior: MockSocketBehavior = 'error',
+    private readonly certificates: Record<string, MockCertificate> = {},
   ) {}
 
   public get factory(): WebsocketFactory {
-    return (url: string) => {
-      const socket = new MockExaWebSocket();
+    return (url: string, options?: WebsocketOptions) => {
+      if (options === undefined) {
+        throw new Error('MultiHostMockWebsocketFactory: the driver must pass WebSocket options.');
+      }
+      const certificate = this.certificates[url];
+      const socket = certificate === undefined ? new MockExaWebSocket() : new MockWsWebSocket();
       this.urls.push(url);
+      this.options.push(options);
       this.sockets.push(socket);
       const behavior = this.behaviors[url] ?? this.defaultBehavior;
       if (behavior !== 'hang') {
         setTimeout(() => {
           if (behavior === 'open') {
-            socket.onopen?.(undefined);
+            if (socket instanceof MockWsWebSocket && certificate !== null && certificate !== undefined) {
+              socket.emitUpgrade(certificate === '' ? undefined : certificate);
+            }
+            if (!socket.closed) {
+              socket.onopen?.(undefined);
+            }
           } else if (behavior === 'error') {
             socket.onerror?.({ message: 'connection refused' });
+          } else if (behavior === 'untrusted-certificate') {
+            const error = Object.assign(new Error('self-signed certificate'), { code: 'DEPTH_ZERO_SELF_SIGNED_CERT' });
+            socket.onerror?.({ message: error.message, error });
+          } else if (behavior === 'expired-certificate') {
+            const error = Object.assign(new Error('certificate has expired'), { code: 'CERT_HAS_EXPIRED' });
+            socket.onerror?.({ message: error.message, error });
           } else {
             socket.onclose?.({ code: 1006, reason: 'abnormal closure' });
           }

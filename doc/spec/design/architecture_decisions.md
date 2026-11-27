@@ -147,6 +147,26 @@ Needs: impl
 
 Tags: csv-export, compression, nodejs
 
+## Server Certificates
+
+### Verify Fingerprints on the ws Upgrade Event
+`dsn~decision-verify-fingerprint-on-upgrade~1`
+
+The driver verifies certificate fingerprints itself on the `upgrade` event of the `ws` WebSocket returned by the factory, and only passes `rejectUnauthorized` to the factory.
+
+Rationale:
+
+The application creates the WebSocket, so the driver cannot configure the TLS connection itself. Leaving the fingerprint check to the factory would silently skip it for factories that ignore a new argument. Node's `checkServerIdentity` hook cannot be used, because Node only calls it after the certificate chain was verified, which fails for self-signed certificates. `ws` emits `upgrade` after the TLS handshake and before `open`, and stops the connection when it is closed in the listener, so the driver fails closed before sending credentials or any Exasol command. Only the WebSocket upgrade request, including headers the application's factory adds, reaches the server before the check. WebSockets that do not expose the certificate are rejected.
+
+Covers:
+- `scn~connection-string-fingerprint-validated~1`
+- `scn~fingerprint-mismatch-rejected~1`
+- `constr~injectable-websocket-implementation~1`
+
+Needs: impl
+
+Tags: tls, nodejs
+
 ## Browser Integration Testing
 
 ### Use Vitest Browser Mode

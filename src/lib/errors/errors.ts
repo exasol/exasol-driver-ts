@@ -87,12 +87,6 @@ export const newTooManyDsnHostsError = (dsn: string, max: number) =>
     .mitigation('Check the host ranges in the connection string.')
     .error();
 
-export const newDsnFingerprintNotSupportedError = (host: string) =>
-  new ExaErrorBuilder('E-EDJS-40')
-    .message('Connection string contains a certificate fingerprint for host {{host}}, but fingerprint validation is not supported yet.', host)
-    .mitigation('Remove the fingerprint and configure certificate validation in the WebSocket factory instead.')
-    .error();
-
 export const newConnectTimeoutError = (url: string, timeoutMs: number) =>
   new ExaErrorBuilder('E-EDJS-41').message('Opening WebSocket {{url}} timed out after {{timeout}} ms.', url, timeoutMs).error();
 
@@ -107,4 +101,42 @@ export const newConnectionFailedError = (failures: Array<{ url: string; cause: u
       failures.map(({ url, cause }) => `${url}: ${cause instanceof Error ? cause.message : String(cause)}`).join('; '),
     )
     .mitigation('Check that the hosts are reachable and the port is correct.')
+    .error();
+
+export const newCertificateModeNotSupportedError = () =>
+  new ExaErrorBuilder('E-EDJS-45')
+    .message('Certificate fingerprints and disabled server certificate validation are not supported in browsers.')
+    .mitigation('Remove the fingerprint from the connection string and do not set validateServerCertificate to false.')
+    .mitigation('Use a server certificate that the browser trusts.')
+    .error();
+
+export const newFingerprintMismatchError = (host: string, expected: string, actual: string) =>
+  new ExaErrorBuilder('E-EDJS-46')
+    .message('Provided fingerprint {{expected}} did not match server fingerprint {{actual}} of host {{host}}.', expected, actual, host)
+    .mitigation('Check the fingerprint in the connection string. It is the SHA-256 hash of the server certificate in hexadecimal.')
+    .error();
+
+export const newFingerprintNotVerifiableError = (host: string) =>
+  new ExaErrorBuilder('E-EDJS-47')
+    .message('Cannot verify the certificate fingerprint of host {{host}}: the WebSocket does not expose the server certificate.', host)
+    .mitigation('Create the WebSocket with the ws package in the websocketFactory.')
+    .error();
+
+export const newInvalidFingerprintLengthError = (fingerprint: string, length: number) =>
+  new ExaErrorBuilder('E-EDJS-48')
+    .message(
+      'Certificate fingerprint {{fingerprint}} in the connection string has {{length}} characters, but a SHA-256 fingerprint has 64 hexadecimal characters.',
+      fingerprint,
+      length,
+    )
+    .mitigation('Copy the complete SHA-256 fingerprint of the server certificate, or use nocertcheck to disable the certificate check.')
+    .error();
+
+export const newUntrustedServerCertificateError = (host: string, cause: string) =>
+  new ExaErrorBuilder('E-EDJS-49')
+    .message('Server certificate of host {{host}} is not trusted: {{cause}}.', host, cause)
+    .mitigation('Use a server certificate from a trusted certificate authority that covers the host name.')
+    .mitigation(
+      'Alternatively add the SHA-256 fingerprint of the server certificate to the connection string as host/fingerprint, e.g. exasol1/<fingerprint>:8563.',
+    )
     .error();

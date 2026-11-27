@@ -32,4 +32,19 @@ describe('Browser native WebSocket integration', () => {
     await driver.connect();
     expect(nativeWebSocket.urls).toEqual([`wss://${connection.host}:${connection.port}`]);
   });
+
+  // [itest->dsn~runtime-browser-certificate-modes~1]
+  test.each([
+    ['a fingerprint', (host: string) => ({ host: `${host}/${'ab'.repeat(32)}` })],
+    ['validateServerCertificate false', (host: string) => ({ host, validateServerCertificate: false })],
+  ])('rejects %s without opening a WebSocket', async (_description, certificateConfig) => {
+    const webSocket = nativeWebSocketFactory();
+    driver = new ExasolDriver(webSocket.factory, { ...basicAuthConfig(connection), ...certificateConfig(connection.host) });
+    await expect(driver.connect()).rejects.toThrow(
+      'E-EDJS-45: Certificate fingerprints and disabled server certificate validation are not supported in browsers. ' +
+        'Remove the fingerprint from the connection string and do not set validateServerCertificate to false. ' +
+        'Use a server certificate that the browser trusts.',
+    );
+    expect(webSocket.urls).toEqual([]);
+  });
 });
