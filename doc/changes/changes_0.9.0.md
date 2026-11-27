@@ -30,9 +30,18 @@ The WebSocket factory now receives a second argument `{ rejectUnauthorized }`, w
 ## Security
 
 * Updated `node-forge` to 1.4.3 to fix multiple vulnerabilities (e.g. GHSA-86w9-cpqp-85rv, GHSA-6qrw-m8cv-hcxf, GHSA-5cwg-6vw7-rj6p)
+* #126: Fixed security advisories in development dependencies
 
 ## Dependency Updates
 
 ### Compile Dependency Updates
 
 * Updated `node-forge:^1.4.0` to `^1.4.3`
+
+### Development Dependency Updates
+
+* Updated `vite:^8.3.1` to `^8.4.0`
+* Updated `vitest:^5.0.3` to `^5.1.2`
+* Updated `@vitest/browser-playwright:^5.0.3` to `^5.1.2`
+* Updated `@vitest/coverage-v8:^5.0.3` to `^5.1.2`
+* Updated `typescript-eslint:^8.71.0` to `~8.72.2`
