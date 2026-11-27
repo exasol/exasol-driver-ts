@@ -1,4 +1,3 @@
-import { X509Certificate } from 'node:crypto';
 import { WebSocket } from 'ws';
 import { ExaWebsocket } from '../../src/lib/connection';
 import { ILogger } from '../../src/lib/logger/logger';
@@ -6,6 +5,8 @@ import { NodeExasolDriver } from '../../src/lib/node-sql-client';
 import { NodeExasolPool } from '../../src/lib/node-sql-pool';
 import { Config, WebsocketFactory } from '../../src/lib/sql-client';
 import { startNewDockerContainer } from '../exasolContainer';
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Server certificate modes with real `ws` WebSockets. The test database uses a certificate from its own CA that does
@@ -28,11 +29,7 @@ describe('Server certificate', () => {
     const container = await startNewDockerContainer();
     host = container.getHost();
     port = container.getPort();
-    const certificate = await container.loadCert();
-    if (certificate === undefined) {
-      throw new Error('The test database has no TLS certificate.');
-    }
-    fingerprint = new X509Certificate(certificate).fingerprint256.replace(/:/g, '');
+    fingerprint = await container.getTlsCertificateFingerprint();
   });
 
   afterEach(async () => {
@@ -60,10 +57,26 @@ describe('Server certificate', () => {
     );
   });
 
-  it('rejects the certificate with the default validation', async () => {
-    await expect(connect({ host })).rejects.toThrow('E-EDJS-42: Could not connect to Exasol.');
+  // [itest->dsn~runtime-untrusted-certificate-hint~1]
+  it('rejects the certificate with the default validation and suggests a fingerprint', async () => {
+    // The cause is the Node.js TLS error message, which depends on the certificate chain and the Node.js version.
+    const untrustedCertificateError = new RegExp(
+      '^' +
+        escapeRegExp(`E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://${host}:${port}: `) +
+        escapeRegExp(`E-EDJS-49: Server certificate of host '${host}' is not trusted: '`) +
+        '.+' +
+        escapeRegExp(
+          "'. Use a server certificate from a trusted certificate authority that covers the host name. " +
+            'Alternatively add the SHA-256 fingerprint of the server certificate to the connection string as host/fingerprint, e.g. exasol1/<fingerprint>:8563.\'. ' +
+            'Check that the hosts are reachable and the port is correct.',
+        ) +
+        '$',
+    );
+
+    await expect(connect({ host })).rejects.toThrow(untrustedCertificateError);
   });
 
+  // [itest->dsn~runtime-disabled-validation-warning~1]
   it('connects and warns when validateServerCertificate is false', async () => {
     const warn = jest.fn();
     const logger: ILogger = { error: jest.fn(), warn, info: jest.fn(), log: jest.fn(), debug: jest.fn(), trace: jest.fn() };

@@ -40,7 +40,22 @@ Needs: impl, utest, itest
 
 **Given** a driver without an explicit `url`
 **When** `connect()` is called
-**Then** the driver parses `host` as a connection string with the same grammar as pyexasol: each comma-separated part is `prefix[start..end[suffix]][/fingerprint][:port]`; a range expands to `prefix + n + suffix` keeping the zero padding of `start`; ports and fingerprints apply backwards to preceding parts without their own; host names may only contain letters, digits, `.`, `-` and `_`, so that the host and port end up in the WebSocket URL exactly as written (pyexasol rejects other names when it resolves them); a part can also be a bracketed IPv6 address `[address][/fingerprint][:port]` without range; invalid parts, ports outside 1-65535 and empty strings reject with `E-EDJS-39`, fingerprints other than `nocertcheck` that do not have the 64 hexadecimal characters of a SHA-256 fingerprint with `E-EDJS-48`, descending ranges with `E-EDJS-9`, and more than 10000 expanded hosts with `E-EDJS-43`. Host names are not resolved to IP addresses, so that TLS host name verification and browser runtimes keep working.
+**Then** the driver parses `host` as a connection string with the same grammar as pyexasol, expands it to a list of hosts with port and optional fingerprint, and rejects an invalid connection string before opening a WebSocket
+
+Comment:
+
+* Each comma-separated part is `prefix[start..end[suffix]][/fingerprint][:port]`, or a bracketed IPv6 address `[address][/fingerprint][:port]` without range.
+* A range expands to `prefix + n + suffix` and keeps the zero padding of `start`.
+* Ports and fingerprints apply backwards to preceding parts without their own.
+* Host names may only contain letters, digits, `.`, `-` and `_`.
+* Rejected with `E-EDJS-39`: invalid parts, ports outside 1-65535 and empty strings.
+* Rejected with `E-EDJS-48`: fingerprints other than `nocertcheck` that do not have the 64 hexadecimal characters of a SHA-256 fingerprint.
+* Rejected with `E-EDJS-9`: descending ranges.
+* Rejected with `E-EDJS-43`: more than 10000 expanded hosts.
+
+Rationale:
+
+The character restriction makes the host and port end up in the WebSocket URL exactly as written; pyexasol rejects other names when it resolves them. Host names are not resolved to IP addresses, so that TLS host name verification and browser runtimes keep working.
 
 Covers:
 - `scn~connection-string-hosts-expanded~1`
@@ -92,7 +107,7 @@ Needs: impl, utest
 
 **Given** a driver about to open WebSockets
 **When** `connect()` determines the targets
-**Then** for each target the driver passes `{ rejectUnauthorized }` as second argument to the WebSocket factory: `false` for hosts with a fingerprint (including `NOCERTCHECK`) and, without fingerprint, when `validateServerCertificate` is `false` (also for an explicit `url`); `true` otherwise. When any target skips validation without a fingerprint, the driver logs a warning once per `connect()`. When any target skips validation and the factory declares fewer than two parameters (`Function.length`), the driver logs a warning that the factory probably ignores the options. One-argument factories keep working, because they only lose the option for modes they did not support before.
+**Then** for each target the driver passes `{ rejectUnauthorized }` as second argument to the WebSocket factory: `false` for hosts with a fingerprint (including `NOCERTCHECK`) and for targets without fingerprint when `validateServerCertificate` is `false` (also for an explicit `url`), `true` otherwise
 
 Covers:
 - `scn~server-certificate-validation-disabled~1`
@@ -100,16 +115,80 @@ Covers:
 
 Needs: impl, utest, itest
 
+### Warn About Disabled Certificate Validation
+`dsn~runtime-disabled-validation-warning~1`
+
+**Given** a driver about to open WebSockets
+**When** at least one target skips the certificate validation without a fingerprint
+**Then** the driver logs a warning once per `connect()`
+
+Covers:
+- `scn~server-certificate-validation-disabled~1`
+
+Needs: impl, utest, itest
+
+### Warn About Factories Without Options
+`dsn~runtime-factory-options-warning~1`
+
+**Given** a driver about to open WebSockets with a WebSocket factory that declares fewer than two parameters (`Function.length`)
+**When** at least one target skips the certificate validation
+**Then** the driver logs a warning that the factory probably ignores the options
+
+Rationale:
+
+One-argument factories keep working, because they only lose the option for modes they did not support before. The warning helps users who enabled a fingerprint or disabled validation but did not update their factory.
+
+Covers:
+- `scn~server-certificate-validation-disabled~1`
+
+Needs: impl, utest
+
 ### Verify Server Certificate Fingerprint
 `dsn~runtime-fingerprint-verification~1`
 
 **Given** a Node.js driver and a host with a hexadecimal fingerprint
-**When** the WebSocket to that host opens
-**Then** the driver listens for the `ws` `upgrade` event, reads the peer certificate's `fingerprint256`, removes the colons and compares it with the upper-cased fingerprint from the connection string. On a mismatch it closes the WebSocket in the listener and rejects `connect()` with `E-EDJS-46` (calling `onError`) without trying further hosts. If the WebSocket has no `once` method, the `upgrade` event has no peer certificate, or `open` fires before a successful check, it closes the WebSocket and treats the host as failed with `E-EDJS-47`. The login is only sent after a successful check; only the WebSocket upgrade request precedes it.
+**When** the WebSocket to that host emits the `ws` `upgrade` event with a peer certificate
+**Then** the driver compares the certificate's `fingerprint256` without colons with the upper-cased fingerprint from the connection string; on a mismatch it closes the WebSocket in the listener and rejects `connect()` with `E-EDJS-46` (calling `onError`) without trying further hosts
+
+Comment:
+
+The login is only sent after a successful check; only the WebSocket upgrade request precedes it.
 
 Covers:
 - `scn~connection-string-fingerprint-validated~1`
 - `scn~fingerprint-mismatch-rejected~1`
+
+Needs: impl, utest, itest
+
+### Fail Closed When the Fingerprint Cannot Be Verified
+`dsn~runtime-unverifiable-fingerprint~1`
+
+**Given** a Node.js driver and a host with a hexadecimal fingerprint
+**When** the WebSocket has no `once` method, its `upgrade` event has no peer certificate, or it fires `open` before a successful check
+**Then** the driver closes the WebSocket and treats the host as failed with `E-EDJS-47`
+
+Rationale:
+
+This happens with WebSocket implementations other than `ws`. The driver cannot tell whether the factory honored `rejectUnauthorized`, so it never uses such a WebSocket. Unlike a mismatch, this is no sign of an attack, so the driver tries the next host.
+
+Covers:
+- `scn~fingerprint-mismatch-rejected~1`
+
+Needs: impl, utest
+
+### Suggest a Fingerprint for Untrusted Certificates
+`dsn~runtime-untrusted-certificate-hint~1`
+
+**Given** a Node.js driver that validates the server certificate of a host from the connection string
+**When** opening a WebSocket fails because Node.js does not trust the certificate authority of the server certificate or the certificate does not cover the host name
+**Then** the driver reports this host with `E-EDJS-49`, which names the host and the TLS error and suggests adding the certificate's fingerprint to the connection string
+
+Comment:
+
+The driver recognizes untrusted certificates by the Node.js TLS error code (for example `SELF_SIGNED_CERT_IN_CHAIN` or `ERR_TLS_CERT_ALTNAME_INVALID`) in the `error` property of the `ws` error event. Expired certificates and broken signatures keep `E-EDJS-16`, because they should be fixed on the server rather than pinned. An explicit `url` keeps `E-EDJS-16`, because it cannot contain a fingerprint. Browsers do not report the cause of a failed WebSocket, and the browser driver does not support fingerprints, so it keeps reporting `E-EDJS-16`.
+
+Covers:
+- `scn~untrusted-server-certificate-reported~1`
 
 Needs: impl, utest, itest
 
@@ -325,7 +404,15 @@ Needs: impl, itest
 
 **Given** an `ExasolPool` with pending `acquire()` calls
 **When** creating a driver fails because `connect()` rejects
-**Then** the pool rejects the oldest pending `acquire()` with that error. `generic-pool` would otherwise create a new driver for the pending `acquire()` right away and retry forever, because the pool sets no acquire timeout. `generic-pool` has no public API for this, so the pool handles its `factoryCreateError` event and rejects a request from its internal queue of waiting clients; if that queue is missing, it logs a warning, and unit tests detect if a `generic-pool` update breaks this. `generic-pool` does not report which request a creation was for, so a failed refill of `minimumPoolSize` can also reject a waiting query.
+**Then** the pool rejects the oldest pending `acquire()` with that error
+
+Rationale:
+
+`generic-pool` would otherwise create a new driver for the pending `acquire()` right away and retry forever, because the pool sets no acquire timeout. `generic-pool` has no public API for this, so the pool handles its `factoryCreateError` event and rejects a request from its internal queue of waiting clients. If that queue is missing, the pool logs a warning, and unit tests detect if a `generic-pool` update breaks this.
+
+Comment:
+
+`generic-pool` does not report which request a creation was for, so a failed refill of `minimumPoolSize` can also reject a waiting query.
 
 Covers:
 - `scn~pool-query-rejected-when-connection-fails~1`

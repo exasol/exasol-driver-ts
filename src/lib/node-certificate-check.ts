@@ -33,6 +33,7 @@ export const verifyServerCertificateFingerprint = (
 ): (() => boolean) => {
   // [impl->dsn~runtime-fingerprint-verification~1]
   // [impl->dsn~decision-verify-fingerprint-on-upgrade~1]
+  // [impl->dsn~runtime-unverifiable-fingerprint~1]
   let verified = false;
   if (!hasOnce(webSocket)) {
     fail(newFingerprintNotVerifiableError(host), true);

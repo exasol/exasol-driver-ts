@@ -18,6 +18,7 @@ import {
   newInvalidReturnValueRowCount,
   newSocketClosedError,
   newSocketError,
+  newUntrustedServerCertificateError,
   newSqlError,
 } from './errors/errors';
 import { fetchData } from './fetch';
@@ -28,7 +29,7 @@ import { QueryResult } from './query-result';
 import { CetCancelFunction, IExasolClient, IStatement } from './sql-client.interface';
 import { Statement } from './statement';
 import { CreatePreparedStatementResponse, PublicKeyResponse, SQLQueriesResponse, SQLResponse } from './types';
-import { CertificateCheckFailure, NO_CERTIFICATE_CHECK, ServerCertificateVerifier } from './server-certificate';
+import { CertificateCheckFailure, getUntrustedCertificateMessage, NO_CERTIFICATE_CHECK, ServerCertificateVerifier } from './server-certificate';
 import { DsnHost, parseDsn, shuffle } from './utils';
 
 export interface Config {
@@ -319,11 +320,13 @@ export class BaseExasolDriver implements IExasolClient {
     if (skipsValidation && this.getServerCertificateVerifier() === undefined) {
       throw newCertificateModeNotSupportedError();
     }
+    // [impl->dsn~runtime-disabled-validation-warning~1]
     if (targets.some((target) => !target.rejectUnauthorized && target.fingerprint === undefined)) {
       this.logger.warn(
         '[SQLClient] Server certificate validation is disabled. The connection is vulnerable to man-in-the-middle attacks.',
       );
     }
+    // [impl->dsn~runtime-factory-options-warning~1]
     if (skipsValidation && this.config.websocketFactory.length < 2) {
       this.logger.warn(
         '[SQLClient] The WebSocket factory does not declare the options parameter. Pass options.rejectUnauthorized on to ' +
@@ -449,6 +452,7 @@ export class BaseExasolDriver implements IExasolClient {
         if (settled) {
           return;
         }
+        // [impl->dsn~runtime-unverifiable-fingerprint~1]
         if (!isCertificateVerified()) {
           // The WebSocket opened without reporting its certificate, so the fingerprint was not checked.
           fail(newFingerprintNotVerifiableError(host));
@@ -457,9 +461,22 @@ export class BaseExasolDriver implements IExasolClient {
         settle();
         resolve(webSocket);
       };
-      webSocket.onerror = (event) => fail(newSocketError(event));
+      webSocket.onerror = (event) => fail(this.toOpenError(event, target));
       webSocket.onclose = (event) => fail(newSocketClosedError(event));
     });
+  }
+
+  private toOpenError(event: unknown, target: ConnectTarget): Error {
+    // [impl->dsn~runtime-untrusted-certificate-hint~1]
+    // Only hosts from the connection string can get a fingerprint; an explicit url cannot.
+    const { address, rejectUnauthorized } = target;
+    const untrustedCertificateMessage =
+      address !== undefined && rejectUnauthorized && this.getServerCertificateVerifier() !== undefined
+        ? getUntrustedCertificateMessage(event)
+        : undefined;
+    return untrustedCertificateMessage === undefined
+      ? newSocketError(event)
+      : newUntrustedServerCertificateError(address?.host ?? target.url, untrustedCertificateMessage);
   }
 
   /**

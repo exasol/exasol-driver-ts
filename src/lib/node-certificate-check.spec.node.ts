@@ -72,10 +72,17 @@ describe('server certificate check with ws', () => {
   });
 
   // [utest->dsn~runtime-certificate-mode-selection~1]
-  it('rejects a self-signed certificate by default', async () => {
+  // [utest->dsn~runtime-untrusted-certificate-hint~1]
+  it('rejects a self-signed certificate by default with a hint to the fingerprint', async () => {
     const driver = createDriver(`127.0.0.1:${port}`);
 
-    await expect(driver.connect()).rejects.toThrow('E-EDJS-42: Could not connect to Exasol.');
+    await expect(driver.connect()).rejects.toThrow(
+      `E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://127.0.0.1:${port}: ` +
+        "E-EDJS-49: Server certificate of host '127.0.0.1' is not trusted: 'self-signed certificate'. " +
+        'Use a server certificate from a trusted certificate authority that covers the host name. ' +
+        'Alternatively add the SHA-256 fingerprint of the server certificate to the connection string as host/fingerprint, e.g. exasol1/<fingerprint>:8563.\'. ' +
+        'Check that the hosts are reachable and the port is correct.',
+    );
     expect(receivedMessages).toEqual([]);
   });
 

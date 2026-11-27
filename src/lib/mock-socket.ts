@@ -173,8 +173,11 @@ export function createMockWebsocketFactory(): MockWebsocketFactory {
   return new MockWebsocketFactory();
 }
 
-/** How a mocked WebSocket behaves after creation. `hang` never opens nor fails. */
-export type MockSocketBehavior = 'open' | 'error' | 'close' | 'hang';
+/**
+ * How a mocked WebSocket behaves after creation. `hang` never opens nor fails. `untrusted-certificate` fails with an
+ * error event like `ws` does when Node.js rejects a self-signed server certificate.
+ */
+export type MockSocketBehavior = 'open' | 'error' | 'untrusted-certificate' | 'expired-certificate' | 'close' | 'hang';
 
 /**
  * Mock of a `ws` WebSocket that reports the server certificate in its `upgrade` event, like `ws` does after the
@@ -241,6 +244,12 @@ export class MultiHostMockWebsocketFactory {
             }
           } else if (behavior === 'error') {
             socket.onerror?.({ message: 'connection refused' });
+          } else if (behavior === 'untrusted-certificate') {
+            const error = Object.assign(new Error('self-signed certificate'), { code: 'DEPTH_ZERO_SELF_SIGNED_CERT' });
+            socket.onerror?.({ message: error.message, error });
+          } else if (behavior === 'expired-certificate') {
+            const error = Object.assign(new Error('certificate has expired'), { code: 'CERT_HAS_EXPIRED' });
+            socket.onerror?.({ message: error.message, error });
           } else {
             socket.onclose?.({ code: 1006, reason: 'abnormal closure' });
           }

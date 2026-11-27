@@ -131,3 +131,12 @@ export const newInvalidFingerprintLengthError = (fingerprint: string, length: nu
     )
     .mitigation('Copy the complete SHA-256 fingerprint of the server certificate, or use nocertcheck to disable the certificate check.')
     .error();
+
+export const newUntrustedServerCertificateError = (host: string, cause: string) =>
+  new ExaErrorBuilder('E-EDJS-49')
+    .message('Server certificate of host {{host}} is not trusted: {{cause}}.', host, cause)
+    .mitigation('Use a server certificate from a trusted certificate authority that covers the host name.')
+    .mitigation(
+      'Alternatively add the SHA-256 fingerprint of the server certificate to the connection string as host/fingerprint, e.g. exasol1/<fingerprint>:8563.',
+    )
+    .error();

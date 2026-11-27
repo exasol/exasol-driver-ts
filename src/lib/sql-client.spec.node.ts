@@ -849,6 +849,60 @@ describe('sqlClient', () => {
       jest.restoreAllMocks();
     });
 
+    // [utest->dsn~runtime-untrusted-certificate-hint~1]
+    it('suggests a fingerprint when the server certificate is not trusted', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'untrusted-certificate');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://exasol1:8563: " +
+          "E-EDJS-49: Server certificate of host 'exasol1' is not trusted: 'self-signed certificate'. " +
+          'Use a server certificate from a trusted certificate authority that covers the host name. ' +
+          'Alternatively add the SHA-256 fingerprint of the server certificate to the connection string as host/fingerprint, e.g. exasol1/<fingerprint>:8563.\'. ' +
+          'Check that the hosts are reachable and the port is correct.',
+      );
+    });
+
+    // [utest->dsn~runtime-untrusted-certificate-hint~1]
+    it('reports other socket errors without a fingerprint hint', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'error');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://exasol1:8563: E-EDJS-16: Socket error: 'connection refused''.",
+      );
+    });
+
+    // [utest->dsn~runtime-untrusted-certificate-hint~1]
+    it('does not suggest a fingerprint for an expired certificate', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'expired-certificate');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://exasol1:8563: E-EDJS-16: Socket error: 'certificate has expired''.",
+      );
+    });
+
+    // [utest->dsn~runtime-untrusted-certificate-hint~1]
+    it('does not suggest a fingerprint for an explicit url', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'untrusted-certificate');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', url: 'wss://exasol1:8563' });
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://exasol1:8563: E-EDJS-16: Socket error: 'self-signed certificate''.",
+      );
+    });
+
+    // [utest->dsn~runtime-untrusted-certificate-hint~1]
+    it('does not suggest a fingerprint when certificate validation is disabled', async () => {
+      const factory = new MultiHostMockWebsocketFactory({}, 'untrusted-certificate');
+      driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1', validateServerCertificate: false }, createLogger());
+
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://exasol1:8563: E-EDJS-16: Socket error: 'self-signed certificate''.",
+      );
+    });
+
     // [utest->dsn~runtime-certificate-mode-selection~1]
     it('requires certificate validation by default', async () => {
       const logger = createLogger();
@@ -862,6 +916,7 @@ describe('sqlClient', () => {
     });
 
     // [utest->dsn~runtime-certificate-mode-selection~1]
+    // [utest->dsn~runtime-disabled-validation-warning~1]
     it('disables certificate validation and warns when validateServerCertificate is false', async () => {
       const logger = createLogger();
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
@@ -873,7 +928,7 @@ describe('sqlClient', () => {
       expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Server certificate validation is disabled'));
     });
 
-    // [utest->dsn~runtime-certificate-mode-selection~1]
+    // [utest->dsn~runtime-factory-options-warning~1]
     it('warns when the factory does not declare the options parameter', async () => {
       const logger = createLogger();
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
@@ -885,7 +940,8 @@ describe('sqlClient', () => {
       expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('does not declare the options parameter'));
     });
 
-    // [utest->dsn~runtime-certificate-mode-selection~1]
+    // [utest->dsn~runtime-factory-options-warning~1]
+    // [utest->dsn~runtime-disabled-validation-warning~1]
     it('does not warn about the factory with the default certificate validation', async () => {
       const logger = createLogger();
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
@@ -908,6 +964,7 @@ describe('sqlClient', () => {
     });
 
     // [utest->dsn~runtime-certificate-mode-selection~1]
+    // [utest->dsn~runtime-disabled-validation-warning~1]
     it('disables certificate validation and warns for hosts with fingerprint nocertcheck', async () => {
       keepDsnOrder();
       const logger = createLogger();
@@ -964,7 +1021,7 @@ describe('sqlClient', () => {
       expect(factory.urls).toEqual(['wss://exasol1:8563']);
     });
 
-    // [utest->dsn~runtime-fingerprint-verification~1]
+    // [utest->dsn~runtime-unverifiable-fingerprint~1]
     it('fails over when the WebSocket does not expose the server certificate', async () => {
       keepDsnOrder();
       const factory = new MultiHostMockWebsocketFactory({}, 'open', { 'wss://exasol2:8563': fingerprint256 });
@@ -982,11 +1039,13 @@ describe('sqlClient', () => {
       const factory = new MultiHostMockWebsocketFactory({}, 'open');
       driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1/135a1d2dce10' });
 
-      await expect(driver.connect()).rejects.toThrow('E-EDJS-48');
+      await expect(driver.connect()).rejects.toThrow(
+        "E-EDJS-48: Certificate fingerprint '135a1d2dce10' in the connection string has '12' characters, but a SHA-256 fingerprint has 64 hexadecimal characters.",
+      );
       expect(factory.urls).toEqual([]);
     });
 
-    // [utest->dsn~runtime-fingerprint-verification~1]
+    // [utest->dsn~runtime-unverifiable-fingerprint~1]
     it.each([
       ['has no event emitter', undefined],
       ['never emits upgrade', null],

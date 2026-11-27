@@ -32,6 +32,16 @@ describe('server certificate in browsers', () => {
     expect(factory.urls).toEqual([]);
   });
 
+  // [utest->dsn~runtime-untrusted-certificate-hint~1]
+  it('does not suggest a fingerprint for an untrusted certificate', async () => {
+    const factory = new MultiHostMockWebsocketFactory({}, 'untrusted-certificate');
+    const driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });
+
+    await expect(driver.connect()).rejects.toThrow(
+      "E-EDJS-42: Could not connect to Exasol. Tried '1' host(s): 'wss://exasol1:8563: E-EDJS-16: Socket error: 'self-signed certificate''.",
+    );
+  });
+
   it('connects with certificate validation', async () => {
     const factory = new MultiHostMockWebsocketFactory({}, 'open');
     const driver = new ExasolDriver(factory.factory, { accessToken: 'access-token', host: 'exasol1' });

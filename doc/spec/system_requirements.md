@@ -532,6 +532,18 @@ Covers:
 
 Needs: dsn, uman
 
+### Untrusted Server Certificate Reported
+`scn~untrusted-server-certificate-reported~1`
+
+**Given** a Node.js driver or pool with the default certificate validation and a server certificate that Node.js does not trust, for example a self-signed one
+**When** the application connects
+**Then** the driver rejects the connection with an error stating that the server certificate of the host is not trusted, and suggests adding the certificate's fingerprint to the connection string
+
+Covers:
+- `req~configurable-server-certificate-validation~1`
+
+Needs: dsn, uman
+
 ### Certificate Modes Unsupported in Browsers
 `scn~certificate-modes-unsupported-in-browsers~1`
 

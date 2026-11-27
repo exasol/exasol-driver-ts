@@ -133,6 +133,9 @@ const websocketFactory: WebsocketFactory = (url, options) =>
 
 A factory that ignores the options keeps the TLS settings it sets itself. With the `ws` defaults it always validates the certificate, so fingerprints of self-signed certificates and `validateServerCertificate: false` then fail with a certificate error. A factory that hard-codes `rejectUnauthorized: false` accepts any certificate in every mode, without the driver's warning. Remove such a setting and pass on `options.rejectUnauthorized` instead.
 
+<!-- [uman->scn~untrusted-server-certificate-reported~1] -->
+If Node.js does not trust the server certificate in the default mode, for example because it is self-signed, the connection fails with error `E-EDJS-49`. The error names the host and the TLS error, and suggests adding the certificate fingerprint to the connection string, as described below.
+
 #### Certificate Fingerprint
 
 <!-- [uman->scn~connection-string-fingerprint-validated~1] -->
