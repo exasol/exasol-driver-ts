@@ -1023,15 +1023,15 @@ Covers:
 Needs: dsn, uman
 
 #### Result Row Limit Applied During Fetch
-`scn~result-row-limit-applied-during-fetch~1`
+`scn~result-row-limit-applied-during-fetch~2`
 
-**Given** a configured `resultSetMaxRows` value and a query result with more rows available
-**When** the driver fetches additional result data
-**Then** the driver stops appending rows after the configured maximum, even if Exasol can provide more rows
+**Given** a configured `resultSetMaxRows` value and a query result with more rows than that
+**When** the driver assembles the result
+**Then** the result contains at most the configured maximum of rows, regardless of whether Exasol sent them in the execute response or the driver fetched them, even if Exasol can provide more rows
 
 Comment:
 
-The driver applies this limit while assembling the fetched result pages. It does not change the SQL statement or send a separate server-side row-limit command.
+The driver applies this limit while assembling the rows of the execute response and the fetched result pages. It does not change the SQL statement or send a separate server-side row-limit command. A value of `0` means no limit.
 
 Covers:
 - `req~configure-session-attributes~2`

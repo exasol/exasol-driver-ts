@@ -80,7 +80,7 @@ export interface Config {
   /** Number of bytes to fetch per request. Default: 1024 * 1024 (1 MB) */
   fetchSize: number;
   schema?: string;
-  /** Limit max rows fetched */
+  /** Maximum number of rows returned per result set. 0, a negative value or not set means no limit. */
   resultSetMaxRows?: number;
   /** Called when an open WebSocket closes. */
   onClose?: () => void;
@@ -579,7 +579,7 @@ export class BaseExasolDriver implements IExasolClient {
     getCancel?: CetCancelFunction | undefined,
     responseType?: 'default' | 'raw' | undefined,
   ): Promise<QueryResult | SQLResponse<SQLQueriesResponse>> {
-    // [impl->dsn~runtime-query-execution~3]
+    // [impl->dsn~runtime-query-execution~4]
     // [impl->dsn~runtime-raw-response-execution~1]
     const connection = await this.acquire();
     return connection

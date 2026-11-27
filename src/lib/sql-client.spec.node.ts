@@ -143,7 +143,7 @@ describe('sqlClient', () => {
   });
 
   describe('query', () => {
-    // [utest->dsn~runtime-query-execution~3]
+    // [utest->dsn~runtime-query-execution~4]
     it('should result set', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
@@ -158,6 +158,80 @@ describe('sqlClient', () => {
       expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
         command: 'execute',
         sqlText: 'select 1',
+      });
+    });
+
+    describe('resultSetMaxRows with rows in the execute response', () => {
+      const respondWithThreeRows = (resultSetHandle?: number) => {
+        mockSocketFactory.mockSocket.respondTo('execute', {
+          status: 'ok',
+          responseData: {
+            numResults: 1,
+            results: [{
+              resultType: 'resultSet',
+              resultSet: {
+                resultSetHandle,
+                numColumns: 2,
+                numRows: resultSetHandle ? 5 : 3,
+                numRowsInMessage: 3,
+                columns: [{ name: 'A', dataType: { type: 'INTEGER' } }, { name: 'B', dataType: { type: 'VARCHAR' } }],
+                data: [[1, 2, 3], ['a', 'b', 'c']],
+              },
+            }],
+          },
+        });
+      };
+
+      const connect = async (resultSetMaxRows: number) => {
+        driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', resultSetMaxRows });
+        const connectPromise = driver.connect();
+        mockSocketFactory.mockSocket.simulateOpen();
+        await connectPromise;
+      };
+
+      it.each([
+        ['without result set handle', undefined],
+        ['with result set handle', 17],
+      ])('should truncate the rows of the execute response %s', async (_, resultSetHandle) => {
+        await connect(2);
+        respondWithThreeRows(resultSetHandle);
+
+        const response = await driver.query('select', undefined, undefined, 'raw');
+
+        const resultSet = response.responseData.results[0].resultSet;
+        expect(resultSet?.numRowsInMessage).toBe(2);
+        expect(resultSet?.data).toEqual([[1, 2], ['a', 'b']]);
+        expect(mockSocketFactory.mockSocket.sentCommands).not.toContainEqual(expect.objectContaining({ command: 'fetch' }));
+        if (resultSetHandle) {
+          expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({ command: 'closeResultSet', resultSetHandles: [resultSetHandle] });
+        }
+      });
+
+      it.each([3, 4])('should keep all rows of the execute response when resultSetMaxRows is %i', async (resultSetMaxRows) => {
+        await connect(resultSetMaxRows);
+        respondWithThreeRows();
+
+        const result = await driver.query('select');
+
+        expect(result.getRows()).toStrictEqual([{ A: 1, B: 'a' }, { A: 2, B: 'b' }, { A: 3, B: 'c' }]);
+      });
+
+      it.each([0, -1])('should not limit the rows of the execute response when resultSetMaxRows is %i', async (resultSetMaxRows) => {
+        await connect(resultSetMaxRows);
+        respondWithThreeRows();
+
+        const result = await driver.query('select');
+
+        expect(result.getRows()).toHaveLength(3);
+      });
+
+      it.each([0, -1])('should fetch all remaining rows when resultSetMaxRows is %i', async (resultSetMaxRows) => {
+        await connect(resultSetMaxRows);
+
+        const result = await driver.query('select with multiple rows');
+
+        expect(result.getRows()).toStrictEqual([{ A: 1 }, { A: 2 }]);
+        expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual(expect.objectContaining({ command: 'fetch', resultSetHandle: 17 }));
       });
     });
 
@@ -227,6 +301,27 @@ describe('sqlClient', () => {
       const response = await driver.execute('create table test (id int)', undefined, undefined, 'raw');
 
       expect(response).toEqual(expect.objectContaining({ status: 'ok', attributes: { autocommit: false } }));
+    });
+
+    it.each([
+      ['no data', { numRows: 0 }],
+      ['empty data', { numRows: 0, data: [[]] }],
+      ['no response data', undefined],
+    ])('should reject instead of fetching forever when a fetch returns %s', async (_, responseData) => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      mockSocketFactory.mockSocket.respondTo('fetch', { status: 'ok', responseData });
+
+      // Bounded, so that a missing guard fails with a clear message instead of looping until the test times out.
+      await expect(completeWithin(driver.query('select with multiple rows'), 'query kept fetching')).rejects.toThrow(
+        "E-EDJS-50: Fetching rows of result set '17' from position '1' returned no rows, although up to '2' rows are expected.",
+      );
+      const fetchCommands = mockSocketFactory.mockSocket.sentCommands.filter(
+        (command) => (command as { command: string }).command === 'fetch',
+      );
+      expect(fetchCommands).toHaveLength(1);
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({ command: 'closeResultSet', resultSetHandles: [17] });
     });
 
     it('should return fetched rows when closing the result set fails', async () => {
@@ -1119,8 +1214,6 @@ describe('sqlClient', () => {
   });
 
   describe('prepare', () => {
-    // Regression test for GitHub issue #134: Statement.execute() returned only the first message of a result set
-    // and left its result-set handle open.
     // [utest->dsn~runtime-prepared-statement-execution~2]
     it('should fetch all rows and close the result set when executing a prepared statement', async () => {
       driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', fetchSize: 42 });

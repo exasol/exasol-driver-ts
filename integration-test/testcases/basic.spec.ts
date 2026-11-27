@@ -62,7 +62,7 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
     });
 
     describe('query()', () => {
-      // [itest->dsn~runtime-query-execution~3]
+      // [itest->dsn~runtime-query-execution~4]
       test('Exec and fetch', async () => {
         const driver = await openConnection();
         await createSimpleTestTable(driver);
@@ -79,6 +79,22 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
         await driver.execute(`INSERT INTO ${schemaName}.TEST_TABLE VALUES ${values.join(',')}`);
         const data = await driver.query(`SELECT x FROM ${schemaName}.TEST_TABLE GROUP BY x ORDER BY x`);
         expect(data.getRows()).toHaveLength(10_000);
+      });
+
+      // Exasol returns small results in the first message and larger ones only via fetch: the limit applies to both.
+      // [itest->dsn~runtime-query-execution~4]
+      for (const resultSize of [20, 200, 1000]) {
+        test(`limits a result of ${resultSize} rows to resultSetMaxRows`, async () => {
+          const driver = await openConnection(undefined, undefined, undefined, { resultSetMaxRows: 10 });
+          const data = await driver.query(`SELECT * FROM VALUES BETWEEN 1 AND ${resultSize} AS t(X) ORDER BY X`);
+          expect(data.getRows()).toHaveLength(10);
+        });
+      }
+
+      test('does not limit the result when resultSetMaxRows is 0', async () => {
+        const driver = await openConnection(undefined, undefined, undefined, { resultSetMaxRows: 0 });
+        const data = await driver.query('SELECT * FROM VALUES BETWEEN 1 AND 2000 AS t(X) ORDER BY X');
+        expect(data.getRows()).toHaveLength(2000);
       });
 
       test('reuses a pooled connection after fetching a multi-block result set', async () => {
@@ -141,7 +157,6 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
     describe('prepare()', () => {
       const select100kRows = 'SELECT X FROM (SELECT * FROM VALUES BETWEEN 1 AND 100000 AS t(X)) WHERE X > ? ORDER BY X';
 
-      // Regression test for GitHub issue #134: results larger than the first message used to come back without rows.
       // [itest->dsn~runtime-prepared-statement-execution~2]
       test('Execute prepared statement and fetch all rows', async () => {
         const driver = await openConnection();
@@ -164,14 +179,28 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
         try {
           const response = await statement.execute(0);
           const resultSet = response.responseData.results[0].resultSet;
-          // Relies on the first message having fewer than 1500 rows: rows of the first message ignore
-          // resultSetMaxRows (#135).
           expect(resultSet?.numRowsInMessage).toBe(1500);
           expect(resultSet?.data?.[0]).toHaveLength(1500);
         } finally {
           await statement.close();
         }
       });
+
+      // Covers rows in the first message and fetched rows, see query().
+      for (const resultSize of [20, 200, 1000]) {
+        test(`limits a prepared statement result of ${resultSize} rows to resultSetMaxRows`, async () => {
+          const driver = await openConnection(undefined, undefined, undefined, { resultSetMaxRows: 10 });
+          const statement = await driver.prepare('SELECT X FROM (SELECT * FROM VALUES BETWEEN 1 AND 1000 AS t(X)) WHERE X <= ? ORDER BY X');
+          try {
+            const response = await statement.execute(resultSize);
+            const resultSet = response.responseData.results[0].resultSet;
+            expect(resultSet?.numRowsInMessage).toBe(10);
+            expect(resultSet?.data?.[0]).toHaveLength(10);
+          } finally {
+            await statement.close();
+          }
+        });
+      }
     });
 
     afterEach(async () => {

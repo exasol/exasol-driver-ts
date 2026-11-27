@@ -1,6 +1,6 @@
 import { CloseResultSetCommand, FetchCommand } from './commands';
 import { Connection } from './connection';
-import { GeneralSqlError, newSqlError } from './errors/errors';
+import { GeneralSqlError, newIncompleteFetchError, newSqlError } from './errors/errors';
 import { ILogger } from './logger/logger';
 import { FetchResponse, ResultSet, SQLQueriesResponse, SQLResponse } from './types';
 
@@ -38,8 +38,10 @@ export const fetchData = async (
   fetchSizeBytes: number,
   resultSetMaxRows?: number
 ): Promise<SQLResponse<SQLQueriesResponse>> => {
-  // [impl->dsn~runtime-query-execution~3]
+  // [impl->dsn~runtime-query-execution~4]
   const batchResponse = rawData.responseData;
+  // 0 and negative values mean no limit, see Config.resultSetMaxRows.
+  const maxRows = resultSetMaxRows && resultSetMaxRows > 0 ? resultSetMaxRows : undefined;
 
   const results = (batchResponse?.results ?? []).slice(0, batchResponse?.numResults ?? 0);
   const resultSetHandles = results
@@ -49,13 +51,14 @@ export const fetchData = async (
   try {
     for (const response of results) {
       if (response?.resultType === 'resultSet' && response.resultSet) {
+        limitRowsInMessage(response.resultSet, maxRows);
         logger.debug('[WebSQL]: Fetch more data for: ', response.resultSet.resultSetHandle);
         // Result sets are fetched one after another on purpose: they share one connection, whose commands run in order.
         response.resultSet = await fetchMoreData( // NOSONAR
           response.resultSet,
           response.resultSet.numRowsInMessage,
-          Math.min(response.resultSet.numRows, resultSetMaxRows ?? response.resultSet.numRows),
-          resultSetMaxRows ?? response.resultSet.numRows,
+          Math.min(response.resultSet.numRows, maxRows ?? response.resultSet.numRows),
+          maxRows ?? response.resultSet.numRows,
           connection,
           fetchSizeBytes,
           logger
@@ -71,6 +74,19 @@ export const fetchData = async (
     ...rawData,
     responseData: batchResponse,
   };
+};
+
+/**
+ * Truncates the rows that Exasol sent directly in the execute response to `resultSetMaxRows`.
+ * Small results arrive completely in that response, so no fetch would apply the limit to them.
+ */
+const limitRowsInMessage = (resultSet: ResultSet, resultSetMaxRows: number | undefined): void => {
+  if (resultSetMaxRows === undefined || resultSet.numRowsInMessage <= resultSetMaxRows) {
+    return;
+  }
+  // Data is column-major: one array of row values per column.
+  resultSet.data = resultSet.data?.map((column) => column.slice(0, resultSetMaxRows));
+  resultSet.numRowsInMessage = resultSetMaxRows;
 };
 
 const closeResultSets = async (resultSetHandles: number[], connection: Connection, logger: ILogger) => {
@@ -94,10 +110,15 @@ const fetchMoreData = async (
   fetchSizeBytes: number,
   logger: ILogger
 ): Promise<ResultSet> => {
-  // [impl->dsn~runtime-query-execution~3]
+  // [impl->dsn~runtime-query-execution~4]
   logger.debug('[WebSQL]: fetchMoreData:', fetchedRows, expectedRows);
   if (fetchedRows < expectedRows && resultSet.resultSetHandle) {
-    await sendFetchCommand(resultSet.resultSetHandle, fetchedRows, connection, fetchSizeBytes).then(async (fetchResponse) => {
+    const resultSetHandle = resultSet.resultSetHandle;
+    await sendFetchCommand(resultSetHandle, fetchedRows, connection, fetchSizeBytes).then(async (fetchResponse) => {
+      // An empty page cannot advance the start position: fetching again would request the same page forever.
+      if (!fetchResponse.responseData?.numRows) {
+        throw newIncompleteFetchError(resultSetHandle, fetchedRows, expectedRows);
+      }
       resultSet.data = resultSet.data ?? [];
 
       if (fetchResponse.responseData.data) {
