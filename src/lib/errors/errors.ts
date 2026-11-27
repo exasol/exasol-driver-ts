@@ -140,3 +140,14 @@ export const newUntrustedServerCertificateError = (host: string, cause: string) 
       'Alternatively add the SHA-256 fingerprint of the server certificate to the connection string as host/fingerprint, e.g. exasol1/<fingerprint>:8563.',
     )
     .error();
+
+export const newIncompleteFetchError = (resultSetHandle: number, startPosition: number, expectedRows: number) =>
+  new ExaErrorBuilder('E-EDJS-50')
+    .message(
+      'Fetching rows of result set {{resultSetHandle}} from position {{startPosition}} returned no rows, although up to {{expectedRows}} rows are expected.',
+      resultSetHandle,
+      startPosition,
+      expectedRows,
+    )
+    .mitigation('Run the query again. If the error persists, report it to Exasol support.')
+    .error();

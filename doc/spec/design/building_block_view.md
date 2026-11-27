@@ -69,7 +69,7 @@ The result handling layer fetches additional result pages when needed, closes re
 
 Covers:
 - `scn~query-returns-rows~1`
-- `scn~result-row-limit-applied-during-fetch~1`
+- `scn~result-row-limit-applied-during-fetch~2`
 
 ### Pool API
 `dsn~pool-api~3`
