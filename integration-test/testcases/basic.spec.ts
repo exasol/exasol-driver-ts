@@ -138,6 +138,38 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
       });
     });
 
+    describe('prepare()', () => {
+      // Regression test for GitHub issue #134: results larger than the first message used to come back without rows.
+      // [itest->dsn~runtime-prepared-statement-execution~2]
+      test('Execute prepared statement and fetch all rows', async () => {
+        const driver = await openConnection();
+        const statement = await driver.prepare('SELECT X FROM (SELECT * FROM VALUES BETWEEN 1 AND 100000 AS t(X)) WHERE X > ? ORDER BY X');
+        try {
+          const response = await statement.execute(0);
+          const resultSet = response.responseData.results[0].resultSet;
+          expect(resultSet?.numRows).toBe(100_000);
+          expect(resultSet?.numRowsInMessage).toBe(100_000);
+          expect(resultSet?.data?.[0]).toHaveLength(100_000);
+          expect(resultSet?.data?.[0][99_999]).toBe(100_000);
+        } finally {
+          await statement.close();
+        }
+      });
+
+      test('Execute prepared statement with resultSetMaxRows', async () => {
+        const driver = runtime.driver.create(factory, { ...connection, resultSetMaxRows: 1500 });
+        await driver.connect();
+        tmpDriver = driver;
+        const statement = await driver.prepare('SELECT X FROM (SELECT * FROM VALUES BETWEEN 1 AND 100000 AS t(X)) WHERE X > ? ORDER BY X');
+        try {
+          const response = await statement.execute(0);
+          expect(response.responseData.results[0].resultSet?.data?.[0]).toHaveLength(1500);
+        } finally {
+          await statement.close();
+        }
+      });
+    });
+
     afterEach(async () => {
       if (!connection || !factory) {
         return;

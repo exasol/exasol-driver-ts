@@ -46,6 +46,12 @@ export interface IntegrationDriver {
     (statement: string): Promise<unknown>;
     (statement: string, attributes: undefined, getCancel: undefined, responseType: 'raw'): Promise<IntegrationRawResponse>;
   };
+  prepare: (statement: string) => Promise<IntegrationStatement>;
+}
+
+export interface IntegrationStatement {
+  execute: (...args: unknown[]) => Promise<IntegrationRawResponse>;
+  close: () => Promise<void>;
 }
 
 export interface IntegrationPool {
@@ -64,7 +70,7 @@ interface IntegrationRawResponse {
   status: string;
   responseData: {
     numResults: number;
-    results: Array<{ resultType: string; resultSet?: { data?: unknown[][] } }>;
+    results: Array<{ resultType: string; resultSet?: { numRows?: number; numRowsInMessage?: number; data?: unknown[][] } }>;
   };
 }
 

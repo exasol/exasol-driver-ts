@@ -1,24 +1,39 @@
 import { ClosePreparedStatementCommand, ExecutePreparedStatementCommand } from './commands';
 import { Connection } from './connection';
 import { ErrInvalidValuesCount } from './errors/errors';
+import { DEFAULT_FETCH_SIZE_BYTES, fetchData } from './fetch';
+import { Logger, LogLevel } from './logger/logger';
 import { ConnectionPool } from './pool/pool';
 import { IStatement } from './sql-client.interface';
 import { SQLQueriesResponse, SQLQueryColumn, SQLResponse } from './types';
 
-// [impl->dsn~runtime-prepared-statement-execution~1]
+/**
+ * Fetches the remaining rows of all result sets in a response and closes their result-set handles.
+ */
+export type FetchResultSets = (data: SQLResponse<SQLQueriesResponse>, connection: Connection) => Promise<SQLResponse<SQLQueriesResponse>>;
+
+const defaultFetchResultSets: FetchResultSets = (data, connection) =>
+  fetchData(data, connection, new Logger(LogLevel.Off), DEFAULT_FETCH_SIZE_BYTES);
+
+// [impl->dsn~runtime-prepared-statement-execution~2]
 export class Statement implements IStatement {
+  private closePromise: Promise<void> | undefined;
+
   constructor(
     private readonly connection: Connection,
     private readonly pool: ConnectionPool<Connection>,
     private readonly statementHandle: number,
-    private readonly columns: SQLQueryColumn[]
+    private readonly columns: SQLQueryColumn[],
+    private readonly fetchResultSets: FetchResultSets = defaultFetchResultSets
   ) { }
 
   /**
    * @inheritDoc
    */
   async close(): Promise<void> {
-    return this.connection
+    // Closing twice (e.g. close() inside an `await using` scope) would release a connection another caller may have
+    // acquired in the meantime, so later calls share the result of the first one.
+    this.closePromise ??= this.connection
       .sendCommand(new ClosePreparedStatementCommand(this.statementHandle))
       .then(() => {
         this.pool.release(this.connection);
@@ -28,6 +43,7 @@ export class Statement implements IStatement {
         this.pool.release(this.connection);
         throw err;
       });
+    return this.closePromise;
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -63,9 +79,8 @@ export class Statement implements IStatement {
           data: data,
         })
       )
-      .catch((err) => {
-        this.pool.release(this.connection);
-        throw err;
-      });
+      // Failures do not release the connection: the statement owns it until close(). Releasing it here would let the
+      // pool hand it to another caller while the statement still uses it, and close() would release it a second time.
+      .then((response) => this.fetchResultSets(response, this.connection));
   }
 }

@@ -296,16 +296,16 @@ Covers:
 Needs: impl, utest, itest
 
 ### Prepared Statement Execution
-`dsn~runtime-prepared-statement-execution~1`
+`dsn~runtime-prepared-statement-execution~2`
 
 **Given** an authenticated driver and prepared SQL text
 **When** `prepare()` and `Statement.execute()` are called
-**Then** the driver creates a prepared statement, validates that supplied positional values align with parameter columns, sends the positional values as column-oriented data to Exasol, and releases the connection when the statement is closed
+**Then** the driver creates a prepared statement, validates that supplied positional values align with parameter columns, sends the positional values as column-oriented data to Exasol, fetches additional result-set pages and closes remote result sets in the same way as `query()`, and releases the connection when the statement is closed
 
 Covers:
 - `scn~prepared-statement-execution~1`
 
-Needs: impl
+Needs: impl, utest, itest
 
 ### Prepared Statement Async Disposal
 `dsn~runtime-prepared-statement-async-disposal~1`

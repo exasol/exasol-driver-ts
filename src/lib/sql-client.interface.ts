@@ -172,11 +172,16 @@ export interface IExasolDriver extends IExasolClient {
 
 export interface IStatement extends AsyncDisposable {
   /**
-   * Close statement
+   * Close the statement and release its connection. Must also be called when {@link execute} fails, for example in a
+   * `finally` block or with `await using`. The connection is released even if closing fails. Later calls do not
+   * close again and return the result of the first call.
    */
   close(): Promise<void>;
   /**
-   *  Execute prepared statement with given args
+   * Execute the prepared statement with the given args and fetch all rows of its result sets.
+   *
+   * If Exasol rejects the statement itself, the returned response has `status` `'error'` and contains the
+   * `exception`. If fetching the rows fails, the promise rejects.
    *
    * @param {...any} args
    * @throws {Error}

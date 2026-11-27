@@ -60,6 +60,15 @@ export class MockExaWebSocket implements ExaWebsocket {
         return undefined;
       case 'closeResultSet':
         return { "status": "ok" };
+      case 'createPreparedStatement':
+        return {
+          statementHandle: 5,
+          parameterData: { numColumns: 1, columns: [{ name: 'P', dataType: { type: 'DECIMAL' } }] },
+        };
+      case 'executePreparedStatement':
+        return this.getMockResultForSQL('select with multiple rows');
+      case 'closePreparedStatement':
+        return {};
       default:
         throw new Error(`MockExaWebSocket: No mock response defined for command '${command.command}'.`);
     }

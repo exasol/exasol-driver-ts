@@ -18,6 +18,8 @@ The driver now supports the same server certificate modes as the other Exasol dr
 
 The WebSocket factory now receives a second argument `{ rejectUnauthorized }`, which it should pass on to `ws`. Existing factories keep working for the default certificate validation.
 
+`Statement.execute()` of prepared statements now fetches all rows of result sets and closes their result-set handles, like `query()` does. Previously it returned only the rows of the first message, which is none for large results. The driver now also closes result sets when fetching their rows fails, instead of leaving them open until the session ends. If Exasol rejects fetching rows with an SQL error, `query()`, `execute()`, `executeBatch()` and `Statement.execute()` now reject with that SQL error (`E-EDJS-25`) instead of a `TypeError`. When `Statement.execute()` fails, the prepared statement now keeps its connection until `close()` instead of returning it to the pool while the statement still uses it. Calling `close()` a second time no longer releases the connection again. **Close prepared statements also when `execute()` fails**, with `await using` or in a `finally` block; otherwise their connection stays claimed.
+
 ## Features
 
 * #123: Added support for Exasol connection strings with host ranges, host lists and failover
@@ -26,6 +28,7 @@ The WebSocket factory now receives a second argument `{ rejectUnauthorized }`, w
 ## Bugfixes
 
 * #128: Fixed `ExasolPool` retrying forever when it cannot create a connection
+* #134: Fixed `Statement.execute()` not fetching all rows of a result set and leaving its result-set handle open
 
 ## Security
 

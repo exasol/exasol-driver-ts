@@ -21,7 +21,7 @@ import {
   newUntrustedServerCertificateError,
   newSqlError,
 } from './errors/errors';
-import { fetchData } from './fetch';
+import { DEFAULT_FETCH_SIZE_BYTES, fetchData } from './fetch';
 import { ILogger, Logger, LogLevel } from './logger/logger';
 import { createLoginOptions } from './login-options';
 import { ConnectionPool } from './pool/pool';
@@ -139,7 +139,7 @@ export class BaseExasolDriver implements IExasolClient {
   private readonly defaultConfig: Config & InternalConfig = {
     host: 'localhost',
     port: 8563,
-    fetchSize: 1024 * 1024, // in bytes = 1 MB
+    fetchSize: DEFAULT_FETCH_SIZE_BYTES,
     clientName: 'Javascript client',
     clientVersion: '1',
     autocommit: true,
@@ -731,7 +731,7 @@ export class BaseExasolDriver implements IExasolClient {
    * @inheritDoc
    */
   public async prepare(sqlStatement: string, getCancel?: CetCancelFunction): Promise<IStatement> {
-    // [impl->dsn~runtime-prepared-statement-execution~1]
+    // [impl->dsn~runtime-prepared-statement-execution~2]
     const connection = await this.acquire();
     return connection
       .sendCommand<CreatePreparedStatementResponse>(
@@ -742,7 +742,13 @@ export class BaseExasolDriver implements IExasolClient {
         getCancel,
       )
       .then((response) => {
-        return new Statement(connection, this.pool, response.responseData.statementHandle, response.responseData.parameterData.columns);
+        return new Statement(
+          connection,
+          this.pool,
+          response.responseData.statementHandle,
+          response.responseData.parameterData.columns,
+          (data, statementConnection) => this.fetchData(data, statementConnection),
+        );
       });
   }
 
