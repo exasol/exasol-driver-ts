@@ -98,6 +98,10 @@ async function runQuery() {
 
 The driver declaration in this example also closes its database connection when the function exits.
 
+A prepared statement keeps its connection until it is closed, also when `execute()` fails. If you don't use `await using`, call `close()` in a `finally` block.
+
+`statement.execute()` returns the full Exasol response. If Exasol rejects the statement, the response has `status` `'error'` and the error details are in `exception`. If fetching the result rows fails, `execute()` rejects with the error instead.
+
 <!-- [uman->scn~async-dispose-connection-pool~1] -->
 The pool can be managed the same way. Leaving the scope drains it and clears its connections:
 

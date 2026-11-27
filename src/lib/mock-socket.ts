@@ -13,9 +13,21 @@ export class MockExaWebSocket implements ExaWebsocket {
   onopen: ((event: any) => void) | null = null;
   onclose: ((this: any, ev: unknown) => unknown) | null = null;
   onerror: ((this: any, ev: unknown) => unknown) | null = null;
+  private readonly overrides = new Map<string, object>();
+
+  /** Answers every command with the given name with the given raw response (including `status`). */
+  public respondTo(commandName: string, response: object): void {
+    this.overrides.set(commandName, response);
+  }
+
   public send(data: string | Uint8Array): void {
     const command = JSON.parse(data.toString());
     this.sentCommands.push(command);
+    const override = this.overrides.get(command.command);
+    if (override) {
+      setTimeout(() => this.callOnMessage({ data: JSON.stringify(override) }), 0);
+      return;
+    }
     if (command.accessToken === 'silent-token') {
       // Simulates a server that never answers the login.
       return;
@@ -60,6 +72,15 @@ export class MockExaWebSocket implements ExaWebsocket {
         return undefined;
       case 'closeResultSet':
         return { "status": "ok" };
+      case 'createPreparedStatement':
+        return {
+          statementHandle: 5,
+          parameterData: { numColumns: 1, columns: [{ name: 'P', dataType: { type: 'DECIMAL' } }] },
+        };
+      case 'executePreparedStatement':
+        return this.getMockResultForSQL('select with multiple rows');
+      case 'closePreparedStatement':
+        return {};
       default:
         throw new Error(`MockExaWebSocket: No mock response defined for command '${command.command}'.`);
     }

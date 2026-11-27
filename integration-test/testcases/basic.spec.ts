@@ -138,6 +138,42 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
       });
     });
 
+    describe('prepare()', () => {
+      const select100kRows = 'SELECT X FROM (SELECT * FROM VALUES BETWEEN 1 AND 100000 AS t(X)) WHERE X > ? ORDER BY X';
+
+      // Regression test for GitHub issue #134: results larger than the first message used to come back without rows.
+      // [itest->dsn~runtime-prepared-statement-execution~2]
+      test('Execute prepared statement and fetch all rows', async () => {
+        const driver = await openConnection();
+        const statement = await driver.prepare(select100kRows);
+        try {
+          const response = await statement.execute(0);
+          const resultSet = response.responseData.results[0].resultSet;
+          expect(resultSet?.numRows).toBe(100_000);
+          expect(resultSet?.numRowsInMessage).toBe(100_000);
+          expect(resultSet?.data?.[0]).toHaveLength(100_000);
+          expect(resultSet?.data?.[0][99_999]).toBe(100_000);
+        } finally {
+          await statement.close();
+        }
+      });
+
+      test('Execute prepared statement with resultSetMaxRows', async () => {
+        const driver = await openConnection(undefined, undefined, undefined, { resultSetMaxRows: 1500 });
+        const statement = await driver.prepare(select100kRows);
+        try {
+          const response = await statement.execute(0);
+          const resultSet = response.responseData.results[0].resultSet;
+          // Relies on the first message having fewer than 1500 rows: rows of the first message ignore
+          // resultSetMaxRows (#135).
+          expect(resultSet?.numRowsInMessage).toBe(1500);
+          expect(resultSet?.data?.[0]).toHaveLength(1500);
+        } finally {
+          await statement.close();
+        }
+      });
+    });
+
     afterEach(async () => {
       if (!connection || !factory) {
         return;
@@ -155,8 +191,8 @@ export const basicTests = (runtime: IntegrationTestRuntime) => {
       }
     });
 
-    async function openConnection(url?: string, host = connection.host, port = connection.port) {
-      const driver = runtime.driver.create(factory, { ...connection, host, port, url });
+    async function openConnection(url?: string, host = connection.host, port = connection.port, extraConfig: Partial<IntegrationConnectionConfig> = {}) {
+      const driver = runtime.driver.create(factory, { ...connection, host, port, url, ...extraConfig });
       await driver.connect();
       tmpDriver = driver;
       return driver;

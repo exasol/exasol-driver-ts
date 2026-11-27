@@ -176,25 +176,64 @@ describe('sqlClient', () => {
       });
     });
 
+    it.each([
+      ['an exception', { status: 'error', exception: { sqlCode: '42000', text: 'Resultset handle 17 is unknown' } },
+        "E-EDJS-25: SQL error: code: '42000', message: 'Resultset handle 17 is unknown'"],
+      ['no exception', { status: 'error' }, 'E-EDJS-27'],
+    ])('should close the result set when fetching more rows fails with %s', async (_, response, expectedError) => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      mockSocketFactory.mockSocket.respondTo('fetch', response);
+
+      await expect(driver.query('select with multiple rows')).rejects.toThrow(expectedError);
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'closeResultSet',
+        resultSetHandles: [17],
+      });
+    });
+
+    it('should close all result sets of a batch in one command when fetching fails', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      const resultSet = (resultSetHandle: number) => ({
+        resultType: 'resultSet',
+        resultSet: { resultSetHandle, numColumns: 1, numRows: 2, numRowsInMessage: 1, columns: [], data: [[1]] },
+      });
+      mockSocketFactory.mockSocket.respondTo('executeBatch', {
+        status: 'ok',
+        responseData: { numResults: 2, results: [resultSet(17), resultSet(18)] },
+      });
+      mockSocketFactory.mockSocket.respondTo('fetch', { status: 'error' });
+
+      await expect(driver.executeBatch(['first', 'second'])).rejects.toThrow('E-EDJS-27');
+      const closeCommands = mockSocketFactory.mockSocket.sentCommands.filter(
+        (command) => (command as { command: string }).command === 'closeResultSet',
+      );
+      expect(closeCommands).toEqual([{ command: 'closeResultSet', resultSetHandles: [17, 18] }]);
+    });
+
+    it('should keep all fields of the raw response, such as attributes', async () => {
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+      mockSocketFactory.mockSocket.respondTo('execute', {
+        status: 'ok',
+        attributes: { autocommit: false },
+        responseData: { numResults: 1, results: [{ resultType: 'rowCount', rowCount: 1 }] },
+      });
+
+      const response = await driver.execute('create table test (id int)', undefined, undefined, 'raw');
+
+      expect(response).toEqual(expect.objectContaining({ status: 'ok', attributes: { autocommit: false } }));
+    });
+
     it('should return fetched rows when closing the result set fails', async () => {
       const connectPromise = driver.connect();
       mockSocketFactory.mockSocket.simulateOpen();
       await connectPromise;
-
-      const originalSend = mockSocketFactory.mockSocket.send.bind(mockSocketFactory.mockSocket);
-      mockSocketFactory.mockSocket.send = (data: string | Uint8Array) => {
-        const command = JSON.parse(data.toString());
-        if (command.command === 'closeResultSet') {
-          mockSocketFactory.mockSocket.sentCommands.push(command);
-          setTimeout(() => {
-            mockSocketFactory.mockSocket.callOnMessage({
-              data: JSON.stringify({ status: 'error' }),
-            });
-          }, 0);
-          return;
-        }
-        originalSend(data);
-      };
+      mockSocketFactory.mockSocket.respondTo('closeResultSet', { status: 'error' });
 
       const result = await driver.query('select with multiple rows');
 
@@ -255,7 +294,6 @@ describe('sqlClient', () => {
 
       expect(result).toStrictEqual({
         status: 'ok',
-        exception: undefined,
         responseData: {
           numResults: 1,
           results: [{
@@ -357,7 +395,6 @@ describe('sqlClient', () => {
 
       expect(result).toStrictEqual({
         status: 'ok',
-        exception: undefined,
         responseData: {
           numResults: 1,
           results: [{ resultType: 'rowCount', rowCount: 1 }],
@@ -1078,6 +1115,48 @@ describe('sqlClient', () => {
         startPosition: 1,
         numBytes: 42,
       });
+    });
+  });
+
+  describe('prepare', () => {
+    // Regression test for GitHub issue #134: Statement.execute() returned only the first message of a result set
+    // and left its result-set handle open.
+    // [utest->dsn~runtime-prepared-statement-execution~2]
+    it('should fetch all rows and close the result set when executing a prepared statement', async () => {
+      driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', fetchSize: 42 });
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const statement = await driver.prepare('select with parameter where x > ?');
+      const response = await statement.execute(0);
+      await statement.close();
+
+      expect(response.responseData.results[0].resultSet?.data).toEqual([[1, 2]]);
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'fetch',
+        resultSetHandle: 17,
+        startPosition: 1,
+        numBytes: 42,
+      });
+      expect(mockSocketFactory.mockSocket.sentCommands).toContainEqual({
+        command: 'closeResultSet',
+        resultSetHandles: [17],
+      });
+    });
+
+    it('should limit fetched prepared statement rows to resultSetMaxRows', async () => {
+      driver = new ExasolDriver(mockSocketFactory.factory, { accessToken: 'access-token', resultSetMaxRows: 1 });
+      const connectPromise = driver.connect();
+      mockSocketFactory.mockSocket.simulateOpen();
+      await connectPromise;
+
+      const statement = await driver.prepare('select with parameter where x > ?');
+      const response = await statement.execute(0);
+      await statement.close();
+
+      expect(response.responseData.results[0].resultSet?.data).toEqual([[1]]);
+      expect(mockSocketFactory.mockSocket.sentCommands).not.toContainEqual(expect.objectContaining({ command: 'fetch' }));
     });
   });
 

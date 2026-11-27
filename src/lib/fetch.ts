@@ -1,7 +1,11 @@
 import { CloseResultSetCommand, FetchCommand } from './commands';
 import { Connection } from './connection';
+import { GeneralSqlError, newSqlError } from './errors/errors';
 import { ILogger } from './logger/logger';
 import { FetchResponse, ResultSet, SQLQueriesResponse, SQLResponse } from './types';
+
+/** Default number of bytes requested per fetch command (1 MiB). */
+export const DEFAULT_FETCH_SIZE_BYTES = 1024 * 1024;
 
 export interface SqlStatementsPagedResponse {
   pageSize: number;
@@ -37,39 +41,48 @@ export const fetchData = async (
   // [impl->dsn~runtime-query-execution~3]
   const batchResponse = rawData.responseData;
 
-  for (let index = 0; index < (batchResponse?.numResults ?? 0); index++) {
-    const response = batchResponse.results[index];
-    logger.debug('[WebSQL]: Fetch more data for: ', response?.resultSet?.resultSetHandle);
+  const results = (batchResponse?.results ?? []).slice(0, batchResponse?.numResults ?? 0);
+  const resultSetHandles = results
+    .map((response) => response?.resultSet?.resultSetHandle)
+    .filter((handle): handle is number => !!handle);
 
-    if (response?.resultType === 'resultSet' && response.resultSet) {
-      const fetched = await fetchMoreData(
-        response.resultSet,
-        response.resultSet.numRowsInMessage,
-        Math.min(response.resultSet.numRows, resultSetMaxRows ?? response.resultSet.numRows),
-        resultSetMaxRows ?? response.resultSet.numRows,
-        connection,
-        fetchSizeBytes,
-        logger
-      );
-      batchResponse.results[index].resultSet = fetched;
-
-      logger.debug('[WebSQL]: Closing ResultSet', response.resultSet.resultSetHandle);
-      if (response.resultSet.resultSetHandle) {
-        try {
-          await connection.sendCommand(new CloseResultSetCommand([response.resultSet.resultSetHandle]));
-        } catch (error) {
-          logger.warn('[WebSQL]: Closing ResultSet failed', error);
-        }
+  try {
+    for (const response of results) {
+      if (response?.resultType === 'resultSet' && response.resultSet) {
+        logger.debug('[WebSQL]: Fetch more data for: ', response.resultSet.resultSetHandle);
+        // Result sets are fetched one after another on purpose: they share one connection, whose commands run in order.
+        response.resultSet = await fetchMoreData( // NOSONAR
+          response.resultSet,
+          response.resultSet.numRowsInMessage,
+          Math.min(response.resultSet.numRows, resultSetMaxRows ?? response.resultSet.numRows),
+          resultSetMaxRows ?? response.resultSet.numRows,
+          connection,
+          fetchSizeBytes,
+          logger
+        );
       }
-
-      logger.debug('[WebSQL]: Loaded all data');
     }
+    logger.debug('[WebSQL]: Loaded all data');
+  } finally {
+    // Also when fetching fails: open result sets would otherwise stay open until the session ends.
+    await closeResultSets(resultSetHandles, connection, logger);
   }
   return {
+    ...rawData,
     responseData: batchResponse,
-    status: rawData.status,
-    exception: rawData.exception,
   };
+};
+
+const closeResultSets = async (resultSetHandles: number[], connection: Connection, logger: ILogger) => {
+  if (resultSetHandles.length === 0) {
+    return;
+  }
+  logger.debug('[WebSQL]: Closing ResultSets', resultSetHandles);
+  try {
+    await connection.sendCommand(new CloseResultSetCommand(resultSetHandles));
+  } catch (error) {
+    logger.warn('[WebSQL]: Closing ResultSets failed', error);
+  }
 };
 
 const fetchMoreData = async (
@@ -126,11 +139,17 @@ const sendFetchCommand = async (
   fetchSizeBytes: number
 ): Promise<SQLResponse<FetchResponse>> => {
   // [impl->dsn~runtime-query-fetch-size~1]
-  return connection.sendCommand<FetchResponse>(
+  const response = await connection.sendCommand<FetchResponse>(
     new FetchCommand({
       numBytes: fetchSizeBytes,
       resultSetHandle,
       startPosition,
     })
   );
+  // SQL errors resolve with status 'error', an exception and no responseData. Error responses without an exception
+  // are already rejected by Connection (E-EDJS-27); GeneralSqlError is only a defensive fallback.
+  if (response.status !== 'ok') {
+    throw response.exception ? newSqlError(response.exception) : GeneralSqlError;
+  }
+  return response;
 };

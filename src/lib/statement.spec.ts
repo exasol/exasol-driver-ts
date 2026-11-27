@@ -2,7 +2,7 @@ import { Statement } from './statement';
 import { Connection } from './connection';
 import { ConnectionPool } from './pool/pool';
 import { ExecutePreparedStatementCommand } from './commands';
-import { SQLQueryColumn } from './types';
+import { SQLQueriesResponse, SQLQueryColumn, SQLResponse } from './types';
 import { ErrInvalidValuesCount } from './errors/errors';
 
 describe('statement', () => {
@@ -13,12 +13,66 @@ describe('statement', () => {
     { name: 'D', dataType: { type: 'VARCHAR' } },
   ];
 
-  function createStatement(sendCommand: jest.Mock, statementColumns: SQLQueryColumn[] = columns) {
+  function createStatement(sendCommand: jest.Mock, statementColumns: SQLQueryColumn[] = columns, fetchResultSets?: jest.Mock) {
     const connection = { sendCommand } as unknown as Connection;
     const pool = { release: jest.fn() } as unknown as ConnectionPool<Connection>;
-    const statement = new Statement(connection, pool, 1, statementColumns);
+    const statement = new Statement(connection, pool, 1, statementColumns, fetchResultSets);
     return { statement, connection, pool };
   }
+
+  // [utest->dsn~runtime-prepared-statement-execution~2]
+  it('should return the response with fetched result sets', async () => {
+    const executeResponse = { status: 'ok', responseData: { numResults: 0, results: [] } };
+    const fetchedResponse = { status: 'ok', responseData: { numResults: 1, results: [] } } as unknown as SQLResponse<SQLQueriesResponse>;
+    const sendCommand = jest.fn().mockResolvedValue(executeResponse);
+    const fetchResultSets = jest.fn().mockResolvedValue(fetchedResponse);
+    const { statement, connection } = createStatement(sendCommand, columns, fetchResultSets);
+
+    const response = await statement.execute('a', 'b', 'c', 'd');
+
+    expect(response).toBe(fetchedResponse);
+    expect(fetchResultSets).toHaveBeenCalledWith(executeResponse, connection);
+  });
+
+  it('should fetch and close result sets with the default fetch size when no fetch function is given', async () => {
+    const executeResponse = {
+      status: 'ok',
+      responseData: {
+        numResults: 1,
+        results: [{
+          resultType: 'resultSet',
+          resultSet: { resultSetHandle: 17, numColumns: 1, numRows: 2, numRowsInMessage: 1, columns: [], data: [[1]] },
+        }],
+      },
+    };
+    const sendCommand = jest.fn().mockImplementation((command: { command: string }) => {
+      if (command.command === 'fetch') {
+        return Promise.resolve({ status: 'ok', responseData: { numRows: 1, data: [[2]] } });
+      }
+      return Promise.resolve(command.command === 'executePreparedStatement' ? executeResponse : {});
+    });
+    const { statement } = createStatement(sendCommand);
+
+    const response = await statement.execute('a', 'b', 'c', 'd');
+
+    expect(response.responseData.results[0].resultSet?.data).toEqual([[1, 2]]);
+    expect(sendCommand).toHaveBeenCalledWith(expect.objectContaining({ command: 'fetch', numBytes: 1024 * 1024 }));
+    expect(sendCommand).toHaveBeenCalledWith(expect.objectContaining({ command: 'closeResultSet', resultSetHandles: [17] }));
+  });
+
+  it('should keep the connection claimed until close when fetching result sets fails', async () => {
+    const fetchError = new Error('fetch failed');
+    const sendCommand = jest.fn().mockResolvedValue({});
+    const fetchResultSets = jest.fn().mockRejectedValue(fetchError);
+    const { statement, connection, pool } = createStatement(sendCommand, columns, fetchResultSets);
+
+    await expect(statement.execute('a', 'b', 'c', 'd')).rejects.toEqual(fetchError);
+    expect(pool.release).not.toHaveBeenCalled();
+
+    await statement.close();
+    expect(pool.release).toHaveBeenCalledTimes(1);
+    expect(pool.release).toHaveBeenCalledWith(connection);
+  });
 
   // Regression test for GitHub issue #71: with more than one placeholder, every column
   // used to end up with every argument because the columnar array was aliased.
@@ -74,12 +128,16 @@ describe('statement', () => {
     expect(sendCommand).not.toHaveBeenCalled();
   });
 
-  it('should release the connection back to the pool when execute fails', async () => {
+  it('should keep the connection claimed until close when execute fails', async () => {
     const executeError = new Error('execute failed');
-    const sendCommand = jest.fn().mockRejectedValue(executeError);
+    const sendCommand = jest.fn().mockRejectedValueOnce(executeError).mockResolvedValue({});
     const { statement, connection, pool } = createStatement(sendCommand);
 
     await expect(statement.execute('a', 'b', 'c', 'd')).rejects.toEqual(executeError);
+    expect(pool.release).not.toHaveBeenCalled();
+
+    await statement.close();
+    expect(pool.release).toHaveBeenCalledTimes(1);
     expect(pool.release).toHaveBeenCalledWith(connection);
   });
 
@@ -107,6 +165,41 @@ describe('statement', () => {
       command: 'closePreparedStatement',
     }));
     expect(pool.release).toHaveBeenCalledWith(connection);
+  });
+
+  it('should close the prepared statement and release the connection only once when closed twice', async () => {
+    const sendCommand = jest.fn().mockResolvedValue({});
+    const { statement, pool } = createStatement(sendCommand);
+
+    {
+      await using managedStatement = statement;
+      await managedStatement.close();
+    }
+
+    expect(sendCommand).toHaveBeenCalledTimes(1);
+    expect(pool.release).toHaveBeenCalledTimes(1);
+  });
+
+  it('should close only once when close is called concurrently', async () => {
+    const sendCommand = jest.fn().mockResolvedValue({});
+    const { statement, pool } = createStatement(sendCommand);
+
+    await Promise.all([statement.close(), statement.close()]);
+
+    expect(sendCommand).toHaveBeenCalledTimes(1);
+    expect(pool.release).toHaveBeenCalledTimes(1);
+  });
+
+  it('should return the error of the first close when close is called again after it failed', async () => {
+    const closeError = new Error('close failed');
+    const sendCommand = jest.fn().mockRejectedValue(closeError);
+    const { statement, pool } = createStatement(sendCommand);
+
+    await expect(statement.close()).rejects.toEqual(closeError);
+    await expect(statement.close()).rejects.toEqual(closeError);
+
+    expect(sendCommand).toHaveBeenCalledTimes(1);
+    expect(pool.release).toHaveBeenCalledTimes(1);
   });
 
   it('should release the connection back to the pool when close fails', async () => {

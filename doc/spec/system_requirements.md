@@ -613,11 +613,11 @@ A protocol response is the low-level object returned by the Exasol WebSocket API
 Needs: dsn
 
 ### Prepared Statement Execution
-`scn~prepared-statement-execution~1`
+`scn~prepared-statement-execution~2`
 
 **Given** an authenticated driver and a SQL statement with parameters
 **When** the application prepares the statement, executes it with a value count matching the parameter columns, and closes it
-**Then** the driver sends Exasol prepared-statement commands and releases the underlying connection when the statement is closed
+**Then** the driver sends Exasol prepared-statement commands, returns all rows of the statement's result sets, and releases the underlying connection when the statement is closed
 
 Covers:
 - `req~use-prepared-statements~1`

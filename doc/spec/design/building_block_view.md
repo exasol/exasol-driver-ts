@@ -42,7 +42,7 @@ Covers:
 - `scn~query-returns-rows~1`
 - `scn~execute-returns-row-count~1`
 - `scn~raw-response-requested~1`
-- `scn~prepared-statement-execution~1`
+- `scn~prepared-statement-execution~2`
 - `scn~cancel-active-work~1`
 - `scn~csv-import-is-cancelled~1`
 - `scn~parquet-import-is-cancelled~1`
